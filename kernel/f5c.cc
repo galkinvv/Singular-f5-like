@@ -43,11 +43,9 @@
 #include "f5c.h"
 #include "timer.h"
 
-#define F5EDEBUG  1
+#define F5EDEBUG  0
 #define setMaxIdeal 64
-
-
-
+#define NUMVARS currRing->ExpL_Size
 
 /// NOTE that the input must be homogeneous to guarantee termination and
 /// correctness. Thus these properties are assumed in the following.
@@ -66,8 +64,7 @@ ideal f5cMain(ideal F, ideal Q)
   int* expVec   = new int[(currRing->N)+1];
   for( ; k<IDELEMS(F); k++)
   {
-    Print("TEST Poly: ");
-    pWrite(pHead(F->m[k]));
+    Print("SIZE OF INTERNAL EXPONENT VECTORS: %d\n",currRing->ExpL_Size);
     pGetExpV(F->m[k],expVec);
     Print("EXP VEC: ");
     for( ; j<currRing->N+1; j++)
@@ -108,10 +105,8 @@ ideal f5cMain(ideal F, ideal Q)
     // the following interreduction is the essential idea of F5e.
     // NOTE that we do not need the old rules from previous iteration steps
     // => we only interreduce the polynomials and forget about their labels
-    Print("ELEMENTE IN R: %d\n", IDELEMS(r));
     r = kInterRed(r);
   }
-    pWrite(r->m[0]);
   
   omfree(shift);
   omfree(negBitmaskShifted);
@@ -129,9 +124,7 @@ ideal f5cIter(poly p, ideal redGB, int numVariables, int* shift, int* negBitmask
   
   F5Rules* f5Rules = (F5Rules*) omalloc(sizeof(struct F5Rules));
   // malloc memory for slabel
-    Print("HERE %d  ",IDELEMS(redGB)); pWrite(redGB->m[0]);
   f5Rules->label  = (int**) omalloc(IDELEMS(redGB)*sizeof(int*));
-    Print("HERE %d  ",IDELEMS(redGB)); pWrite(redGB->m[0]);
   f5Rules->slabel = (unsigned long*) omalloc((currRing->N+1)*sizeof(unsigned long)); 
   for(i=0; i<IDELEMS(redGB); i++) 
   {
@@ -171,9 +164,6 @@ ideal f5cIter(poly p, ideal redGB, int numVariables, int* shift, int* negBitmask
   CpairDegBound* critPairsBounds = NULL;
   criticalPairInit( gCurr, redGB, *f5Rules, critPairsBounds, numVariables, shift,
                     negBitmaskShifted, offsets); 
-  // free memory 
-  //omfree(critPairsFirst); 
-  //omfree(critPairsLast); 
   return redGB;
 }
 
@@ -232,7 +222,7 @@ void criticalPairInit(const Lpoly& gCurr, const ideal redGB,
       // to the list of critical pairs 
       critPairTemp->p2      = redGB->m[i];
       // now we really need the memory for the exp label
-      critPairTemp->mLabelExp = (unsigned long*) omalloc(VARS*sizeof(unsigned long));
+      critPairTemp->mLabelExp = (unsigned long*) omalloc(NUMVARS*sizeof(unsigned long));
       getExpFromIntArray( critPairTemp->mLabel1, critPairTemp->mLabelExp, numVariables,
                           shift, negBitmaskShifted, offsets);
       insertCritPair(critPairTemp, critPairDeg, critPairsBounds);
@@ -270,14 +260,13 @@ void criticalPairInit(const Lpoly& gCurr, const ideal redGB,
     }
   }
   critPairTemp->smLabel1 = getShortExpVecFromArray(critPairTemp->mLabel1);
-  
   if(!criterion1(critPairTemp->mLabel1, critPairTemp->smLabel1, f5Rules)) // testing the F5 Criterion
   {
     // completing the construction of the new critical pair and inserting it
     // to the list of critical pairs 
     critPairTemp->p2  = redGB->m[IDELEMS(redGB)-1];
     // now we really need the memory for the exp label
-    critPairTemp->mLabelExp = (unsigned long*) omalloc(VARS*sizeof(unsigned long));
+    critPairTemp->mLabelExp = (unsigned long*) omalloc(NUMVARS*sizeof(unsigned long));
     getExpFromIntArray( critPairTemp->mLabel1, critPairTemp->mLabelExp, numVariables,
                         shift, negBitmaskShifted, offsets);
     insertCritPair(critPairTemp, critPairDeg, critPairsBounds);
@@ -342,7 +331,7 @@ void criticalPairPrev(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Ru
       // to the list of critical pairs 
       critPairTemp->p2      = redGB->m[i];
       // now we really need the memory for the exp label
-      critPairTemp->mLabelExp = (unsigned long*) omalloc(VARS*sizeof(unsigned long));
+      critPairTemp->mLabelExp = (unsigned long*) omalloc(NUMVARS*sizeof(unsigned long));
       getExpFromIntArray( critPairTemp->mLabel1, critPairTemp->mLabelExp, numVariables,
                           shift, negBitmaskShifted, offsets);
       insertCritPair(critPairTemp, critPairDeg, critPairsBounds);
@@ -389,7 +378,7 @@ void criticalPairPrev(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Ru
     // to the list of critical pairs 
     critPairTemp->p2  = redGB->m[IDELEMS(redGB)-1];
     // now we really need the memory for the exp label
-    critPairTemp->mLabelExp = (unsigned long*) omalloc(VARS*sizeof(unsigned long));
+    critPairTemp->mLabelExp = (unsigned long*) omalloc(NUMVARS*sizeof(unsigned long));
     getExpFromIntArray( critPairTemp->mLabel1, critPairTemp->mLabelExp, numVariables,
                         shift, negBitmaskShifted, offsets);
     insertCritPair(critPairTemp, critPairDeg, critPairsBounds);
@@ -427,7 +416,7 @@ void criticalPairCurr(const Lpoly& gCurr, const F5Rules& f5Rules,
   // Note: As we do not need the smaller exponent vector we do NOT store both in
   // the critical pair structure, but only the greater one. Thus the following
   // memory is freed before the end of criticalPairCurr()
-  unsigned long* checkExp = (unsigned long*) omalloc(VARS*sizeof(unsigned long));
+  unsigned long* checkExp = (unsigned long*) omalloc(NUMVARS*sizeof(unsigned long));
   int temp;
   long critPairDeg = 0;
   Lpoly* gCurrIter  = gCurr.next;
@@ -471,7 +460,7 @@ void criticalPairCurr(const Lpoly& gCurr, const F5Rules& f5Rules,
       // to the list of critical pairs 
       critPairTemp->p2      = gCurrIter->p;
       // now we really need the memory for the exp label
-      critPairTemp->mLabelExp = (unsigned long*) omalloc(VARS*sizeof(unsigned long));
+      critPairTemp->mLabelExp = (unsigned long*) omalloc(NUMVARS*sizeof(unsigned long));
       getExpFromIntArray( critPairTemp->mLabel1, critPairTemp->mLabelExp, numVariables,
                           shift, negBitmaskShifted, offsets);
       getExpFromIntArray( critPairTemp->mLabel2, checkExp, numVariables,
@@ -532,7 +521,7 @@ void criticalPairCurr(const Lpoly& gCurr, const F5Rules& f5Rules,
     // to the list of critical pairs 
     critPairTemp->p2  = gCurrIter->p;
     // now we really need the memory for the exp label
-    critPairTemp->mLabelExp = (unsigned long*) omalloc(VARS*sizeof(unsigned long));
+    critPairTemp->mLabelExp = (unsigned long*) omalloc(NUMVARS*sizeof(unsigned long));
     getExpFromIntArray( critPairTemp->mLabel1, critPairTemp->mLabelExp, numVariables,
                         shift, negBitmaskShifted, offsets);
     getExpFromIntArray( critPairTemp->mLabel2, checkExp, numVariables,
@@ -640,6 +629,18 @@ inline bool criterion2(const int* mLabel1, const unsigned long smLabel1, const R
 }
 
 
+
+void computeSpols()
+{
+
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////
+// MEMORY & INTERNAL EXPONENT VECTOR STUFF: HANDLED A BIT DIFFERENT FROM //
+// SINGULAR KERNEL                                                       //
+///////////////////////////////////////////////////////////////////////////
 
 unsigned long getShortExpVecFromArray(int* a, ring r)
 {
