@@ -3088,7 +3088,7 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
           return TRUE;
         }
 
-        ring r = currRing;
+        ideal r = currQuotient;
         ideal G = (ideal) h->Data();
         res->rtyp=IDEAL_CMD;
         res->data=(ideal) f5cMain(G,r);
