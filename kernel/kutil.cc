@@ -4463,9 +4463,6 @@ poly redtail (LObject* L, int pos, kStrategy strat)
 
   while(hn != NULL)
   {
-    Print("\nIN REDTAIL:  ");
-    pWrite(pHead(hn));
-    Print("HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE");
     op = strat->tailRing->pFDeg(hn, strat->tailRing);
     if ((Kstd1_deg>0)&&(op>Kstd1_deg)) goto all_done;
     e = strat->tailRing->pLDeg(hn, &l, strat->tailRing) - op;
@@ -4492,8 +4489,6 @@ poly redtail (LObject* L, int pos, kStrategy strat)
         else
           return NULL;
       }
-    Print("\nIN REDTAIL INNER LOOP:  ");
-    pWrite(h);
       hn = pNext(h);
       if (hn == NULL) goto all_done;
       op = strat->tailRing->pFDeg(hn, strat->tailRing);
@@ -4502,7 +4497,6 @@ poly redtail (LObject* L, int pos, kStrategy strat)
     }
     h = hn;
     hn = pNext(h);
-    Print("NEXT REDTAIL STEP\n");
   }
 
   all_done:
@@ -4512,8 +4506,6 @@ poly redtail (LObject* L, int pos, kStrategy strat)
     L->pLength = 0;
   }
   strat->kHEdgeFound = save_HE;
-  Print("RETURN REDTAIL:  ");
-  pWrite( p );
   return p;
 }
 
