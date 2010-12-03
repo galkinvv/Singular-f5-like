@@ -172,12 +172,24 @@ ideal f5cIter (
 #endif  
   // create the reduction structure "strat" which is needed for all 
   // reductions with redGB in this iteration step
-  kStrategy strat = new skStrategy;
-  strat->syzComp  = 0;
-  strat->ak       = idRankFreeModule( redGB );
-  prepRedGBReduction( strat, redGB );
-  stratSize       = strat->sl+1;
-  rewRulesSize    = 2*(strat->sl+1);
+  kStrategy strat   = new skStrategy;
+  BOOLEAN b         = pLexOrder;
+  BOOLEAN toReset   = FALSE;
+  BOOLEAN delete_w  = TRUE;
+  if (rField_has_simple_inverse())
+  {  
+    strat->LazyPass = 20;
+  }
+  else
+  {
+    strat->LazyPass = 2;
+  }
+  strat->LazyDegree   = 1;
+  strat->enterOnePair = enterOnePairNormal;
+  strat->chainCrit    = chainCritNormal;
+  strat->syzComp      = 0;
+  strat->ak           = idRankFreeModule(redGB);
+  prepRedGBReduction(strat, redGB);
 #if F5EDEBUG3
   Print("F5CITER-AFTER PREPREDUCTION\n");
   Print("ORDER %ld -- %ld\n",p_GetOrder(p,currRing), p->exp[currRing->pOrdIndex]);
