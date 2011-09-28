@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: cf_algorithm.cc 14344 2011-07-25 14:08:17Z mlee $ */
 
 //{{{ docu
 //
@@ -30,6 +30,9 @@
 #include "cf_iter.h"
 #include "templates/ftmpl_functions.h"
 #include "algext.h"
+#ifdef HAVE_NTL
+#include "NTLconvert.h"
+#endif
 
 void out_cf(const char *s1,const CanonicalForm &f,const char *s2);
 
@@ -366,8 +369,26 @@ fdivides ( const CanonicalForm & f, const CanonicalForm & g )
              && fdivides( f.tailcoeff(), g.tailcoeff() )
              && fdivides( f.LC(), g.LC() ) )
         {
-            CanonicalForm q, r;
-            return divremt( g, f, q, r ) && r.isZero();
+/*#ifdef HAVE_NTL
+            if ((CFFactory::gettype() == FiniteFieldDomain) && (getNumVars (f) == 2) && (getNumVars (g) == 2) && (getVars (f) == getVars (g)))
+            {
+              zz_p::init (getCharacteristic());
+              bi_zz_pX NTLf, NTLg, dummy;
+              NTLf= convertFacCF2NTLbi_zz_pX (f);
+              NTLg= convertFacCF2NTLbi_zz_pX (g);
+              if (divide (dummy, NTLg, NTLf))
+                return true;
+              else
+                return false;
+            }
+            else
+            {
+#endif*/
+              CanonicalForm q, r;
+              return divremt( g, f, q, r ) && r.isZero();
+/*#ifdef HAVE_NTL
+            }
+#endif*/
         }
         else
             return false;
@@ -421,14 +442,37 @@ fdivides ( const CanonicalForm & f, const CanonicalForm & g, CanonicalForm& quot
              && fdivides( f.tailcoeff(), g.tailcoeff() )
              && fdivides( f.LC(), g.LC() ) )
         {
-            CanonicalForm q, r;
-            if (divremt( g, f, q, r ) && r.isZero())
+/*#ifdef HAVE_NTL
+            if ((CFFactory::gettype() == FiniteFieldDomain) && (getNumVars (f) == 2) && (getNumVars (g) == 2) && (getVars (f) == getVars (g)))
             {
-              quot= q;
-              return true;
+              zz_p::init (getCharacteristic());
+              bi_zz_pX NTLf, NTLg, NTLQ;
+              CanonicalForm vs= getVars (f);
+              CanonicalForm dummy= vs/vs.mvar();
+              NTLf= convertFacCF2NTLbi_zz_pX (f);
+              NTLg= convertFacCF2NTLbi_zz_pX (g);
+              if (divide (NTLQ, NTLg, NTLf))
+              {
+                quot= convertNTLbi_zz_pX2CF (NTLQ, vs.mvar(),dummy.mvar());
+                return true;
+              }
+              else
+                return false;
             }
             else
-              return false;
+            {
+#endif*/
+              CanonicalForm q, r;
+              if (divremt( g, f, q, r ) && r.isZero())
+              {
+                quot= q;
+                return true;
+              }
+              else
+                return false;
+/*#ifdef HAVE_NTL
+            }
+#endif*/
         }
         else
             return false;

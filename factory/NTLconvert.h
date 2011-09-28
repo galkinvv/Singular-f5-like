@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: NTLconvert.h 13113 2010-08-12 15:16:16Z hannes $ */
 #ifndef INCL_NTLCONVERT_H
 #define INCL_NTLCONVERT_H
 
@@ -32,6 +32,7 @@
 #include <NTL/mat_ZZ.h>
 #include <NTL/mat_lzz_p.h>
 #include <NTL/mat_lzz_pE.h>
+//#include <NTL/bi_zz_pX.h>
 
 
 #ifdef NTL_CLIENT               // in <NTL/tools.h>: using of name space NTL
@@ -48,8 +49,9 @@ CanonicalForm convertNTLZZX2CF(ZZX polynom,Variable x);
 CFFList convertNTLvec_pair_ZZpX_long2FacCFFList(vec_pair_ZZ_pX_long e,ZZ_p multi,Variable x);
 CFFList convertNTLvec_pair_zzpX_long2FacCFFList(vec_pair_zz_pX_long e,zz_p multi,Variable x);
 
+CanonicalForm convertZZ2CF (ZZ a);
 CFFList convertNTLvec_pair_GF2X_long2FacCFFList(vec_pair_GF2X_long e,GF2 multi,Variable x);
-CanonicalForm convertZZ2CF(ZZ coefficient);
+CanonicalForm convertZZ2CF2 (ZZ coefficient);
 ZZ convertFacCF2NTLZZ(const CanonicalForm f);
 ZZX convertFacCF2NTLZZX(CanonicalForm f);
 CFFList convertNTLvec_pair_ZZX_long2FacCFFList(vec_pair_ZZX_long e,ZZ multi,Variable x);
@@ -70,6 +72,9 @@ mat_zz_p* convertFacCFMatrix2NTLmat_zz_p(CFMatrix &m);
 CFMatrix* convertNTLmat_zz_p2FacCFMatrix(mat_zz_p &m);
 mat_zz_pE* convertFacCFMatrix2NTLmat_zz_pE(CFMatrix &m);
 CFMatrix* convertNTLmat_zz_pE2FacCFMatrix(mat_zz_pE &m, Variable alpha);
+
+//bi_zz_pX convertFacCF2NTLbi_zz_pX (const CanonicalForm& f);
+//CanonicalForm convertNTLbi_zz_pX2CF (const bi_zz_pX& f, const Variable& x, const Variable& y);
 
 extern int fac_NTL_char;
 #endif

@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: initgmp.cc 13621 2010-11-09 12:09:28Z hannes $ */
 
 #include <config.h>
 

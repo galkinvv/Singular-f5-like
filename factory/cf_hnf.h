@@ -4,7 +4,7 @@
 
 /*BEGINPUBLIC*/
 
-/* $Id$ */
+/* $Id: cf_hnf.h 13670 2010-11-25 15:11:10Z hannes $ */
 
 //{{{ docu
 //

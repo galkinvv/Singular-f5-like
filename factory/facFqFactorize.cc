@@ -1683,6 +1683,282 @@ precomputeLeadingCoeff (const CanonicalForm& LCF, const CFList& LCFFactors,
   return result;
 }
 
+/*CFList
+precomputeLeadingCoeff (const CanonicalForm& LCF, const CFList& LCFFactors,
+                        const Variable& alpha, const CFList& evaluation,
+                        CFList* & differentSecondVarLCs, int length,
+                        Variable& y
+                       )
+{
+  y= Variable (1);
+  if (LCF.inCoeffDomain())
+  {
+    CFList result;
+    for (int i= 1; i <= LCFFactors.length() + 1; i++)
+      result.append (1);
+    return result;
+  }
+
+  CFMap N;
+  CanonicalForm F= compress (LCF, N);
+  if (LCF.isUnivariate())
+  {
+    CFList result;
+    int LCFLevel= LCF.level();
+    bool found= false;
+    if (LCFLevel == 2)
+    {
+    //bivariate leading coefficients are already the true leading coefficients
+      result= LCFFactors;
+      Variable v= Variable (LCF.mvar());
+      CanonicalForm bla= 1;
+      for (CFListIterator i= result; i.hasItem(); i++)
+      {
+        i.getItem()= i.getItem() (v+evaluation.getLast(), v);
+        bla *= Lc (i.getItem());
+      }
+      found= true;
+    }
+    else
+    {
+      for (int i= 0; i < length; i++)
+      {
+        for (CFListIterator j= differentSecondVarLCs[i]; j.hasItem(); j++)
+        {
+          if (j.getItem().level() == LCFLevel)
+          {
+            found= true;
+            break;
+          }
+        }
+        if (found)
+        {
+          result= differentSecondVarLCs [i];
+          break;
+        }
+      }
+      if (!found)
+        result= LCFFactors;
+    }
+    if (found)
+      result.insert (Lc (LCF));
+    else
+      result.append (LCF);
+    return result;
+  }
+
+  CFList factors= LCFFactors;
+
+  CFMap dummy;
+  for (CFListIterator i= factors; i.hasItem(); i++)
+  {
+    i.getItem()= compress (i.getItem(), dummy);
+    i.getItem()= i.getItem() (Variable (1) + evaluation.getLast(), Variable (1));
+  }
+
+  CanonicalForm sqrfPartF;
+  CFFList * bufSqrfFactors= new CFFList [factors.length()];
+  CFList evalSqrfPartF;
+  CanonicalForm bufContent;
+  CFList bufFactors;
+  int pass= testFactors (F, factors, alpha, sqrfPartF,
+                         bufFactors, bufSqrfFactors, evalSqrfPartF);
+
+  bool foundDifferent= false;
+  Variable z;
+  Variable x= y;
+  int j= 0;
+  if (!pass)
+  {
+    int lev;
+    // LCF is non-constant here
+    for (int i= 1; i <= LCF.level(); i++)
+    {
+      if(degree (LCF, i) > 0)
+      {
+        lev= i - 1;
+        break;
+      }
+    }
+    for (int i= 0; i < length; i++)
+    {
+      if (!differentSecondVarLCs [i].isEmpty())
+      {
+        bool allConstant= true;
+        for (CFListIterator iter= differentSecondVarLCs[i]; iter.hasItem();
+             iter++)
+        {
+          if (!iter.getItem().inCoeffDomain())
+          {
+            allConstant= false;
+            y= Variable (iter.getItem().level());
+          }
+        }
+        if (allConstant)
+          continue;
+
+        bufFactors= differentSecondVarLCs [i];
+        for (CFListIterator iter= bufFactors; iter.hasItem(); iter++)
+          iter.getItem()= swapvar (iter.getItem(), x, y);
+        CanonicalForm bufF= F;
+        z= Variable (y.level() - lev);
+        bufF= swapvar (bufF, x, z);
+        CFList bufBufFactors= bufFactors;
+        pass= testFactors (bufF, bufBufFactors, alpha, sqrfPartF, bufFactors,
+                           bufSqrfFactors, evalSqrfPartF);
+        if (pass)
+        {
+          foundDifferent= true;
+          F= bufF;
+          CFList l= factors;
+          for (CFListIterator iter= l; iter.hasItem(); iter++)
+            iter.getItem()= swapvar (iter.getItem(), x, y);
+          differentSecondVarLCs [i]= l;
+          j= i;
+          break;
+        }
+        if (!pass && i == length - 1)
+        {
+          CFList result;
+          result.append (LCF);
+          for (int k= 1; k <= factors.length(); k++)
+            result.append (LCF);
+          y= Variable (1);
+          return result;
+        }
+      }
+    }
+  }
+  if (!pass)
+  {
+    CFList result;
+    result.append (LCF);
+    for (int k= 1; k <= factors.length(); k++)
+      result.append (LCF);
+    y= Variable (1);
+    return result;
+  }
+  else
+    factors= bufFactors;
+
+  bufFactors= factors;
+
+  if (factors.length() > 1)
+  {
+    cout << "NEWLEADINGCOEFF" << "\n";
+    CanonicalForm LC1= LC (evalSqrfPartF.getFirst(), 1);
+
+    CFArray leadingCoeffs= CFArray (factors.length());
+    for (int i= 0; i < factors.length(); i++)
+      leadingCoeffs[i]= LC1;
+    for (CFListIterator i= factors; i.hasItem(); i++)
+      i.getItem() *= LC1 (0,2)/Lc (i.getItem());
+    factors.insert (1);
+
+    CanonicalForm
+    newSqrfPartF= evalSqrfPartF.getFirst()*power (LC1, factors.length() - 2);
+
+    int liftBound= degree (newSqrfPartF,2) + 1;
+
+    CFMatrix M= CFMatrix (liftBound, factors.length() - 1);
+    CFArray Pi;
+    CFList diophant;
+    henselLift122 (newSqrfPartF, factors, liftBound, Pi, diophant, M,
+                   leadingCoeffs, false);
+
+    if (sqrfPartF.level() > 2)
+    {
+      int* liftBounds= new int [sqrfPartF.level() - 1];
+      liftBounds [0]= liftBound;
+      bool noOneToOne= false;
+      CFList *leadingCoeffs2= new CFList [sqrfPartF.level()-2];
+      LC1= LC (evalSqrfPartF.getLast(), 1);
+      CFList LCs;
+      for (int i= 0; i < factors.length(); i++)
+        LCs.append (LC1);
+      leadingCoeffs2 [sqrfPartF.level() - 3]= LCs;
+      for (int i= sqrfPartF.level() - 1; i > 2; i--)
+      {
+        for (CFListIterator j= LCs; j.hasItem(); j++)
+          j.getItem()= j.getItem() (0, i + 1);
+        leadingCoeffs2 [i - 3]= LCs;
+      }
+      sqrfPartF= sqrfPartF*power (LC1, factors.length()-1);
+
+      int liftBoundsLength= sqrfPartF.level() - 1;
+      for (int i= 1; i < liftBoundsLength; i++)
+        liftBounds [i]= degree (sqrfPartF, i + 2) + 1;
+      evalSqrfPartF= evaluateAtZero (sqrfPartF);
+      evalSqrfPartF.removeFirst();
+      factors= nonMonicHenselLift (evalSqrfPartF, factors, leadingCoeffs2,
+               diophant, Pi, liftBounds, sqrfPartF.level() - 1, noOneToOne);
+      delete [] leadingCoeffs2;
+      delete [] liftBounds;
+    }
+  }
+  else
+    factors= evalSqrfPartF.getLast();
+
+  CFList interMedResult= recoverFactors (evalSqrfPartF.getLast(), factors);
+
+  CFList result;
+  for (int i= 0; i < LCFFactors.length(); i++)
+  {
+    CanonicalForm tmp= 1;
+    for (CFFListIterator k= bufSqrfFactors[i]; k.hasItem(); k++)
+    {
+      int pos= findItem (bufFactors, k.getItem().factor());
+      if (pos)
+        tmp *= power (getItem (interMedResult, pos), k.getItem().exp());
+    }
+    result.append (tmp);
+  }
+
+  for (CFListIterator i= result; i.hasItem(); i++)
+  {
+    F /= i.getItem();
+    if (foundDifferent)
+      i.getItem()= swapvar (i.getItem(), x, z);
+    i.getItem()= N (i.getItem());
+  }
+
+  if (foundDifferent)
+  {
+    CFList l= differentSecondVarLCs [j];
+    for (CFListIterator i= l; i.hasItem(); i++)
+      i.getItem()= swapvar (i.getItem(), y, z);
+    differentSecondVarLCs [j]= l;
+    F= swapvar (F, x, z);
+  }
+
+  result.insert (N (F));
+
+  result= distributeContent (result, differentSecondVarLCs, length);
+
+  if (!result.getFirst().inCoeffDomain())
+  {
+    CFListIterator i= result;
+    CanonicalForm tmp;
+    if (foundDifferent)
+      i.getItem()= swapvar (i.getItem(), Variable (2), y);
+
+    tmp= i.getItem();
+
+    i++;
+    for (; i.hasItem(); i++)
+    {
+      if (foundDifferent)
+        i.getItem()= swapvar (i.getItem(), Variable (2), y)*tmp;
+      else
+        i.getItem() *= tmp;
+    }
+  }
+  else
+    y= Variable (1);
+
+  return result;
+}*/
+
 void
 evaluationWRTDifferentSecondVars (CFList*& Aeval, const CFList& evaluation,
                                   const CanonicalForm& A)
@@ -1973,10 +2249,13 @@ CFList recoverFactors (const CanonicalForm& F, const CFList& factors)
   CFList result;
   CanonicalForm tmp, tmp2;
   CanonicalForm G= F;
+  CanonicalForm R;
   for (CFListIterator i= factors; i.hasItem(); i++)
   {
-    tmp= i.getItem()/content (i.getItem(), 1);
+    tmp= i.getItem() / content (i.getItem(), 1);
+    //divrem (tmp, G, tmp2, R);
     if (fdivides (tmp, G, tmp2))
+    //if (R.isZero())
     {
       G= tmp2;
       result.append (tmp);

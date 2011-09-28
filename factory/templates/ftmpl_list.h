@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: ftmpl_list.h 13210 2010-09-17 13:36:19Z seelisch $ */
 
 #ifndef INCL_LIST_H
 #define INCL_LIST_H

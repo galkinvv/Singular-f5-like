@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: fac_sqrfree.h 14297 2011-06-22 12:06:03Z mlee $ */
 
 #ifndef INCL_FAC_SQRFREE_H
 #define INCL_FAC_SQRFREE_H

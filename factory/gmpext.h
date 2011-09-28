@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: gmpext.h 13649 2010-11-11 16:26:41Z hannes $ */
 
 #ifndef INCL_GMPEXT_H
 #define INCL_GMPEXT_H

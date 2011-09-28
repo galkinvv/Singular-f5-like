@@ -99,10 +99,26 @@ CFFList FpFactorize (const CanonicalForm& F ///< [in] a multivariate poly
 {
   if (getNumVars (F) == 2)
     return FpBiFactorize (F);
-  ExtensionInfo info= ExtensionInfo (false);
-  Variable a= Variable (1);
+  //ExtensionInfo info= ExtensionInfo (false);
+  //Variable a= Variable (1);
   CanonicalForm LcF= Lc (F);
-  CanonicalForm pthRoot, A;
+  CFFList sqrf= FpSqrf (F);
+  CFFList result;
+  sqrf.removeFirst();
+  for (CFFListIterator i= sqrf; i.hasItem(); i++)
+  {
+    CFList tmp= FpSqrfFactorize (i.getItem().factor());
+    for (CFListIterator j= tmp; j.hasItem(); j++)
+    {
+      if (j.getItem().inCoeffDomain()) continue;
+      result.append (CFFactor (j.getItem(), i.getItem().exp()));
+    }
+  }
+  result.insert (CFFactor (LcF, 1));
+  return result;
+
+
+  /*CanonicalForm pthRoot, A;
   CanonicalForm sqrfP= sqrfPart (F/Lc(F), pthRoot, a);
   CFList buf, bufRoot;
   CFFList result, resultRoot;
@@ -131,7 +147,7 @@ CFFList FpFactorize (const CanonicalForm& F ///< [in] a multivariate poly
     result= Union (result, resultRoot);
   }
   result.insert (CFFactor (LcF, 1));
-  return result;
+  return result;*/
 }
 
 /// factorize a multivariate polynomial over \f$ F_{p} (\alpha ) \f$
@@ -146,9 +162,25 @@ CFFList FqFactorize (const CanonicalForm& F, ///< [in] a multivariate poly
 {
   if (getNumVars (F) == 2)
     return FqBiFactorize (F, alpha);
-  ExtensionInfo info= ExtensionInfo (alpha, false);
+  //ExtensionInfo info= ExtensionInfo (alpha, false);
   CanonicalForm LcF= Lc (F);
-  CanonicalForm pthRoot, A;
+  CFFList sqrf= FqSqrf (F, alpha);
+  CFFList result;
+  sqrf.removeFirst();
+  for (CFFListIterator i= sqrf; i.hasItem(); i++)
+  {
+    CFList tmp= FqSqrfFactorize (i.getItem().factor(), alpha);
+    for (CFListIterator j= tmp; j.hasItem(); j++)
+    {
+      if (j.getItem().inCoeffDomain()) continue;
+      result.append (CFFactor (j.getItem(), i.getItem().exp()));
+    }
+  }
+  result.insert (CFFactor (LcF, 1));
+  return result;
+
+
+  /*CanonicalForm pthRoot, A;
   CanonicalForm sqrfP= sqrfPart (F/Lc(F), pthRoot, alpha);
   CFList buf, bufRoot;
   CFFList result, resultRoot;
@@ -178,7 +210,7 @@ CFFList FqFactorize (const CanonicalForm& F, ///< [in] a multivariate poly
     result= Union (result, resultRoot);
   }
   result.insert (CFFactor (LcF, 1));
-  return result;
+  return result;*/
 }
 
 /// factorize a multivariate polynomial over GF
@@ -194,10 +226,26 @@ CFFList GFFactorize (const CanonicalForm& F ///< [in] a multivariate poly
           "GF as base field expected");
   if (getNumVars (F) == 2)
     return GFBiFactorize (F);
-  Variable a= Variable (1);
-  ExtensionInfo info= ExtensionInfo (getGFDegree(), gf_name, false);
+  //Variable a= Variable (1);
+  //ExtensionInfo info= ExtensionInfo (getGFDegree(), gf_name, false);
   CanonicalForm LcF= Lc (F);
-  CanonicalForm pthRoot, A;
+  CFFList sqrf= GFSqrf (F);
+  CFFList result;
+  sqrf.removeFirst();
+  for (CFFListIterator i= sqrf; i.hasItem(); i++)
+  {
+    CFList tmp= GFSqrfFactorize (i.getItem().factor());
+    for (CFListIterator j= tmp; j.hasItem(); j++)
+    {
+      if (j.getItem().inCoeffDomain()) continue;
+      result.append (CFFactor (j.getItem(), i.getItem().exp()));
+    }
+  }
+  result.insert (CFFactor (LcF, 1));
+  return result;
+
+
+  /*CanonicalForm pthRoot, A;
   CanonicalForm sqrfP= sqrfPart (F/LcF, pthRoot, a);
   CFList buf;
   CFFList result, resultRoot;
@@ -227,7 +275,7 @@ CFFList GFFactorize (const CanonicalForm& F ///< [in] a multivariate poly
     result= Union (result, resultRoot);
   }
   result.insert (CFFactor (LcF, 1));
-  return result;
+  return result;*/
 }
 
 /// Naive factor recombination for multivariate factorization over an extension

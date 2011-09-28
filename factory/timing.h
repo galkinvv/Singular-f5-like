@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: timing.h 12231 2009-11-02 10:12:22Z hannes $ */
 
 /* It should be possible to include this file multiple times for different */
 /* settings of TIMING */

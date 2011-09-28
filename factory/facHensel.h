@@ -55,6 +55,33 @@ divNTL (const CanonicalForm& F, ///< [in] a univariate poly
         const CanonicalForm& G  ///< [in] a univariate poly
        );
 
+#ifdef HAVE_FLINT
+CanonicalForm
+modFLINTQ(const CanonicalForm& F, ///< [in] a univariate poly
+        const CanonicalForm& G  ///< [in] a univariate poly
+       );
+
+CanonicalForm
+mulFLINTQ(const CanonicalForm& F, ///< [in] a univariate poly
+        const CanonicalForm& G  ///< [in] a univariate poly
+       );
+
+CanonicalForm
+mulFLINQ2(const CanonicalForm& F, ///< [in] a univariate poly
+        const CanonicalForm& G  ///< [in] a univariate poly
+       );
+
+CanonicalForm
+divFLINTQ(const CanonicalForm& F, ///< [in] a univariate poly
+        const CanonicalForm& G  ///< [in] a univariate poly
+       );
+
+CanonicalForm
+mulNTLQ(const CanonicalForm& F, ///< [in] a univariate poly
+        const CanonicalForm& G  ///< [in] a univariate poly
+       );
+#endif
+
 /*/// division with remainder of univariate polys over a finite field using NTL,
 /// if we are in GF factory's default division with remainder is used.
 void
@@ -357,6 +384,15 @@ nonMonicHenselLift (const CFList& eval,    ///< [in] a list of polys the last
                     bool& noOneToOne       ///< [in, out] check for one to one
                                            ///< correspondence
                    );
+
+#ifdef HAVE_NTL
+#include "NTLconvert.h"
+CanonicalForm reverseSubstFp (const zz_pX& F, int d);
+zz_pX kronSubFp (const CanonicalForm& A, int d);
+zz_pEX kronSub (const CanonicalForm& A, int d, const Variable& alpha);
+CanonicalForm reverseSubst (const zz_pEX& F, int d, const Variable& alpha);
+#endif
+
 #endif
 /* FAC_HENSEL_H */
 

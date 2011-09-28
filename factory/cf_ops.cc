@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: cf_ops.cc 14325 2011-07-05 13:16:22Z mlee $ */
 
 //{{{ docu
 //

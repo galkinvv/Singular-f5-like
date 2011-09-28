@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: ffops.h 13655 2010-11-15 15:34:57Z hannes $ */
 
 #ifndef INCL_FFOPS_H
 #define INCL_FFOPS_H

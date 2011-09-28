@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C -*- */
-/* $Id$ */
+/* $Id: mmblock.c 13007 2010-07-14 21:20:56Z hannes $ */
 
 #define _POSIX_SOURCE 1
 

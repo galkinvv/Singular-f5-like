@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: cf_primetab.h 12231 2009-11-02 10:12:22Z hannes $ */
 
 #ifndef INCL_CF_PRIMETAB_H
 #define INCL_CF_PRIMETAB_H

@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: int_poly.cc 14327 2011-07-06 12:41:32Z mlee $ */
 
 #include <config.h>
 

@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: ftmpl_inst.cc 13143 2010-08-20 11:40:52Z hannes $ */
 
 //{{{ docu
 //

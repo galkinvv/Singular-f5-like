@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: gengftables-conway.cc 13655 2010-11-15 15:34:57Z hannes $ */
 
 //{{{ docu
 //
@@ -10,10 +10,11 @@
 //
 //}}}
 
-#include <iostream.h>
-#include <fstream.h>
+#include <iostream>
+#include <fstream>
 #include <strstream>
 #include <string>
+#include <cstdlib>
 
 #include <factory.h>
 
@@ -190,7 +191,7 @@ printTable ( int d, int q, CanonicalForm mipo )
     char * fn = fname.str();
     ofstream outfile;
     outfile.open( fn, ios::out );
-    STICKYASSERT1( outfile, "can not open GF(q) table %s for writing", fn );
+    //STICKYASSERT1( outfile, "can not open GF(q) table %s for writing", fn );
     delete fn;
 
     cerr << "mipo = " << mipo << ": ";

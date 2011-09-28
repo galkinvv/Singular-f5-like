@@ -28,6 +28,24 @@
 #include "algext.h"
 #include "cf_reval.h"
 
+CFList recoverFactors2 (const CanonicalForm& F, const CFList& factors, const CFList& evaluation)
+{
+  CFList result;
+  CanonicalForm tmp, tmp2;
+  CanonicalForm G= reverseShift (F, evaluation);
+  for (CFListIterator i= factors; i.hasItem(); i++)
+  {
+    tmp= reverseShift (i.getItem(), evaluation);
+    tmp /= content (tmp, 1);
+    if (fdivides (tmp, G, tmp2))
+    {
+      G= tmp2;
+      result.append (tmp);
+    }
+  }
+  return result;
+}
+
 CFList evalPoints (const CanonicalForm& F, CFList& eval, Evaluation& E)
 {
   CFList result;
@@ -155,11 +173,13 @@ testFactors (const CanonicalForm& G, const CFList& uniFactors,
 
   CanonicalForm F= G;
   CFFList sqrfFactorization= sqrFree (F);
+  cout << "sqrFree (F)= " << sqrFree (F) << "\n";
 
   sqrfPartF= 1;
   for (CFFListIterator i= sqrfFactorization; i.hasItem(); i++)
     sqrfPartF *= i.getItem().factor();
 
+  cout << "sqrfPartF= " << sqrfPartF << "\n";
   evalSqrfPartF= evaluateAtZero (sqrfPartF);
 
   CanonicalForm test= evalSqrfPartF.getFirst() (0, 2);
@@ -238,12 +258,16 @@ precomputeLeadingCoeff (const CanonicalForm& LCF, const CFList& LCFFactors,
                         int length, Variable& y
                        )
 {
+  cout << "LCF= " << LCF << "\n";
+  cout << "LCFFactors= " << LCFFactors << "\n";
+  cout << "length= " << length << "\n";
   y= Variable (1);
   if (LCF.inCoeffDomain())
   {
     CFList result;
     for (int i= 1; i <= LCFFactors.length() + 1; i++)
       result.append (1);
+    cout << "exit1" << "\n";
     return result;
   }
 
@@ -293,6 +317,7 @@ precomputeLeadingCoeff (const CanonicalForm& LCF, const CFList& LCFFactors,
       result.insert (Lc (LCF));
     else
       result.append (LCF);
+    cout << "exit2" << "\n";
     return result;
   }
 
@@ -313,6 +338,9 @@ precomputeLeadingCoeff (const CanonicalForm& LCF, const CFList& LCFFactors,
   int pass= testFactors (F, factors, sqrfPartF,
                          bufFactors, bufSqrfFactors, evalSqrfPartF);
 
+  cout << "factors= " << factors << "\n";
+  cout << "bufFactors= " << bufFactors << "\n";
+  cout << "bufSqrfFactors= " << bufSqrfFactors << "\n";
   bool foundDifferent= false;
   Variable z;
   Variable x= y;
@@ -374,6 +402,7 @@ precomputeLeadingCoeff (const CanonicalForm& LCF, const CFList& LCFFactors,
           for (int j= 1; j <= factors.length(); j++)
             result.append (LCF);
           y= Variable (1);
+          cout << "exit3" << "\n";
           return result;
         }
       }
@@ -386,6 +415,7 @@ precomputeLeadingCoeff (const CanonicalForm& LCF, const CFList& LCFFactors,
     for (int j= 1; j <= factors.length(); j++)
       result.append (LCF);
     y= Variable (1);
+    cout << "exit4" << "\n";
     return result;
   }
   else
@@ -394,6 +424,7 @@ precomputeLeadingCoeff (const CanonicalForm& LCF, const CFList& LCFFactors,
 
   bufFactors= factors;
 
+  cout << "factors= " << factors << "\n";
   if (factors.length() > 1)
   {
     CanonicalForm LC1= LC (evalSqrfPartF.getFirst(), 1);
@@ -416,6 +447,7 @@ precomputeLeadingCoeff (const CanonicalForm& LCF, const CFList& LCFFactors,
     henselLift122 (newSqrfPartF, factors, liftBound, Pi, diophant, M,
                    leadingCoeffs, false);
 
+    cout << "prod (factors) == newSqrfPartF" << (prod (factors) == newSqrfPartF) << "\n";
     if (sqrfPartF.level() > 2)
     {
       int* liftBounds= new int [sqrfPartF.level() - 1];
@@ -450,6 +482,11 @@ precomputeLeadingCoeff (const CanonicalForm& LCF, const CFList& LCFFactors,
     factors= evalSqrfPartF.getLast();
 
   CFList interMedResult= recoverFactors (evalSqrfPartF.getLast(), factors);
+  /*if (factors.length() > 1)
+    interMedResult= recoverFactors (evalSqrfPartF.getLast(), factors);
+  else
+    interMedResult= CFList (evalSqrfPartF.getLast());
+  cout << "interMedResult= " << interMedResult << "\n";*/
 
   CFList result;
   CFFListIterator k;
@@ -458,6 +495,322 @@ precomputeLeadingCoeff (const CanonicalForm& LCF, const CFList& LCFFactors,
   {
     tmp= 1;
     for (k= bufSqrfFactors[i]; k.hasItem(); k++)
+    {
+      int pos= findItem (bufFactors, k.getItem().factor());
+      if (pos)
+        tmp *= power (getItem (interMedResult, pos), k.getItem().exp());
+    }
+    cout << "tmp= " << tmp << "\n";
+    result.append (tmp);
+  }
+  cout << "result= " << result << "\n";
+
+  for (CFListIterator i= result; i.hasItem(); i++)
+  {
+    F /= i.getItem();
+    if (foundDifferent)
+      i.getItem()= swapvar (i.getItem(), x, z);
+    i.getItem()= N (i.getItem());
+  }
+
+  if (foundDifferent)
+  {
+    CFList l= differentSecondVarLCs [j];
+    for (CFListIterator i= l; i.hasItem(); i++)
+      i.getItem()= swapvar (i.getItem(), y, z);
+    differentSecondVarLCs [j]= l;
+    F= swapvar (F, x, z);
+  }
+
+  result.insert (N (F));
+  cout << "result before distributeContent= " << result << "\n";
+
+  result= distributeContent (result, differentSecondVarLCs, length);
+  cout << "result after= " << result << "\n";
+
+  if (!result.getFirst().inCoeffDomain())
+  {
+    CFListIterator i= result;
+    CanonicalForm tmp;
+    if (foundDifferent)
+      i.getItem()= swapvar (i.getItem(), Variable (2), y);
+
+    tmp= i.getItem();
+
+    i++;
+    for (; i.hasItem(); i++)
+    {
+      if (foundDifferent)
+        i.getItem()= swapvar (i.getItem(), Variable (2), y)*tmp;
+      else
+        i.getItem() *= tmp;
+    }
+  }
+  else
+    y= Variable (1);
+
+  cout << "exit5" << "\n";
+  return result;
+}
+
+
+/*CFList
+precomputeLeadingCoeff (const CanonicalForm& LCF, const CFList& LCFFactors,
+                        const CFList& evaluation,CFList*& differentSecondVarLCs,
+                        int length, Variable& y
+                       )
+{
+  y= Variable (1);
+  if (LCF.inCoeffDomain())
+  {
+    CFList result;
+    for (int i= 1; i <= LCFFactors.length() + 1; i++)
+      result.append (1);
+    return result;
+  }
+
+  CFMap N;
+  CanonicalForm F= compress (LCF, N);
+  if (LCF.isUnivariate())
+  {
+    CFList result;
+    int LCFLevel= LCF.level();
+    bool found= false;
+    if (LCFLevel == 2)
+    {
+    //bivariate leading coefficients are already the true leading coefficients
+      result= LCFFactors;
+      Variable v= Variable (LCF.mvar());
+      CanonicalForm bla= 1;
+      for (CFListIterator i= result; i.hasItem(); i++)
+      {
+        i.getItem()= i.getItem() (v+evaluation.getLast(), v);
+        bla *= Lc (i.getItem());
+      }
+      found= true;
+    }
+    else
+    {
+      for (int i= 0; i < length; i++)
+      {
+        for (CFListIterator j= differentSecondVarLCs[i]; j.hasItem(); j++)
+        {
+          if (j.getItem().level() == LCFLevel)
+          {
+            found= true;
+            break;
+          }
+        }
+        if (found)
+        {
+          result= differentSecondVarLCs [i];
+          break;
+        }
+      }
+      if (!found)
+        result= LCFFactors;
+    }
+    if (found)
+      result.insert (Lc (LCF));
+    else
+      result.append (LCF);
+    return result;
+  }
+
+  CFList factors= LCFFactors;
+
+  CFMap dummy;
+  for (CFListIterator i= factors; i.hasItem(); i++)
+  {
+    i.getItem()= compress (i.getItem(), dummy);
+    i.getItem()= i.getItem() (Variable (1)+evaluation.getLast(), Variable (1));
+  }
+
+  CanonicalForm sqrfPartF;
+  CFFList * bufSqrfFactors= new CFFList [factors.length()];
+  CFList evalSqrfPartF;
+  CanonicalForm bufContent;
+  CFList bufFactors;
+  //TODO sqrfPartF einmal berechnen nicht ständig
+  int pass= testFactors (F, factors, sqrfPartF,
+                         bufFactors, bufSqrfFactors, evalSqrfPartF);
+
+  bool foundDifferent= false;
+  Variable z;
+  Variable x= y;
+  int j= 0;
+  if (!pass)
+  {
+    int lev;
+    for (int i= 1; i <= LCF.level(); i++)
+    {
+      if(degree (LCF, i) > 0)
+      {
+        lev= i - 1;
+        break;
+      }
+    }
+    for (int i= 0; i < length; i++)
+    {
+      if (!differentSecondVarLCs [i].isEmpty())
+      {
+        bool allConstant= true;
+        for (CFListIterator iter= differentSecondVarLCs[i]; iter.hasItem();
+             iter++)
+        {
+          if (!iter.getItem().inCoeffDomain())
+          {
+            allConstant= false;
+            y= Variable (iter.getItem().level());
+          }
+        }
+        if (allConstant)
+          continue;
+
+        bufFactors= differentSecondVarLCs [i];
+        for (CFListIterator iter= bufFactors; iter.hasItem(); iter++)
+          iter.getItem()= swapvar (iter.getItem(), x, y);
+        CanonicalForm bufF= F;
+        z= Variable (y.level() - lev);
+        bufF= swapvar (bufF, x, z);
+        CFList bufBufFactors= bufFactors;
+        pass= testFactors (bufF, bufBufFactors, sqrfPartF, bufFactors,
+                           bufSqrfFactors, evalSqrfPartF);
+        if (pass)
+        {
+          foundDifferent= true;
+          F= bufF;
+          CFList l= factors;
+          for (CFListIterator iter= l; iter.hasItem(); iter++)
+            iter.getItem()= swapvar (iter.getItem(), x, y);
+          differentSecondVarLCs [i]= l;
+          j= i;
+          break;
+        }
+        if (!pass && i == length - 1)
+        {
+          CFList result;
+          result.append (LCF);
+          for (int j= 1; j <= factors.length(); j++)
+            result.append (LCF);
+          y= Variable (1);
+          return result;
+        }
+      }
+    }
+  }
+  if (!pass)
+  {
+    CFList result;
+    result.append (LCF);
+    for (int j= 1; j <= factors.length(); j++)
+      result.append (LCF);
+    y= Variable (1);
+    return result;
+  }
+  else
+    factors= bufFactors;
+
+  int liftBound= degree (sqrfPartF,2) + degree (LC (sqrfPartF, 1), 2) + 1;
+  cout << "liftBound= " << liftBound << "\n";
+
+
+
+  bufFactors= factors;
+
+  cout << "evaluation= " << evaluation << "\n";
+  cout << "factors= " << factors << "\n";
+  cout << "size (factors.getFirst())= " << size (factors.getFirst()) << "\n";
+  cout << "size (power (factors.getFirst()))= " << size (power (factors.getFirst(), factors.length() - 1)) << "\n";
+  //cout << "sqrfPartF= " << sqrfPartF << "\n";
+  //cout << "LC (sqrfPartF,1)= " << LC (sqrfPartF,1) << "\n";
+  cout << "size (LC (sqrfPartF,1))= " << size (LC (sqrfPartF,1)) << "\n";
+  cout << "size (power)= " << size (power (LC (sqrfPartF,1), factors.length()-1)) << "\n";
+
+  clock_t start= clock();
+  CanonicalForm blub= LC (evalSqrfPartF.getFirst(), 1);
+
+  //cout << "blub= " << blub << "\n";
+  //cout << "evaluateAtZero ()= " << evaluateAtZero (LC (sqrfPartF, 1)) << "\n";
+  cout << "factors= " << factors << "\n";
+  CFArray leadingCoeffs= CFArray (factors.length());
+  for (int i= 0; i < factors.length(); i++)
+    leadingCoeffs[i]= blub;
+  for (CFListIterator i= factors; i.hasItem(); i++)
+    i.getItem() *= blub (0,2)/Lc (i.getItem());
+  factors.insert (LC (evalSqrfPartF.getFirst(), 1));
+
+  CanonicalForm blab= evalSqrfPartF.getFirst()*power (blub, factors.length() - 2);
+  cout << "size (blab)= " << size (blab) << "\n";
+  liftBound= degree (blab,2) + 1;
+  CFMatrix M= CFMatrix (liftBound, factors.length() - 1);
+  CFArray Pi;
+  CFList diophant;
+  cout << "liftBound= " << liftBound << "\n";
+  cout << "factors= " << factors << "\n";
+  cout << "LC (blab,1)= " << LC (blab, 1) << "\n";
+  henselLift122 (blab, factors, liftBound, Pi, diophant, M, leadingCoeffs, false); //TODO add leadingCoeffs
+  //henselLift12 (evalSqrfPartF.getFirst(), factors, liftBound, Pi, diophant, M,
+  //              false);
+  cout << "time for lift12= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
+  cout << "factors.length= " << factors.length() << "\n";
+  bool test= (evalSqrfPartF.getFirst()*power (blub, factors.length() - 1) == prod (factors));
+  cout << "test factors= " << test << "\n";
+  if (!test)
+  {
+    cout << "evalSqrfPartF.getFirst()= " << evalSqrfPartF.getFirst()*power (blub, factors.length() - 1) << "\n";
+    cout << "prod (factors)= " << prod (factors) << "\n";
+    exit (-1);
+  }
+  //cout << "factors= " << factors << "\n";
+
+  if (sqrfPartF.level() > 2)
+  {
+    int* liftBounds= new int [sqrfPartF.level() - 1];
+    liftBounds [0]= liftBound;
+    cout << "in henselLift for leadingCoeff" << "\n";
+    start= clock();
+    bool noOneToOne= false;
+    CFList *leadingCoeffs2= new CFList [sqrfPartF.level()-2];
+    blub= LC (evalSqrfPartF.getLast(), 1);
+    CFList bla; //= evaluateAtZero (blub);
+    for (int i= 0; i < factors.length(); i++)
+      bla.append (blub);
+    leadingCoeffs2 [sqrfPartF.level() - 3]= bla;
+    for (int i= sqrfPartF.level() - 1; i > 2; i--)
+    {
+      for (CFListIterator j= bla; j.hasItem(); j++)
+        j.getItem()= j.getItem() (0, i + 1);
+      leadingCoeffs2 [i - 3]= bla;
+    }
+    sqrfPartF= sqrfPartF*power (blub, factors.length()-1);
+
+    int liftBoundsLength= sqrfPartF.level() - 1;
+    for (int i= 1; i < liftBoundsLength; i++)
+      liftBounds [i]= degree (sqrfPartF, i + 2) + 1;
+    evalSqrfPartF= evaluateAtZero (sqrfPartF);
+   // cout << "evalSqrfPartF.getFirst().level()= " << evalSqrfPartF.getFirst().level() << "\n";
+    //cout << "sqrfPartF.level()= " << sqrfPartF.level() << "\n";
+    evalSqrfPartF.removeFirst();
+    //TODO add LCs in there
+    factors= nonMonicHenselLift (evalSqrfPartF, factors, leadingCoeffs2, diophant, Pi, liftBounds, sqrfPartF.level() - 1, noOneToOne);
+    //TODO nonMonicHenselLift
+    cout << "time for lift= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
+  }
+
+  //cout << "test factors= " << (sqrfPartF== prod (factors)) << "\n";
+  //cout << "after henselLifting for leadingCoeff" << "\n";
+  //CFList MOD;
+  //for (int i= 0; i < sqrfPartF.level() - 1; i++)
+    //MOD.append (power (Variable (i + 2), liftBounds [i]));
+
+  CFList interMedResult= recoverFactors (evalSqrfPartF.getLast(), factors);
+
+  CFList result;
+  for (int i= 0; i < LCFFactors.length(); i++)
+  {
+    CanonicalForm tmp= 1;
+    for (CFFListIterator k= bufSqrfFactors[i]; k.hasItem(); k++)
     {
       int pos= findItem (bufFactors, k.getItem().factor());
       if (pos)
@@ -508,8 +861,9 @@ precomputeLeadingCoeff (const CanonicalForm& LCF, const CFList& LCFFactors,
   else
     y= Variable (1);
 
+  //cout << "result= " << result << "\n";
   return result;
-}
+}*/
 
 
 CFList
@@ -525,7 +879,11 @@ multiFactorize (const CanonicalForm& F, const Variable& v)
   //univariate case
   if (F.isUnivariate())
   {
-    CFList result= conv (factorize (F, v));
+    CFList result;
+    if (v.level() == 1)
+      result= conv (factorize (F));
+    else
+      result= conv (factorize (F, v));
     if (result.getFirst().inCoeffDomain())
       result.removeFirst();
     return result;
@@ -576,7 +934,10 @@ multiFactorize (const CanonicalForm& F, const Variable& v)
   CFList factors;
   if (A.isUnivariate ())
   {
-    factors= conv (factorize (A, v));
+    if (v.level() == 1)
+      factors= conv (factorize (A));
+    else
+      factors= conv (factorize (A, v));
     append (factors, contentAFactors);
     decompress (factors, N);
     return factors;
@@ -596,12 +957,14 @@ multiFactorize (const CanonicalForm& F, const Variable& v)
   CanonicalForm bufA;
   // several bivariate factorizations
   REvaluation E (2, A.level(), IntRandom (25));
+  clock_t start= clock();
   for (int i= 0; i < factorNums; i++)
   {
     counter= 0;
     bufA= A;
     bufAeval= CFList();
     bufEvaluation= evalPoints (bufA, bufAeval, E);
+    cout << "bufEvaluation= " << bufEvaluation << "\n";
     E.nextpoint();
     evalPoly= 0;
 
@@ -665,6 +1028,11 @@ multiFactorize (const CanonicalForm& F, const Variable& v)
     list.append (evalPoly);
   }
 
+  cout << "time for bivariate factorizations= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
+  cout << "after bivariate factorizations" << "\n";
+  cout << "biFactors= " << biFactors << "\n";
+  cout << "prod (biFactors)*Lc (Aeval.getFirst())== Aeval.getFirst()" << (prod (biFactors)*Lc (Aeval.getFirst())== Aeval.getFirst()) << "\n";
+  start= clock();
   delete [] bufAeval2;
 
   sortList (biFactors, x);
@@ -672,6 +1040,9 @@ multiFactorize (const CanonicalForm& F, const Variable& v)
   int minFactorsLength;
   bool irred= false;
   factorizationWRTDifferentSecondVars (A, Aeval2, minFactorsLength, irred, v);
+  cout << "after more bivariate " << "\n";
+  for (int i=0;i < A.level() - 2;i++)
+    cout << "Aeval2[i]= " << Aeval2[i] << "\n";
 
   if (irred)
   {
@@ -701,6 +1072,10 @@ multiFactorize (const CanonicalForm& F, const Variable& v)
     biFactorsLCs.append (LC (i.getItem(), 1));
 
 
+  for (int i=0;i < A.level() - 2;i++)
+    cout << "Aeval2[i]= " << Aeval2[i] << "\n";
+  cout << "evaluation= " << evaluation << "\n";
+  cout << "biFactorsLCs= " << biFactorsLCs << "\n";
   //shifting to zero
   A= shift2Zero (A, Aeval, evaluation);
 
@@ -711,10 +1086,14 @@ multiFactorize (const CanonicalForm& F, const Variable& v)
 
   A /= hh;
 
+  cout << "before precomputeLeadingCoeff" << "\n";
   Variable w;
   CFList leadingCoeffs= precomputeLeadingCoeff (LC (A, 1), biFactorsLCs,
                                           evaluation, Aeval2, A.level() - 2, w);
-
+  for (int i=0;i < A.level() - 2;i++)
+    cout << "Aeval2[i]= " << Aeval2[i] << "\n";
+  cout << "after precomputeLeadingCoeff" << "\n";
+  cout << "leadingCoeffs= " << leadingCoeffs << "\n";
   if (w.level() != 1)
   {
     A= swapvar (A, y, w);
@@ -787,21 +1166,35 @@ multiFactorize (const CanonicalForm& F, const Variable& v)
   for (int i= 0; i < liftBoundsLength; i++)
     liftBounds [i]= degree (A, i + 2) + 1;
 
+  cout << "leadingCoeffs2= " << leadingCoeffs2 << "\n";
+  cout << "prod (biFactors)= " << prod (biFactors) << "\n";
+  cout << "Aveal.getFirst()= " << Aeval.getFirst() << "\n";
+  cout << "Aeval.getFirst() == prod (biFactors)" << (prod (biFactors) == Aeval.getFirst()) << "\n";
+  cout << "biFactors= " << biFactors << "\n";
+  cout << "LC (Aeval.getLast(),1)= " << LC (Aeval.getLast(),1) << "\n";
   Aeval.removeFirst();
   bool noOneToOne= false;
 
+  cout << "time for leadingCoeff stuff= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
+  cout << "before nonMonicHenselLift" << "\n";
   factors= nonMonicHenselLift (Aeval, biFactors, leadingCoeffs2, diophant,
                                Pi, liftBounds, liftBoundsLength, noOneToOne);
 
+  cout << "noOneToOne= " << noOneToOne << "\n";
+  cout << "evaluation= " << evaluation << "\n";
+  start= clock();
   if (!noOneToOne)
   {
     int check= factors.length();
-    factors= recoverFactors (A, factors);
+    factors= recoverFactors2 (A, factors, evaluation);
     if (check != factors.length())
       noOneToOne= true;
   }
+  cout << "time to recoverFactors2= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
+  cout << "noOneToOne= " << noOneToOne << "\n";
   if (noOneToOne)
   {
+    exit (-1);
     A= oldA;
     Aeval= evaluateAtZero (A);
     biFactors= oldBiFactors;
@@ -848,7 +1241,7 @@ multiFactorize (const CanonicalForm& F, const Variable& v)
       factors= Union (factors, earlyFactors);
   }
 
-  for (CFListIterator i= factors; i.hasItem(); i++)
+  /*for (CFListIterator i= factors; i.hasItem(); i++)
   {
     int kk= Aeval.getLast().level();
     for (CFListIterator j= evaluation; j.hasItem(); j++, kk--)
@@ -857,7 +1250,7 @@ multiFactorize (const CanonicalForm& F, const Variable& v)
         continue;
       i.getItem()= i.getItem() (Variable (kk) - j.getItem(), kk);
     }
-  }
+  }*/
 
   if (w.level() != 1)
   {

@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: int_int.cc 12731 2010-04-16 17:17:39Z hannes $ */
 
 #include <config.h>
 

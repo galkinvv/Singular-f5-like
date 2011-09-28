@@ -40,7 +40,7 @@ biFactorize (const CanonicalForm& F,       ///< [in] a bivariate poly
 ///         element is the leading coefficient.
 inline
 CFList ratBiSqrfFactorize (const CanonicalForm & G, ///< [in] a bivariate poly
-                           const Variable& v
+                           const Variable& v= Variable (1)
                          )
 {
   CFMap N;
@@ -49,8 +49,16 @@ CFList ratBiSqrfFactorize (const CanonicalForm & G, ///< [in] a bivariate poly
   CanonicalForm contentY= content (F, 2);
   F /= (contentX*contentY);
   CFFList contentXFactors, contentYFactors;
-  contentXFactors= factorize (contentX, v);
-  contentYFactors= factorize (contentY, v);
+  if (v.level() != 1)
+  {
+    contentXFactors= factorize (contentX, v);
+    contentYFactors= factorize (contentY, v);
+  }
+  else
+  {
+    contentXFactors= factorize (contentX);
+    contentYFactors= factorize (contentY);
+  }
   if (contentXFactors.getFirst().factor().inCoeffDomain())
     contentXFactors.removeFirst();
   if (contentYFactors.getFirst().factor().inCoeffDomain())
@@ -71,7 +79,9 @@ CFList ratBiSqrfFactorize (const CanonicalForm & G, ///< [in] a bivariate poly
   }
   mat_ZZ M;
   vec_ZZ S;
+  cout << "before compress" << "\n";
   F= compress (F, M, S);
+  cout << "after compress" << "\n";
   CFList result= biFactorize (F, v);
   for (CFListIterator i= result; i.hasItem(); i++)
     i.getItem()= N (decompress (i.getItem(), M, S));
@@ -93,25 +103,38 @@ CFList ratBiSqrfFactorize (const CanonicalForm & G, ///< [in] a bivariate poly
 ///         multiplicity, the first element is the leading coefficient.
 inline
 CFFList ratBiFactorize (const CanonicalForm & G, ///< [in] a bivariate poly
-                        const Variable& v
+                        const Variable& v= Variable (1)
                       )
 {
+  clock_t start= clock();
   CFMap N;
   CanonicalForm F= compress (G, N);
   CanonicalForm LcF= Lc (F);
+  if (isOn (SW_RATIONAL))
+    F *= bCommonDen (F);
   CanonicalForm contentX= content (F, 1);
   CanonicalForm contentY= content (F, 2);
   F /= (contentX*contentY);
+  if (isOn (SW_RATIONAL))
+    F *= bCommonDen (F);
   CFFList contentXFactors, contentYFactors;
-  contentXFactors= factorize (contentX, v);
-  contentYFactors= factorize (contentY, v);
+  if (v.level() != 1)
+  {
+    contentXFactors= factorize (contentX, v);
+    contentYFactors= factorize (contentY, v);
+  }
+  else
+  {
+    contentXFactors= factorize (contentX);
+    contentYFactors= factorize (contentY);
+  }
   if (contentXFactors.getFirst().factor().inCoeffDomain())
     contentXFactors.removeFirst();
   if (contentYFactors.getFirst().factor().inCoeffDomain())
     contentYFactors.removeFirst();
   decompress (contentXFactors, N);
   decompress (contentYFactors, N);
-  CFFList result, resultRoot;
+  CFFList result;
   if (F.inCoeffDomain())
   {
     result= Union (contentXFactors, contentYFactors);
@@ -124,11 +147,57 @@ CFFList ratBiFactorize (const CanonicalForm & G, ///< [in] a bivariate poly
   }
   mat_ZZ M;
   vec_ZZ S;
+    cout << "degree (F) before= " << degree (F) << "\n";
+    cout << "degree (F,1) before= " << degree (F,1) << "\n";
   F= compress (F, M, S);
+  cout << "time for stuff before sqrfPart= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
+  /*start= clock();
   CanonicalForm sqrfP= sqrfPart (F);
+  cout << "time for sqrfPart= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";*/
+
+  /*if (v.level() == 1)
+  {*/
+    cout << "degree (F)= " << degree (F) << "\n";
+    cout << "degree (F,1)= " << degree (F,1) << "\n";
+    cout << "size (F)= " << size (F) << "\n";
+    //cout << "F= " << F << "\n";
+      start= clock();
+    CFFList sqrfFactors= sqrFree (F);
+    cout << "sqrfFactors= " << sqrfFactors << "\n";
+    //cout << "F= " << F << "\n";
+  //}
+  cout << "time for sqrfree= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
+  cout << "result= " << result << "\n";
+  for (CFFListIterator i= sqrfFactors; i.hasItem(); i++)
+  {
+    start= clock();
+    CFList tmp= ratBiSqrfFactorize (i.getItem().factor(), v);
+    cout << "time for sqrfFactorize= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
+    cout << "tmp= " << tmp << "\n";
+    for (CFListIterator j= tmp; j.hasItem(); j++)
+    {
+      if (j.getItem().inCoeffDomain()) continue;
+      result.append (CFFactor (N (decompress (j.getItem(), M, S)), i.getItem().exp()));
+    }
+  }
+  result= Union (result, contentXFactors);
+  result= Union (result, contentYFactors);
+  if (isOn (SW_RATIONAL))
+  {
+    normalize (result);
+    result.insert (CFFactor (LcF, 1));
+  }
+  return result;
+
+  /*//exit (-1);
+  start= clock();
   CFList buf;
   buf= biFactorize (sqrfP, v);
+  cout << "buf= " << buf << "\n";
+  cout << "time for biFactorize= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
+  start= clock();
   result= multiplicity (F, buf);
+  cout << "time for multiplicity= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
   for (CFFListIterator i= result; i.hasItem(); i++)
     i.getItem()= CFFactor (N (decompress (i.getItem().factor(), M, S)),
                              i.getItem().exp());
@@ -139,7 +208,7 @@ CFFList ratBiFactorize (const CanonicalForm & G, ///< [in] a bivariate poly
     normalize (result);
     result.insert (CFFactor (LcF, 1));
   }
-  return result;
+  return result;*/
 }
 
 /// convert a CFFList to a CFList by dropping the multiplicity

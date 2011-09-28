@@ -1,4 +1,4 @@
-dnl $Id$
+dnl $Id: ftest_util.m4 12231 2009-11-02 10:12:22Z hannes $
 dnl
 dnl ftest_util.m4 - m4 macros used by the factory test environment.
 dnl

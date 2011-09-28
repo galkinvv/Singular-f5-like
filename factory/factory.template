@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: factory.template 14042 2011-03-23 13:30:30Z mlee $ */
 
 #ifndef INCL_FACTORY_H
 #define INCL_FACTORY_H

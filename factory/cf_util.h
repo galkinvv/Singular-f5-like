@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: cf_util.h 13618 2010-11-09 11:59:33Z hannes $ */
 
 #ifndef INCL_CF_UTIL_H
 #define INCL_CF_UTIL_H

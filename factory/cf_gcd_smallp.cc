@@ -49,6 +49,24 @@ TIMING_DEFINE_PRINT(newton_interpolation);
 
 static const double log2exp= 1.442695041;
 
+//assume f,g compressed, content wrt Variable (1) is one, f,g bivariate
+CanonicalForm 
+heuGCD (const CanonicalForm& F, const CanonicalForm& G)
+{
+  CanonicalForm A= F;
+  CanonicalForm B= G;
+  int d= degree (A, 1);
+  int d0= degree (B, 1);
+  if (d0 > d)
+    d= d0;  
+  d += 3; //TODO make a while loop to check this
+  zz_pX NTLA, NTLB;
+  NTLA= kronSubFp (A, d);
+  NTLB= kronSubFp (B, d);
+  NTLA= GCD (NTLA, NTLB);
+  return reverseSubstFp (NTLA, d);
+}
+
 /// compressing two polynomials F and G, M is used for compressing,
 /// N to reverse the compression
 int myCompress (const CanonicalForm& F, const CanonicalForm& G, CFMap & M,
@@ -845,6 +863,7 @@ GFRandomElement (const CanonicalForm& F, CFList& list, bool& fail)
 CanonicalForm GCD_GF (const CanonicalForm& F, const CanonicalForm& G,
         CFList& l, bool& topLevel)
 {
+  //cout << "dense GF" << "\n";
   CanonicalForm A= F;
   CanonicalForm B= G;
   if (F.isZero() && degree(G) > 0) return G/Lc(G);
@@ -4076,6 +4095,7 @@ bool findeval_P (const CanonicalForm & F, const CanonicalForm & G,
   }
   if (count > 0)
   {
+    //cout << "HIER" << "\n";
     b.nextpoint(k);
     if (k == 0)
       k++;
@@ -4133,6 +4153,11 @@ static int sizePerVars1= 500; //try dense gcd if size/#variables is bigger
 /// Extended Zassenhaus GCD for finite fields
 CanonicalForm EZGCD_P( const CanonicalForm & FF, const CanonicalForm & GG )
 {
+                /*cout << "isOn (SW_USE_EZGCD_P)= " << isOn (SW_USE_EZGCD_P) << "\n";
+                cout << "isOn (SW_USE_FF_MOD_GCD)= " << isOn (SW_USE_FF_MOD_GCD) << "\n";
+                cout << "isOn (SW_USE_fieldGCD)= " << isOn (SW_USE_fieldGCD) << "\n";
+                cout << "isOn(SW_USE_NTL_GCD_P)= " << isOn(SW_USE_NTL_GCD_P) << "\n";
+  cout << "EZGCD_P" << "\n";*/
   if (FF.isZero() && degree(GG) > 0) return GG/Lc(GG);
   else if (GG.isZero() && degree (FF) > 0) return FF/Lc(FF);
   else if (FF.isZero() && GG.isZero()) return FF.genOne();
@@ -4141,6 +4166,7 @@ CanonicalForm EZGCD_P( const CanonicalForm & FF, const CanonicalForm & GG )
   if (GG.isUnivariate() && fdivides(GG, FF)) return GG/Lc(GG);
   if (FF == GG) return FF/Lc(FF);
 
+  //cout << "EZGCD_P" << "\n";
   CanonicalForm F, G, f, g, d, Fb, Gb, Db, Fbt, Gbt, Dbt, B0, B, D0, lcF, lcG,
                 lcD;
   CFArray DD( 1, 2 ), lcDD( 1, 2 );
@@ -4151,6 +4177,8 @@ CanonicalForm EZGCD_P( const CanonicalForm & FF, const CanonicalForm & GG )
   count= 0; // number of eval. used
   REvaluation b, bt;
   int gcdfound = 0;
+
+  clock_t start= clock();
   Variable x = Variable(1);
 
   F= FF;
@@ -4164,10 +4192,13 @@ CanonicalForm EZGCD_P( const CanonicalForm & FF, const CanonicalForm & GG )
 
   F= M (F);
   G= M (G);
+  cout << "time for compress= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
 
+  start= clock();
   f = content( F, x ); g = content( G, x );
   d = gcd( f, g );
   F /= f; G /= g;
+  cout << "time for content= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
 
   if( F.isUnivariate() && G.isUnivariate() )
   {
@@ -4176,6 +4207,15 @@ CanonicalForm EZGCD_P( const CanonicalForm & FF, const CanonicalForm & GG )
     return N (d);
   }
 
+  start= clock();
+  if( gcd_test_one( F, G, false ) )
+  {
+    cout << "time for gcd_test_one= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
+    return N (d);
+  }
+  else
+    cout << "time for gcd_test_one_negativ= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
+
   int maxNumVars= tmax (getNumVars (F), getNumVars (G));
   Variable a, oldA;
   int sizeF= size (F);
@@ -4183,17 +4223,13 @@ CanonicalForm EZGCD_P( const CanonicalForm & FF, const CanonicalForm & GG )
 
   if (sizeF/maxNumVars > sizePerVars1 && sizeG/maxNumVars > sizePerVars1)
   {
+    //cout << "dense" << "\n";
     if (hasFirstAlgVar (F, a) || hasFirstAlgVar (G, a))
       return N (d*GCD_Fp_extension (F, G, a));
     else if (CFFactory::gettype() == GaloisFieldDomain)
       return N (d*GCD_GF (F, G));
     else
       return N (d*GCD_small_p (F, G));
-  }
-
-  if( gcd_test_one( F, G, false ) )
-  {
-    return N (d);
   }
 
   bool passToGF= false;
@@ -4309,6 +4345,7 @@ CanonicalForm EZGCD_P( const CanonicalForm & FF, const CanonicalForm & GG )
     if( !findeval_P( F, G, Fb, Gb, Db, b, delta, degF, degG, maxeval, count, o,
          maxeval/maxNumVars, t ))
     { // too many eval. used --> try another method
+      //cout << "FAIL1" << "\n";
       Off (SW_USE_EZGCD_P);
       result= gcd (F,G);
       On (SW_USE_EZGCD_P);
@@ -4342,6 +4379,7 @@ CanonicalForm EZGCD_P( const CanonicalForm & FF, const CanonicalForm & GG )
       if( !findeval_P(F,G,Fbt,Gbt,Dbt, bt, delta, degF, degG, maxeval, count, o,
            maxeval/maxNumVars, t ))
       { // too many eval. used --> try another method
+        //cout << "FAIL2" << "\n";
         Off (SW_USE_EZGCD_P);
         result= gcd (F,G);
         On (SW_USE_EZGCD_P);
@@ -4371,6 +4409,7 @@ CanonicalForm EZGCD_P( const CanonicalForm & FF, const CanonicalForm & GG )
       }
       if( dd == delta )
       {
+        //cout << "o= " << o << "\n";
         goodPointCount++;
         if (goodPointCount == 5)
           break;
@@ -4459,6 +4498,7 @@ CanonicalForm EZGCD_P( const CanonicalForm & FF, const CanonicalForm & GG )
       }
       else // special case handling
       {
+        //cout << "FAIL3" << "\n";
         Off (SW_USE_EZGCD_P);
         result= gcd (F,G);
         On (SW_USE_EZGCD_P);
@@ -4555,6 +4595,7 @@ CanonicalForm EZGCD_P( const CanonicalForm & FF, const CanonicalForm & GG )
     delta--;
     goodPointCount= 0;
   }
+  //cout << "b= " << b << "\n";
   return N (d*cand);
 }
 

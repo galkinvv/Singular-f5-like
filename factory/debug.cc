@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: debug.cc 14265 2011-06-07 13:27:18Z hannes $ */
 
 static int deb_level = -1;
 char * deb_level_msg = (char *)"";

@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: feval.m4 12231 2009-11-02 10:12:22Z hannes $ */
 
 ftestSetNameOfGame( feval, `"
 Usage: feval [<options>] [<envSpec>] [expand=<n>] <f>

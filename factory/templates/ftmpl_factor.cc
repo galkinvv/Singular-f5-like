@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: ftmpl_factor.cc 13210 2010-09-17 13:36:19Z seelisch $ */
 
 #include <factory/templates/ftmpl_factor.h>
 

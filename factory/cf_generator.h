@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: cf_generator.h 14041 2011-03-23 09:57:38Z mlee $ */
 
 #ifndef INCL_CF_GENERATOR_H
 #define INCL_CF_GENERATOR_H

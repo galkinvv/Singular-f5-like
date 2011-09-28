@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: cf_switches.cc 13655 2010-11-15 15:34:57Z hannes $ */
 
 //{{{ docu
 //
@@ -30,12 +30,12 @@ CFSwitches::CFSwitches ()
 #ifdef HAVE_NTL
   On(SW_USE_NTL);
   On(SW_USE_CHINREM_GCD);
-  //Off(SW_USE_NTL_GCD_0);
+  //On(SW_USE_NTL_GCD_0);
   //Off(SW_USE_NTL_GCD_P);
   //Off(SW_USE_NTL_SORT);
 #endif
   On(SW_USE_EZGCD);
-  //On(SW_USE_EZGCD_P); // still testing
+  On(SW_USE_EZGCD_P); // still testing
   On(SW_USE_QGCD);
   //On(SW_USE_fieldGCD);
 }

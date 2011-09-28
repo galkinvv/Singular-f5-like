@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: cf_map.h 13772 2010-12-15 14:53:39Z hannes $ */
 
 #ifndef INCL_CF_MAP_H
 #define INCL_CF_MAP_H

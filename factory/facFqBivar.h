@@ -111,8 +111,8 @@ CFList FqBiSqrfFactorize (const CanonicalForm & G, ///< [in] a bivariate poly
   CanonicalForm contentY= content (F, 2);
   F /= (contentX*contentY);
   CFFList contentXFactors, contentYFactors;
-  contentXFactors= factorize (contentX, alpha);
-  contentYFactors= factorize (contentY, alpha);
+  contentXFactors= factorize (contentX);
+  contentYFactors= factorize (contentY);
   if (contentXFactors.getFirst().factor().inCoeffDomain())
     contentXFactors.removeFirst();
   if (contentYFactors.getFirst().factor().inCoeffDomain())
@@ -202,6 +202,7 @@ inline
 CFFList FpBiFactorize (const CanonicalForm & G ///< [in] a bivariate poly
                       )
 {
+  clock_t start= clock();
   ExtensionInfo info= ExtensionInfo (false);
   CFMap N;
   CanonicalForm F= compress (G, N);
@@ -218,6 +219,7 @@ CFFList FpBiFactorize (const CanonicalForm & G ///< [in] a bivariate poly
     contentYFactors.removeFirst();
   decompress (contentXFactors, N);
   decompress (contentYFactors, N);
+
   CFFList result, resultRoot;
   if (F.inCoeffDomain())
   {
@@ -229,7 +231,53 @@ CFFList FpBiFactorize (const CanonicalForm & G ///< [in] a bivariate poly
   mat_ZZ M;
   vec_ZZ S;
   F= compress (F, M, S);
-  CanonicalForm pthRoot, A;
+  cout << "time for convexdenseandcompress= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
+  start= clock();
+  CFFList sqrf= FpSqrf (F);
+    cout << "time for FpSqrf= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
+    /*cout << "sqrf= " << sqrf.getFirst() << "\n";
+    CanonicalForm test= 1;
+    for (CFFListIterator i= sqrf;i.hasItem(); i++)
+      test *= power (i.getItem().factor(), i.getItem().exp());
+    //cout << "test sqrf= " << test << "\n";
+    if (test/Lc (test) != F/Lc (F))
+    {
+      cout << "Nope" << "\n";
+      exit (-1);
+    }*/
+    sqrf.removeFirst();
+  for (CFFListIterator i= sqrf; i.hasItem(); i++)
+  {
+    start= clock();
+    CFList tmp= FpBiSqrfFactorize (i.getItem().factor());
+    /*cout << "tmp= " << tmp << "\n";
+    cout << "tmp.length()= " << tmp.length() << "\n";
+    test= prod (tmp);
+    if (test/Lc (test) != i.getItem().factor()/Lc (i.getItem().factor()))
+    {
+      cout << "fdivides (test, i.getItem().factor())= " << fdivides (test, i.getItem().factor()) << "\n";
+      //cout << "test= " << test << "\n";
+      //cout << "i.getItem().factor()= " << i.getItem().factor() << "\n";
+      exit (-1);
+    }*/
+    for (CFListIterator j= tmp; j.hasItem(); j++)
+    {
+      if (j.getItem().inCoeffDomain()) continue;
+      result.append (CFFactor (N (decompress (j.getItem(), M, S)), i.getItem().exp()));
+    }
+    cout << "time for sqrfFactorize and result append= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
+  }
+  start= clock();
+  result= Union (result, contentXFactors);
+  result= Union (result, contentYFactors);
+  normalize (result);
+  result.insert (CFFactor (LcF, 1));
+  cout << "time for append normalize= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
+  return result;
+
+
+
+  /*CanonicalForm pthRoot, A;
   CanonicalForm sqrfP= sqrfPart (F/Lc(F), pthRoot, info.getAlpha());
   CFList buf, bufRoot;
   int p= getCharacteristic();
@@ -252,10 +300,14 @@ CFFList FpBiFactorize (const CanonicalForm & G ///< [in] a bivariate poly
   {
     buf= biFactorize (sqrfP, info);
     A= F/LcF;
+    cout << "buf.length()= " << buf.length() << "\n";
     result= multiplicity (A, buf);
+    cout << "result.length()= " << result.length() << "\n";
     for (CFFListIterator i= result; i.hasItem(); i++)
       i.getItem()= CFFactor (N (decompress (i.getItem().factor(), M, S)),
                              i.getItem().exp());
+    //cout << "A= " << A << "\n";
+    cout << "getCharacteristic()= " << getCharacteristic() << "\n";
   }
   if (degree (A) > 0)
   {
@@ -270,7 +322,7 @@ CFFList FpBiFactorize (const CanonicalForm & G ///< [in] a bivariate poly
   result= Union (result, contentYFactors);
   normalize (result);
   result.insert (CFFactor (LcF, 1));
-  return result;
+  return result;*/
 }
 
 /// factorize a bivariate polynomial over \f$ F_{p}(\alpha ) \f$
@@ -291,8 +343,8 @@ CFFList FqBiFactorize (const CanonicalForm & G, ///< [in] a bivariate poly
   CanonicalForm contentY= content (F, 2);
   F /= (contentX*contentY);
   CFFList contentXFactors, contentYFactors;
-  contentXFactors= factorize (contentX, alpha);
-  contentYFactors= factorize (contentY, alpha);
+  contentXFactors= factorize (contentX);
+  contentYFactors= factorize (contentY);
   if (contentXFactors.getFirst().factor().inCoeffDomain())
     contentXFactors.removeFirst();
   if (contentYFactors.getFirst().factor().inCoeffDomain())

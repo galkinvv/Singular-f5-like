@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: cf_gcd.cc 14377 2011-09-01 13:40:30Z mlee $ */
 
 #include <config.h>
 
@@ -27,6 +27,12 @@
 bool isPurePoly(const CanonicalForm & );
 static CanonicalForm gcd_univar_ntl0( const CanonicalForm &, const CanonicalForm & );
 static CanonicalForm gcd_univar_ntlp( const CanonicalForm &, const CanonicalForm & );
+#endif
+
+#ifdef HAVE_FLINT
+#include "FLINTconvert.h"
+static CanonicalForm gcd_univar_flint0 (const CanonicalForm &, const CanonicalForm &);
+static CanonicalForm gcd_univar_flintp (const CanonicalForm &, const CanonicalForm &);
 #endif
 
 static CanonicalForm cf_content ( const CanonicalForm &, const CanonicalForm & );
@@ -327,6 +333,60 @@ extgcd ( const CanonicalForm & f, const CanonicalForm & g, CanonicalForm & a, Ca
     return convertNTLzzpX2CF(R,f.mvar());
     #endif
   }
+/*#ifdef HAVE_FLINT
+  if (( getCharacteristic() ==0)
+  && (f.level()==g.level()) && isPurePoly(f) && isPurePoly(g))
+  {
+    CanonicalForm fc=bCommonDen(f);
+    CanonicalForm gc=bCommonDen(g);
+    fmpz_poly_t F1, G1;
+    convertFacCF2Fmpz_poly_t(F1,f*fc);
+    convertFacCF2Fmpz_poly_t(G1,g*gc);
+    fmpz_poly_t R;
+    fmpz_t RR;
+    fmpz_init (RR);
+    fmpz_poly_t A,B;
+    fmpz_poly_init (A);
+    fmpz_poly_init (B);
+    fmpz_poly_xgcd (RR,A,B,F1,G1);
+    if (!fmpz_is_zero(RR))
+    {
+      CanonicalForm rr=convertFmpz2CF(RR);
+      ASSERT (!rr.isZero(), "NTL:XGCD failed");
+      a=convertFmpz_poly_t2FacCF(A,f.mvar())*fc/rr;
+      b=convertFmpz_poly_t2FacCF(B,f.mvar())*gc/rr;
+      fmpz_poly_clear (F1);
+      fmpz_poly_clear (G1);
+      fmpz_poly_clear (A);
+      fmpz_poly_clear (B);
+      fmpz_clear (RR);
+      return CanonicalForm(1);
+    }
+    else
+    {
+      fmpz_poly_init (R);
+      fmpz_poly_gcd (R, F1, G1);
+      CanonicalForm r=convertFmpz_poly_t2FacCF(R,f.mvar());
+      fmpz_poly_div (F1, F1, R);
+      fmpz_poly_div (G1, G1, R);
+      fmpz_poly_xgcd(RR,A,B,F1,G1);
+      a=convertFmpz_poly_t2FacCF(A,f.mvar())*fc;
+      b=convertFmpz_poly_t2FacCF(B,f.mvar())*gc;
+      CanonicalForm rr=convertFmpz2CF(RR);
+      ASSERT (!rr.isZero(), "NTL:XGCD failed");
+      r*=rr;
+      if ( r.sign() < 0 ) { r= -r; a= -a; b= -b; }
+      fmpz_poly_clear (F1);
+      fmpz_poly_clear (G1);
+      fmpz_poly_clear (R);
+      fmpz_poly_clear (A);
+      fmpz_poly_clear (B);
+      fmpz_clear (RR);
+      return r;
+    }
+  }
+#endif*/
+
   if (isOn(SW_USE_NTL_GCD_0) && ( getCharacteristic() ==0)
   && (f.level()==g.level()) && isPurePoly(f) && isPurePoly(g))
   {
@@ -363,6 +423,44 @@ extgcd ( const CanonicalForm & f, const CanonicalForm & g, CanonicalForm & a, Ca
       return r;
     }
   }
+
+  /*if (isOn(SW_USE_NTL_GCD_0) && ( getCharacteristic() ==0)
+  && (f.level()==g.level()) && isPurePoly(f) && isPurePoly(g))
+  {
+    CanonicalForm fc=bCommonDen(f);
+    CanonicalForm gc=bCommonDen(g);
+    ZZX F1=convertFacCF2NTLZZX(f*fc);
+    ZZX G1=convertFacCF2NTLZZX(g*gc);
+    ZZX R;
+    ZZ RR;
+    ZZX A,B;
+    XGCD(RR,F1,G1,A,B, 1);
+    if (!IsZero(RR))
+    {
+      CanonicalForm rr=convertZZ2CF(RR);
+      ASSERT (!rr.isZero(), "NTL:XGCD failed");
+      a=convertNTLZZX2CF(A,f.mvar())*fc/rr;
+      b=convertNTLZZX2CF(B,f.mvar())*gc/rr;
+      return CanonicalForm(1);
+    }
+    else
+    {
+      R= GCD (F1, G1);
+      CanonicalForm r=convertNTLZZX2CF(R,f.mvar());
+      fc=bCommonDen(f);
+      gc=bCommonDen(g);
+      F1=convertFacCF2NTLZZX(f*fc/r);
+      G1=convertFacCF2NTLZZX(g*gc/r);
+      XGCD(RR,A,B,F1,G1,1);
+      a=convertNTLZZX2CF(A,f.mvar())*fc;
+      b=convertNTLZZX2CF(B,f.mvar())*gc;
+      CanonicalForm rr=convertZZ2CF(RR);
+      ASSERT (!rr.isZero(), "NTL:XGCD failed");
+      r*=rr;
+      if ( r.sign() < 0 ) { r= -r; a= -a; b= -b; }
+      return r;
+    }
+  }*/
 #endif
   // may contain bug in the co-factors, see track 107
   CanonicalForm contf = content( f );
@@ -512,8 +610,20 @@ static CanonicalForm gcd_poly_univar0( const CanonicalForm & F, const CanonicalF
 static CanonicalForm
 gcd_poly_p( const CanonicalForm & f, const CanonicalForm & g )
 {
+    /*bool bpure;
+    if (f.isUnivariate() && g.isUnivariate())
+    {
+        bpure = isPurePoly(f) && isPurePoly(g);
+        cout << "bpure= " << bpure << "\n";
+#ifdef HAVE_NTL
+        if ( isOn(SW_USE_NTL_GCD_P) && bpure && (CFFactory::gettype() != GaloisFieldDomain))
+            return gcd_univar_ntlp(f, g );
+#endif
+    }*/
+    //cout << "gcd_poly_p" << "\n";
     CanonicalForm pi, pi1;
     CanonicalForm C, Ci, Ci1, Hi, bi, pi2;
+
     bool bpure;
     int delta = degree( f ) - degree( g );
 
@@ -532,6 +642,7 @@ gcd_poly_p( const CanonicalForm & f, const CanonicalForm & g )
     {
         if ( gcd_test_one( pi1, pi, true ) )
         {
+          //cout << "teilerfremd" << "\n";
           C=abs(C);
           //out_cf("GCD:",C,"\n");
           return C;
@@ -540,7 +651,26 @@ gcd_poly_p( const CanonicalForm & f, const CanonicalForm & g )
     }
     else
     {
+        //cout << "univariate" << "\n";
         bpure = isPurePoly(pi) && isPurePoly(pi1);
+#ifdef HAVE_FLINT
+        if (bpure && (CFFactory::gettype() != GaloisFieldDomain))
+        {
+          /*CanonicalForm result= gcd_univar_flintp(pi,pi1)*C;
+          CanonicalForm test= gcd_univar_ntlp(pi, pi1 ) * C;
+          if (test != result)
+          {
+            printf ("LIKEITLIKEYOUSHOULD\n");
+            printf ("EQUAL= %d\n",result/lc(result) == test/lc(test));
+            out_cf ("test= ",test,"\n");
+            out_cf ("result= ", result, "\n");
+            out_cf ("pi= ", pi.mapinto(), "\n");
+            out_cf ("pi1= ", pi1.mapinto(), "\n");
+            printf ("isOn (SW_USE_NTL_GCD_P) %d\n",isOn (SW_USE_NTL_GCD_P));
+          }*/
+          return gcd_univar_flintp(pi,pi1)*C;
+        }
+#endif
 #ifdef HAVE_NTL
         if ( isOn(SW_USE_NTL_GCD_P) && bpure && (CFFactory::gettype() != GaloisFieldDomain))
             return gcd_univar_ntlp(pi, pi1 ) * C;
@@ -563,6 +693,7 @@ gcd_poly_p( const CanonicalForm & f, const CanonicalForm & g )
             On (SW_USE_FF_MOD_GCD);
             C *= gcd (oldPi, oldPi1);
             Off (SW_USE_FF_MOD_GCD);
+            //cout << "DICHT" << "\n";
             return C;
           }
         }
@@ -614,6 +745,10 @@ gcd_poly_0( const CanonicalForm & f, const CanonicalForm & g )
     C = gcd( Ci, Ci1 );
     if ( pi.isUnivariate() && pi1.isUnivariate() )
     {
+#ifdef HAVE_FLINT
+        if (isPurePoly(pi) && isPurePoly(pi1) )
+            return gcd_univar_flint0(pi, pi1 ) * C;
+#endif
 #ifdef HAVE_NTL
         if ( isOn(SW_USE_NTL_GCD_0) && isPurePoly(pi) && isPurePoly(pi1) )
             return gcd_univar_ntl0(pi, pi1 ) * C;
@@ -672,6 +807,19 @@ CanonicalForm gcd_poly ( const CanonicalForm & f, const CanonicalForm & g )
   bool fc_isUnivariate=f.isUnivariate();
   bool gc_isUnivariate=g.isUnivariate();
   bool fc_and_gc_Univariate=fc_isUnivariate && gc_isUnivariate;
+/*#if 1
+  if (( getCharacteristic() == 0 )
+  && (f.level() >4)
+  && (g.level() >4)
+  && isOn( SW_USE_CHINREM_GCD)
+  && (!fc_and_gc_Univariate)
+  && (isPurePoly_m(f))
+  && (isPurePoly_m(g))
+  )
+  {
+      return chinrem_gcd( f, g );
+  }
+#endif*/
   cf_prepgcd( f, g, cc, p1, pe);
   if ( cc != 0 )
   {
@@ -690,17 +838,36 @@ CanonicalForm gcd_poly ( const CanonicalForm & f, const CanonicalForm & g )
 // now each appearing variable is in f and g
   fc = f;
   gc = g;
+  /*if( gcd_avoid_mtaildegree ( fc, gc, d1 ) )
+      return d1;*/
   if ( getCharacteristic() != 0 )
   {
     if ((!fc_and_gc_Univariate)
     && isOn(SW_USE_fieldGCD)
     && (getCharacteristic() >100))
     {
+      //cout << "fieldGCD" << "\n";
       return fieldGCD(f,g);
     }
     #ifdef HAVE_NTL
     else if ((!fc_and_gc_Univariate) && (isOn( SW_USE_EZGCD_P )))
     {
+      /*if ( pe == 1 )
+        fc = fin_ezgcd( fc, gc );
+      else if ( pe > 0 )// no variable at position 1
+      {
+        fc = replacevar( fc, Variable(pe), Variable(1) );
+        gc = replacevar( gc, Variable(pe), Variable(1) );
+        fc = replacevar( fin_ezgcd( fc, gc ), Variable(1), Variable(pe) );
+      }
+      else
+      {
+        pe = -pe;
+        fc = swapvar( fc, Variable(pe), Variable(1) );
+        gc = swapvar( gc, Variable(pe), Variable(1) );
+        fc = swapvar( fin_ezgcd( fc, gc ), Variable(1), Variable(pe) );
+      }*/
+      //cout << "EZGCD_P" << "\n";
       fc= EZGCD_P (fc, gc);
     }
     else if (isOn(SW_USE_FF_MOD_GCD) && !fc_and_gc_Univariate)
@@ -715,9 +882,13 @@ CanonicalForm gcd_poly ( const CanonicalForm & f, const CanonicalForm & g )
     }
     #endif
     else if ( p1 == fc.level() )
+    {
+      //cout << "noswap" << "\n";
       fc = gcd_poly_p( fc, gc );
+    }
     else
     {
+      //cout << "swap" << "\n";
       fc = replacevar( fc, Variable(p1), Variable(mp) );
       gc = replacevar( gc, Variable(p1), Variable(mp) );
       fc = replacevar( gcd_poly_p( fc, gc ), Variable(mp), Variable(p1) );
@@ -761,6 +932,24 @@ CanonicalForm gcd_poly ( const CanonicalForm & f, const CanonicalForm & g )
         fc = swapvar( ezgcd( fc, gc ), Variable(1), Variable(pe) );
       }
     }
+    /*else if (
+    isOn(SW_USE_CHINREM_GCD)
+    && (isPurePoly_m(fc)) && (isPurePoly_m(gc))
+    )
+    {
+    #if 0
+      if ( p1 == fc.level() )
+        fc = chinrem_gcd( fc, gc );
+      else
+      {
+        fc = replacevar( fc, Variable(p1), Variable(mp) );
+        gc = replacevar( gc, Variable(p1), Variable(mp) );
+        fc = replacevar( chinrem_gcd( fc, gc ), Variable(mp), Variable(p1) );
+      }
+    #else
+      fc = chinrem_gcd( fc, gc);
+    #endif
+    }*/
     else
     {
        fc = gcd_poly_0( fc, gc );
@@ -948,13 +1137,13 @@ gcd ( const CanonicalForm & f, const CanonicalForm & g )
                 return abs( g );
             if ( !( getCharacteristic() == 0 && isOn( SW_RATIONAL ) ) )
             {
+                //cout << "HALLO HIER" << "\n";
                 CanonicalForm d;
                 d = gcd_poly( f, g );
                 return abs( d );
             }
             else
             {
-                //printf ("here\n");
                 CanonicalForm cdF = bCommonDen( f );
                 CanonicalForm cdG = bCommonDen( g );
                 Off( SW_RATIONAL );
@@ -1036,6 +1225,39 @@ gcd_univar_ntlp( const CanonicalForm & F, const CanonicalForm & G )
   zz_pX R=GCD(F1,G1);
   return  convertNTLzzpX2CF(R,F.mvar());
   #endif
+}
+
+#endif
+
+#ifdef HAVE_FLINT
+static CanonicalForm
+gcd_univar_flintp (const CanonicalForm& F, const CanonicalForm& G)
+{
+  nmod_poly_t F1, G1;
+  convertFacCF2nmod_poly_t (F1, F);
+  convertFacCF2nmod_poly_t (G1, G);
+  nmod_poly_gcd (F1, F1, G1);
+  CanonicalForm result= convertnmod_poly_t2FacCF (F1, F.mvar());
+  nmod_poly_clear (F1);
+  nmod_poly_clear (G1);
+  return result;
+}
+
+static CanonicalForm
+gcd_univar_flint0( const CanonicalForm & F, const CanonicalForm & G )
+{
+  fmpz_poly_t F1, G1;
+  convertFacCF2Fmpz_poly_t(F1, F);
+  convertFacCF2Fmpz_poly_t(G1, G);
+  /*fmpz_poly_print_pretty (F1,"x");
+  printf ("\n");
+  fmpz_poly_print_pretty (G1,"x");
+  printf ("\n");*/
+  fmpz_poly_gcd (F1, F1, G1);
+  CanonicalForm result= convertFmpz_poly_t2FacCF (F1, F.mvar());
+  fmpz_poly_clear (F1);
+  fmpz_poly_clear (G1);
+  return result;
 }
 
 #endif
@@ -1155,32 +1377,31 @@ balance_p ( const CanonicalForm & f, const CanonicalForm & q )
 
 CanonicalForm chinrem_gcd ( const CanonicalForm & FF, const CanonicalForm & GG )
 {
-  CanonicalForm f, g, cl, q(0), Dp, newD, D, newq;
+  bool saveRat= isOn (SW_RATIONAL);
+  if (!saveRat)
+    On (SW_RATIONAL);
+  CanonicalForm f, g, cg, cl, q(0), Dp, newD, D, newq;
   int p, i, dp_deg, d_deg=-1;
 
   CanonicalForm cd ( bCommonDen( FF ));
   f=cd*FF;
-  Variable x= Variable (1);
-  CanonicalForm cf, cg;
-  cf= icontent (f);
-  f /= cf;
+  f /=vcontent(f,Variable(1));
   //cd = bCommonDen( f ); f *=cd;
   //f /=vcontent(f,Variable(1));
 
   cd = bCommonDen( GG );
   g=cd*GG;
-  cg= icontent (g);
-  g /= cg;
+  g /=vcontent(g,Variable(1));
   //cd = bCommonDen( g ); g *=cd;
   //g /=vcontent(g,Variable(1));
 
-  CanonicalForm Dn, test= 0;
-  bool equal= false;
   i = cf_getNumBigPrimes() - 1;
-  cl =  gcd (f.lc(),g.lc());
+  cl =  f.lc()* g.lc();
+  CanonicalForm normf= maxNorm (f);
+  CanonicalForm normg= maxNorm (g);
 
-  CanonicalForm gcdcfcg= gcd (cf, cg);
-  //Off (SW_RATIONAL);
+  CanonicalForm Dn, normDn;
+  Off (SW_RATIONAL);
   while ( true )
   {
     p = cf_getBigPrime( i );
@@ -1192,14 +1413,20 @@ CanonicalForm chinrem_gcd ( const CanonicalForm & FF, const CanonicalForm & GG )
     }
     //printf("try p=%d\n",p);
     setCharacteristic( p );
+    clock_t start= clock();
     Dp = gcd_poly( mapinto( f ), mapinto( g ) );
+    cout << "time for mod gcd= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
+    cout << "i= " << i << "\n";
     Dp /=Dp.lc();
     setCharacteristic( 0 );
     dp_deg=totaldegree(Dp);
     if ( dp_deg == 0 )
     {
+      cout << "coprime" << "\n";
       //printf(" -> 1\n");
-      return CanonicalForm(gcdcfcg);
+      if (saveRat)
+        On (SW_RATIONAL);
+      return CanonicalForm(1);
     }
     if ( q.isZero() )
     {
@@ -1222,8 +1449,6 @@ CanonicalForm chinrem_gcd ( const CanonicalForm & FF, const CanonicalForm & GG )
         q = p;
         D = mapinto( Dp );
         d_deg=dp_deg;
-        test= 0;
-        equal= false;
       }
       else
       {
@@ -1233,33 +1458,54 @@ CanonicalForm chinrem_gcd ( const CanonicalForm & FF, const CanonicalForm & GG )
     }
     if ( i >= 0 )
     {
-      Dn= Farey(D,q);
-      int is_rat= isOn (SW_RATIONAL);
+      start= clock();
       On (SW_RATIONAL);
+      //cout << "D= " << D << "\n";
+      Dn= Farey(D,q);
+      cout << "time for Farey= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
+      //cout << "Dn= " << Dn << "\n";
+      //CanonicalForm Dn= D;
       cd = bCommonDen( Dn ); // we need On(SW_RATIONAL)
-      if (!is_rat)
-        Off (SW_RATIONAL);
       Dn *=cd;
-      if (test != Dn)
-        test= Dn;
-      else
-        equal= true;
+      //cout << "Dn after= " << Dn << "\n";
+      /*cout << "icontent (Dn)= " << icontent (Dn) << "\n";
+      cout << "q= " << q << "\n";
+      cout << "maxNorm (f)= " << maxNorm (f) << "\n";
+      cout << "maxNorm (g)= " << maxNorm (g) << "\n";
+      cout << "maxNorm (Dn)= " << maxNorm (Dn) << "\n";
+      cout << "f.level()= " << f.level() << "\n";
+      cout << "g.level()= " << g.level() << "\n";
+      cout << "degree (f)= " << degree (f) << "\n";
+      cout << "degree (g)= " << degree (g) << "\n";
+      cout << "bCommonDen (f)= " << bCommonDen (f) << "\n";
+      cout << "bCommonDen (g)= " << bCommonDen (g) << "\n";
+      cout << "gcd (f.lc(),g.lc())= " << gcd (f.lc(), g.lc()) << "\n";
+      cout << "vcontent (Dn, Variable (1))= " << vcontent (Dn, Variable (1)) << "\n";*/
+      normDn= maxNorm (Dn);
+      start= clock();
       //Dn /=vcontent(Dn,Variable(1));
-      if (equal && fdivides( Dn, f ) && fdivides( Dn, g ) )
+      if ( !(normDn > normf && normDn > normg) && fdivides( Dn, f ) && fdivides( Dn, g ) )
+      //if (fdivides( Dn, f ) && fdivides( Dn, g ))
       {
+        if (!saveRat)
+          Off (SW_RATIONAL);
+        cout << "time for successful fdivides= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
         //printf(" -> success\n");
-        return Dn*gcdcfcg;
+        return Dn;
       }
-      equal= false;
+        cout << "time for unsuccessful fdivides= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
+      Off (SW_RATIONAL);
       //else: try more primes
     }
     else
     { // try other method
       //printf("try other gcd\n");
+      if (saveRat)
+        On (SW_RATIONAL);
       Off(SW_USE_CHINREM_GCD);
       D=gcd_poly( f, g );
       On(SW_USE_CHINREM_GCD);
-      return D*gcdcfcg;
+      return D;
     }
   }
 }

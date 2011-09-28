@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C -*- */
-/* $Id$ */
+/* $Id: mminit.c 12231 2009-11-02 10:12:22Z hannes $ */
 
 #define _POSIX_SOURCE 1
 

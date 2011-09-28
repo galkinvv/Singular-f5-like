@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: int_poly.h 14377 2011-09-01 13:40:30Z mlee $ */
 
 #ifndef INCL_INT_POLY_H
 #define INCL_INT_POLY_H

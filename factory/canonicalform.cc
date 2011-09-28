@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: canonicalform.cc 14326 2011-07-06 08:31:05Z mlee $ */
 
 #include <config.h>
 

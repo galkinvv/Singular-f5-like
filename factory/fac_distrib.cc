@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: fac_distrib.cc 14344 2011-07-25 14:08:17Z mlee $ */
 
 #include <config.h>
 

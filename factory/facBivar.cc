@@ -154,6 +154,7 @@ CFList biFactorize (const CanonicalForm& F, const Variable& v)
   //check trivial case
   if (degree (A) == 1 || degree (A, 1) == 1)
   {
+    cout << "HIER" << "\n";
     CFList factors;
     factors.append (A);
 
@@ -211,14 +212,16 @@ CFList biFactorize (const CanonicalForm& F, const Variable& v)
   int subCheck2= substituteCheck (A, y);
   buf= swapvar (A,x,y);
   int evaluation, evaluation2, bufEvaluation= 0, bufEvaluation2= 0;
+  clock_t start= clock();
   for (int i= 0; i < factorNums; i++)
   {
     bufAeval= A;
     bufAeval= evalPoint (A, bufEvaluation);
 
+    cout << "bufEval= " << bufEvaluation << "\n";
     bufAeval2= buf;
     bufAeval2= evalPoint (buf, bufEvaluation2);
-
+    cout << "bufEval2= " << bufEvaluation2 << "\n";
 
     // univariate factorization
     TIMING_START (fac_uni_factorizer);
@@ -237,6 +240,8 @@ CFList biFactorize (const CanonicalForm& F, const Variable& v)
       bufUniFactors2= conv (factorize (bufAeval2, v));
     else
       bufUniFactors2= conv (factorize (bufAeval2, true));
+    cout << "bufUniFactors= " << bufUniFactors << "\n";
+    cout << "bufUniFactors2=  "<< bufUniFactors2 << "\n";
     TIMING_END_AND_PRINT (fac_uni_factorizer,
                           "time for univariate factorization in y: ");
     DEBOUTLN (cerr, "Lc (Aeval2)*prod (uniFactors2)== Aeval2 " <<
@@ -335,7 +340,7 @@ CFList biFactorize (const CanonicalForm& F, const Variable& v)
     bufEvaluation++;
     bufEvaluation2++;
   }
-
+  cout << "time for univariate= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
   if (evaluation != 0 && (uniFactors.length() > uniFactors2.length() ||
       (uniFactors.length() == uniFactors2.length()
        && degs.getLength() > degs2.getLength())))
@@ -359,20 +364,53 @@ CFList biFactorize (const CanonicalForm& F, const Variable& v)
     return factors;
   }
 
+  //cout << "uniFactors.length()= " << uniFactors.length() << "\n";
+  cout << "size (A)= " << size (A) << "\n";
   A= A (y + evaluation, y);
+  cout << "size (A) after= " << size (A) << "\n";
 
   int liftBound= degree (A, y) + 1 + degree (LC(A, x));
 
+  //cout << "liftBound= " << liftBound << "\n";
   ExtensionInfo dummy= ExtensionInfo (false);
   bool earlySuccess= false;
   CFList earlyFactors;
   TIMING_START (fac_hensel_lift);
-  uniFactors= henselLiftAndEarly 
+  start= clock();
+  if (!extension)
+  {
+    for (CFListIterator i= uniFactors; i.hasItem(); i++)
+      i.getItem() /= lc (i.getItem());
+  }
+  //cout << "isOn (SW_RATIONAL)= " << isOn (SW_RATIONAL) << "\n";
+  /*cout << "uniFactors= " << uniFactors << "\n";
+  cout << "A == prod (uniFactors) " << (mod (A,y) == prod (uniFactors)) << "\n";
+  cout << "A mod y= " << mod (A, y) << "\n";
+  cout << "prod (uniFactors)= " << prod (uniFactors) << "\n";
+  cout << "LC (A,1)= " << LC (A, 1) << "\n";*/
+  cout << "degree (A)= " << degree (A) << "\n";
+  cout << "evaluation= " << evaluation << "\n";
+  uniFactors= henselLiftAndEarly
              (A, earlySuccess, earlyFactors, degs, liftBound,
               uniFactors, dummy, evaluation);
+  cout << "time for hensel lift= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
   TIMING_END_AND_PRINT (fac_hensel_lift, "time for hensel lifting: ");
   DEBOUTLN (cerr, "lifted factors= " << uniFactors);
+  cout << "earlySuccess= " << earlySuccess << "\n";
+  cout << "earlyFactors.length()= " << earlyFactors.length() << "\n";
+  cout << "liftBound= " << liftBound << "\n";
 
+  /*cout << "uniFactors= " << uniFactors << "\n";
+  cout << "liftBound= " << liftBound << "\n";
+  cout << "check factors= " << (mod (prod (uniFactors)*LC (A,1), power (y,liftBound)) == A) << "\n";
+  cout << "isOn (SW_RATIONAL)= " << isOn (SW_RATIONAL) << "\n";
+  cout << "earlyFactors= " << earlyFactors << "\n";
+  cout << "mod (prod (uniFactors)*LC (A,1), power (y,liftBound))= " << mod (prod (uniFactors)*LC (A,1), power (y,liftBound)) << "\n";
+  cout << "mod(prod (uniFactors))= " << mod (prod (uniFactors), power (y,liftBound)) << "\n";
+  cout << "A= " << A << "\n";
+  cout << "LC (A,1)= " << LC (A,1) << "\n";
+  cout << "evaluation= " << evaluation << "\n";*/
+  cout << "evaluation= " << evaluation << "\n";
   CanonicalForm MODl= power (y, liftBound);
 
   factors= factorRecombination (uniFactors, A, MODl, degs, 1,

@@ -150,12 +150,23 @@ AlgExtFactorize (const CanonicalForm& F, const Variable& alpha)
   if (F.inCoeffDomain())
     return CFFList (CFFactor (F, 1));
 
-  CanonicalForm sqrf= uniSqrfPart (F);
-  CFList sqrfFactors= AlgExtSqrfFactorize (sqrf, alpha);
-
   bool save_rat=!isOn (SW_RATIONAL);
   On (SW_RATIONAL);
-  CanonicalForm quot, buf= F/Lc (F);
+  CFFList sqrf= sqrFreeZ (F);
+  //CanonicalForm sqrf= uniSqrfPart (F);
+  CFList sqrfFactors;
+  CFFList factors;
+  CFListIterator j;
+
+  for (CFFListIterator i= sqrf; i.hasItem(); i++)
+  {
+    if (i.getItem().factor().inCoeffDomain()) continue;
+    sqrfFactors= AlgExtSqrfFactorize (i.getItem().factor(), alpha);
+    for (j= sqrfFactors; j.hasItem(); j++)
+      factors.append (CFFactor (j.getItem()/Lc (j.getItem()), i.getItem().exp()));
+  }
+
+  /*CanonicalForm quot, buf= F/Lc (F);
   CFFList factors;
   int multi;
   for (CFListIterator i= sqrfFactors; i.hasItem(); i++)
@@ -168,7 +179,7 @@ AlgExtFactorize (const CanonicalForm& F, const Variable& alpha)
       multi++;
     }
     factors.append (CFFactor (i.getItem(), multi));
-  }
+  }*/
   factors.insert (CFFactor (Lc(F), 1));
   ASSERT (degree (buf) <= 0, "bug in AlgExtFactorize");
   if (save_rat) Off(SW_RATIONAL);

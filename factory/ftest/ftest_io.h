@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: ftest_io.h 12231 2009-11-02 10:12:22Z hannes $ */
 
 #ifndef INCL_FTEST_IO_H
 #define INCL_FTEST_IO_H

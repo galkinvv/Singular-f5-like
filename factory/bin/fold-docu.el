@@ -1,5 +1,5 @@
 ;; emacs edit mode for this file is -*- Emacs-Lisp -*-
-;; $Id$
+;; $Id: fold-docu.el 12231 2009-11-02 10:12:22Z hannes $
 
 ;;{{{ docu
 ;;

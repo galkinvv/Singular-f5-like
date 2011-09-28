@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: cf_iter_inline.cc 13655 2010-11-15 15:34:57Z hannes $ */
 
 //{{{ docu
 //

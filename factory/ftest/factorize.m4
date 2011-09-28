@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: factorize.m4 12231 2009-11-02 10:12:22Z hannes $ */
 
 ftestSetNameOfGame( factorize, `"
 Usage: factorize [<options>] [<envSpec>] <f> [<v>]

@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: ftmpl_matrix.cc 13210 2010-09-17 13:36:19Z seelisch $ */
 
 #include <factory/templates/ftmpl_matrix.h>
 
@@ -52,7 +52,7 @@ Matrix<T>& Matrix<T>::operator= ( const Matrix<T>& M )
 	if ( NR != M.NR || NC != M.NC ) {
 	    for ( i = 0; i < NR; i++ )
 		delete [] elems[i];
-	    delete elems;
+	    delete [] elems;
 	    NR = M.NR; NC = M.NC;
 	    elems = new T_ptr[NR];
 	    for ( i = 0; i < NR; i++ )

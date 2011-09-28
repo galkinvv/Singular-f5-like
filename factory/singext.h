@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: singext.h 13612 2010-11-09 10:17:34Z hannes $ */
 
 #ifndef INCL_SINGEXT_H
 #define INCL_SINGEXT_H

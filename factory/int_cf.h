@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: int_cf.h 14326 2011-07-06 08:31:05Z mlee $ */
 
 #ifndef INCL_INT_CF_H
 #define INCL_INT_CF_H

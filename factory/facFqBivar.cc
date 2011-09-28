@@ -638,15 +638,24 @@ earlyFactorDetection (CanonicalForm& F, CFList& factors,int& adaptedLiftBound,
       continue;
     else
     {
+      clock_t start= clock();
       g= i.getItem() (0, 1);
       g *= LCBuf;
       g= mod (g, M);
+      cout << "time for g*LC= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
+      start= clock();
       if (fdivides (LC (g), LCBuf))
       {
+        cout << "time for successful fdivides1= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
+        start= clock();
         g= mulMod2 (i.getItem(), LCBuf, M);
         g /= content (g, Variable (1));
+          cout << "time for mulMod2 and /content= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
+        start= clock();
         if (fdivides (g, buf, quot))
         {
+          cout << "time for successful fdivides2= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
+          start= clock();
           result.append (g);
           buf= quot;
           d -= degree (g) + degree (LC (g, Variable (1)));
@@ -657,13 +666,16 @@ earlyFactorDetection (CanonicalForm& F, CFList& factors,int& adaptedLiftBound,
           bufDegs2= DegreePattern (T);
           bufDegs1.intersect (bufDegs2);
           bufDegs1.refine ();
+            cout << "time for difference and degree pattern= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
           if (bufDegs1.getLength() <= 1)
           {
             result.append (buf);
             break;
           }
         }
+          cout << "time for unsuccessful fdivides2= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
       }
+        cout << "time for unsuccessful fdivides1= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
     }
   }
   adaptedLiftBound= d + 1;
@@ -1045,14 +1057,18 @@ reconstructionTry (CFList& reconstructedFactors, CanonicalForm& F, const CFList&
     buf *= LC (F, x);
     buf= mod (buf, yToL);
     buf /= content (buf, x);
+    clock_t start= clock();
     if (fdivides (buf, F, quot))
     {
+      cout << "time for successful fdivides= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
       factorsFoundIndex[i - 1]= 1;
       factorsFound++;
       F= quot;
       F /= Lc (F);
       reconstructedFactors.append (buf);
     }
+    else
+      cout << "time for unsuccessful fdivides= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
     if (degree (F) <= 0)
       return;
     if (factorsFound + 1 == N.NumCols())
@@ -1456,6 +1472,8 @@ liftAndComputeLattice (const CanonicalForm& F, int* bounds, int sizeBounds, int
         }
         if (isReduced (NTLN) && l > (minBound+1)*2)
         {
+          cout << "l= " << l << "\n";
+          cout << "NTLN.NumCols()= " << NTLN.NumCols() << "\n";
           reduced= true;
           break;
         }
@@ -1915,9 +1933,11 @@ increasePrecision (CanonicalForm& F, CFList& factors, int factorsFound,
   CFMatrix C;
   CFArray buf;
   mat_zz_p* NTLC, NTLK;
+  clock_t start;
   while (l <= precision)
   {
     j= factors;
+    start= clock();
     if (useOldQs)
     {
       for (int i= 0; i < factors.length(); i++, j++)
@@ -1930,6 +1950,7 @@ increasePrecision (CanonicalForm& F, CFList& factors, int factorsFound,
       for (int i= 0; i < factors.length(); i++, j++)
         A[i]= logarithmicDerivative (F, j.getItem(), l, bufQ [i]);
     }
+      cout << "time for logDeriv= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
     useOldQs= true;
     for (int i= 0; i < d; i++)
     {
@@ -1956,6 +1977,10 @@ increasePrecision (CanonicalForm& F, CFList& factors, int factorsFound,
           delete [] bounds;
           CanonicalForm G= F;
           F= 1;
+          cout << "NTLN= " << *convertNTLmat_zz_p2FacCFMatrix (NTLN) << "\n";
+          cout << "irred" << "\n";
+          cout << "l= " << l << "\n";
+          cout << "precision= " << precision << "\n";
           return CFList (G);
         }
       }
@@ -1974,11 +1999,13 @@ increasePrecision (CanonicalForm& F, CFList& factors, int factorsFound,
         reconstructionTry (result, bufF, factors, degree (F) + 1, factorsFound2,
                            factorsFoundIndex, NTLN, false
                           );
+        cout << "bufF= " << bufF << "\n";
         if (result.length() == NTLN.NumCols())
         {
           delete [] factorsFoundIndex;
           delete [] A;
           delete [] bounds;
+          cout << "THIS EXIT" << "\n";
           return result;
         }
         delete [] factorsFoundIndex;
@@ -1987,11 +2014,14 @@ increasePrecision (CanonicalForm& F, CFList& factors, int factorsFound,
       {
         CanonicalForm bufF= F;
         int * zeroOne= extractZeroOneVecs (NTLN);
+        cout << "NTLN= " << *convertNTLmat_zz_p2FacCFMatrix (NTLN) << "\n";
+        cout << "precision= " << precision << "\n";
         CFList result= reconstruction (bufF, factors, zeroOne, precision, NTLN);
         F= bufF;
         delete [] zeroOne;
         delete [] A;
         delete [] bounds;
+        cout << "THAT EXIT" << "\n";
         return result;
       }
     }
@@ -2586,6 +2616,8 @@ increasePrecision (CanonicalForm& F, CFList& factors, int oldL, int
   bool hitBound= false;
   if (NTLN.NumRows() != factors.length()) //refined factors
   {
+    cout << "refined" << "\n";
+    cout << "oldL= " << oldL << "\n";
     ident (NTLN, factors.length());
     bufQ= CFArray (factors.length());
   }
@@ -2596,9 +2628,11 @@ increasePrecision (CanonicalForm& F, CFList& factors, int oldL, int
   mat_zz_p* NTLC, NTLK;
   CanonicalForm bufF;
   CFList bufUniFactors;
+  clock_t start= clock();
   while (oldL <= l)
   {
     j= factors;
+    start= clock();
     if (useOldQs)
     {
       for (int i= 0; i < factors.length(); i++, j++)
@@ -2612,7 +2646,7 @@ increasePrecision (CanonicalForm& F, CFList& factors, int oldL, int
         A[i]= logarithmicDerivative (F, j.getItem(), oldL, bufQ [i]);
     }
     useOldQs= true;
-
+    cout << "time for logDeriv= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
     for (int i= 0; i < d; i++)
     {
       if (bounds [i] + 1 <= oldL/2)
@@ -2633,6 +2667,8 @@ increasePrecision (CanonicalForm& F, CFList& factors, int oldL, int
         NTLN *= NTLK;
         if (NTLN.NumCols() == 1)
         {
+          cout << "irred" << "\n";
+          cout << "oldL= " << oldL << "\n";
           irreducible= true;
           delete [] A;
           return CFList (F);
@@ -2649,7 +2685,9 @@ increasePrecision (CanonicalForm& F, CFList& factors, int oldL, int
     zeroOneVecs= extractZeroOneVecs (NTLN);
     bufF= F;
     bufUniFactors= factors;
+    start= clock();
     result= reconstruction (bufF, bufUniFactors, zeroOneVecs, oldL, NTLN);
+      cout << "time for reconstruction= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
     delete [] zeroOneVecs;
     if (degree (bufF) + 1 + degree (LC (bufF, 1)) < oldL && result.length() > 0)
     {
@@ -3734,11 +3772,14 @@ earlyReconstructionAndLifting (const CanonicalForm& F, const mat_zz_p& N,
       henselLiftResume12 (F, factors, l, smallFactorDeg, Pi, diophant, M);
       l= smallFactorDeg;
     }
+    clock_t start= clock();
     reconstructionTry (result, bufF, factors, smallFactorDeg, factorsFound,
                        factorsFoundIndex, NTLN, beenInThres
                       );
+      cout << "time for reconstructionTry1= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
     if (result.length() == NTLN.NumCols())
     {
+      cout << "fertig1" << "\n";
       delete [] factorsFoundIndex;
       return result;
     }
@@ -3750,11 +3791,14 @@ earlyReconstructionAndLifting (const CanonicalForm& F, const mat_zz_p& N,
     henselLiftResume12 (F, factors, l, degree (bufF)/2 + 2, Pi, diophant, M);
     l= degree (bufF)/2 + 2;
   }
+  clock_t start= clock();
   reconstructionTry (result, bufF, factors, degree (bufF)/2 + 2,
                      factorsFound, factorsFoundIndex, NTLN, beenInThres
                     );
+    cout << "time for reconstructionTry2= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
   if (result.length() == NTLN.NumCols())
   {
+    cout << "fertig2" << "\n";
     delete [] factorsFoundIndex;
     return result;
   }
@@ -3765,11 +3809,14 @@ earlyReconstructionAndLifting (const CanonicalForm& F, const mat_zz_p& N,
     henselLiftResume12 (F, factors, l, degree (bufF) + 1, Pi, diophant, M);
     l= degree (bufF) + 1;
   }
+  start= clock();
   reconstructionTry (result, bufF, factors, degree (bufF) + 1, factorsFound,
                      factorsFoundIndex, NTLN, beenInThres
                     );
+    cout << "time for reconstructionTry3= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
   if (result.length() == NTLN.NumCols())
   {
+    cout << "fertig3" << "\n";
     delete [] factorsFoundIndex;
     return result;
   }
@@ -4342,13 +4389,15 @@ henselLiftAndLatticeRecombi (const CanonicalForm& G, const CFList& uniFactors,
   int factorsFound= 0;
   if (alpha.level() == 1 || (alpha.level() != 1 && reduceFq2Fp))
   {
+    clock_t start= clock();
     result= earlyReconstructionAndLifting (F, NTLN, bufF, bufUniFactors, l,
                                            factorsFound, beenInThres, M, Pi,
                                            diophant
                                           );
-
+    cout << "earlyReconstructionAndLifting= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
     if (result.length() == NTLN.NumCols())
     {
+      cout << "fertig" << "\n";
       delete [] bounds;
       return Union (result, smallFactors);
     }
@@ -4369,6 +4418,7 @@ henselLiftAndLatticeRecombi (const CanonicalForm& G, const CFList& uniFactors,
 
   if (result.length() > 0)
   {
+    cout << "\n" << "\n" << "HIER" << "\n";
     if (beenInThres)
     {
       int index;
@@ -4489,8 +4539,10 @@ henselLiftAndLatticeRecombi (const CanonicalForm& G, const CFList& uniFactors,
 
   if (l < liftBound)
   {
+      cout << "\n" << "\n" << "NEIN HIER" << "\n";
     if (alpha.level() == 1)
     {
+        cout << "INCREASEPRECISION" << "\n";
         result=increasePrecision (F, bufUniFactors, oldL, l, d, bounds, bufQ,
                                   NTLN
                                  );
@@ -4531,6 +4583,7 @@ henselLiftAndLatticeRecombi (const CanonicalForm& G, const CFList& uniFactors,
 
     if (result.isEmpty())
     {
+          cout << "\n" << "\n" << "NEIN NEIN HIER" << "\n";
       if (alpha.level() == 1)
         result= furtherLiftingAndIncreasePrecision (F,bufUniFactors, l,
                                                     liftBound, d, bounds, NTLN,
@@ -4573,6 +4626,7 @@ henselLiftAndLatticeRecombi (const CanonicalForm& G, const CFList& uniFactors,
     }
   }
 
+    cout << "\n" << "\n" << "NEIN NEIN NEIN NEIN HIER" << "\n";
   DEBOUTLN (cerr, "lattice recombination failed");
 
   DegreePattern bufDegs= DegreePattern (bufUniFactors);
@@ -5238,6 +5292,7 @@ biFactorize (const CanonicalForm& F, const ExtensionInfo& info)
   int factorNums= 3;
   int subCheck1= substituteCheck (A, x);
   int subCheck2= substituteCheck (A, y);
+  clock_t start= clock();
   for (int i= 0; i < factorNums; i++)
   {
     bufAeval= A;
@@ -5403,6 +5458,8 @@ biFactorize (const CanonicalForm& F, const ExtensionInfo& info)
       list2.append (bufEvaluation2);
   }
 
+  cout << "time for uniFactorize= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
+  start= clock();
   if (!derivXZero && !fail2)
   {
     if (!evaluation.isZero() && (uniFactors.length() > uniFactors2.length() ||
@@ -5451,7 +5508,8 @@ biFactorize (const CanonicalForm& F, const ExtensionInfo& info)
     degMipo= degree (getMipo (alpha));
 
   DEBOUTLN (cerr, "uniFactors= " << uniFactors);
-
+  cout << "time for stuff before lift and recombination= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
+  start= clock();
   if ((GF && !extension) || (GF && extension && k != 1))
   {
     bool earlySuccess= false;
@@ -5505,17 +5563,22 @@ biFactorize (const CanonicalForm& F, const ExtensionInfo& info)
     bool earlySuccess= false;
     CFList earlyFactors;
     TIMING_START (fac_hensel_lift);
+    cout << "uniFactors.length()= " << uniFactors.length() << "\n";
     uniFactors= henselLiftAndEarly
                (A, earlySuccess, earlyFactors, degs, liftBound,
                 uniFactors, info, evaluation);
     TIMING_END_AND_PRINT (fac_hensel_lift, "time for hensel lifting: ");
     DEBOUTLN (cerr, "lifted factors= " << uniFactors);
 
+    cout << "earlyFactors.length()= " << earlyFactors.length() << "\n";
     CanonicalForm MODl= power (y, liftBound);
     if (!extension)
     {
+      cout << "uniFactors.length()= " << uniFactors.length() << "\n";
       factors= factorRecombination (uniFactors, A, MODl, degs, 1, 3);
 
+      cout << "uniFactors.length()= " << uniFactors.length() << "\n";
+      cout << "factors.length()= " << factors.length() << "\n";
       int oldUniFactorsLength= uniFactors.length();
       if (degree (A) > 0)
       {
@@ -5535,11 +5598,18 @@ biFactorize (const CanonicalForm& F, const ExtensionInfo& info)
                                     alpha, liftBound
                                    );
         }
+        cout << "factors.length()= " << factors.length() << "\n";
         factors= Union (factors, tmp);
+        //cout << "A= " << A << "\n";
+        cout << "uniFactors.length()= " << uniFactors.length() << "\n";
+        //cout << "uniFactors= " << uniFactors << "\n";
+        cout << "tmp.length()= " << tmp.length() << "\n";
+        cout << "factors.length()= " << factors.length() << "\n";
         if (tmp.length() == 0 || (tmp.length() > 0 && uniFactors.length() != 0
                                   && uniFactors.length() != oldUniFactorsLength)
            )
         {
+          cout << "BAM" << "\n";
           DegreePattern bufDegs= DegreePattern (uniFactors);
           degs.intersect (bufDegs);
           degs.refine ();
@@ -5619,6 +5689,8 @@ biFactorize (const CanonicalForm& F, const ExtensionInfo& info)
     else if (!earlySuccess && degs.getLength() == 1)
       factors= earlyFactors;
   }
+  cout << "time for recombi= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
+  start= clock();
   delete [] bounds;
   if (!extension)
   {
@@ -5629,7 +5701,7 @@ biFactorize (const CanonicalForm& F, const ExtensionInfo& info)
   appendSwapDecompress (factors, contentAxFactors, contentAyFactors,
                         swap, swap2, N);
   normalize (factors);
-
+  cout << "time for stuff after recombi= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
   return factors;
 }
 

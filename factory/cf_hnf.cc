@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: cf_hnf.cc 13676 2010-11-26 11:06:51Z hannes $ */
 
 //{{{ docu
 //

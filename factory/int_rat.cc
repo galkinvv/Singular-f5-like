@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: int_rat.cc 14267 2011-06-08 13:20:17Z mlee $ */
 
 #include <config.h>
 
@@ -633,10 +633,10 @@ InternalCF* InternalRational::mulcoeff( InternalCF* c )
     }
     else
     {
-        mpz_fdiv_q( &n, &n, &g );
+        mpz_divexact( &n, &n, &g );
         mpz_mul( &n, &n, &_num );
         mpz_init( &d );
-        mpz_fdiv_q( &d, &_den, &g );
+        mpz_divexact( &d, &_den, &g );
     }
     mpz_clear( &g );
     if ( deleteObject() ) delete this;

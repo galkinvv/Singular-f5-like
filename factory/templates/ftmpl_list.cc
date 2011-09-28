@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: ftmpl_list.cc 13769 2010-12-14 12:07:00Z mlee $ */
 
 #include <factory/templates/ftmpl_list.h>
 

@@ -222,19 +222,20 @@ void convertFacCF2Fmpq_poly_t (fmpq_poly_t result, const CanonicalForm& f)
 {
   ASSERT (isOn (SW_RATIONAL), "expected poly over Q");
 
-  /*fmpq_poly_init2 (result, degree (f)+1);
+  fmpq_poly_init2 (result, degree (f)+1);
   _fmpq_poly_set_length (result, degree (f) + 1);
   CanonicalForm den= bCommonDen (f);
-  convertFacCF2Fmpz_array (fmpq_poly_numref (result), f*den);
-  convertCF2Fmpz (fmpq_poly_denref (result), den);*/
-  fmpq_t coeff;
+  CanonicalForm F= f*den;
+  convertFacCF2Fmpz_array (fmpq_poly_numref (result), F);
+  convertCF2Fmpz (fmpq_poly_denref (result), den);
+  /*fmpq_t coeff;
   for (CFIterator i= f; i.hasTerms(); i++)
   {
     fmpq_init (coeff);
     convertCF2Fmpq (coeff, i.coeff());
     fmpq_poly_set_coeff_fmpq (result, i.exp(), coeff);
     fmpq_clear (coeff);
-  }
+  }*/
 }
 
 #endif

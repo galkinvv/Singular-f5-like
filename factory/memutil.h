@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C -*- */
-/* $Id$ */
+/* $Id: memutil.h 12231 2009-11-02 10:12:22Z hannes $ */
 
 #ifndef INCL_MEMUTIL_H
 #define INCL_MEMUTIL_H

@@ -24,6 +24,123 @@
 #include "cf_map.h"
 #include "cf_generator.h"
 
+#ifdef HAVE_NTL
+#include "NTLconvert.h"
+#include <NTL/lzz_pE.h>
+#endif
+
+#ifdef HAVE_NTL
+
+long InvModStatus (zz_pE& x, const zz_pE& a)
+{
+   return InvModStatus(x._zz_pE__rep, a._zz_pE__rep, zz_pE::modulus());
+}
+
+static
+void SetSize(vec_zz_pX& x, long n, long m)
+{
+   x.SetLength(n);
+   long i;
+   for (i = 0; i < n; i++)
+      x[i].rep.SetMaxLength(m);
+}
+
+void tryPlainRem(zz_pEX& r, const zz_pEX& a, const zz_pEX& b, vec_zz_pX& x, bool& fail)
+{
+   long da, db, dq, i, j, LCIsOne;
+   const zz_pE *bp;
+   zz_pX *xp;
+
+
+   zz_pE LCInv, t;
+   zz_pX s;
+
+   da = deg(a);
+   db = deg(b);
+
+   if (db < 0) Error("zz_pEX: division by zero");
+
+   if (da < db) {
+      r = a;
+      return;
+   }
+
+   bp = b.rep.elts();
+
+   if (IsOne(bp[db]))
+      LCIsOne = 1;
+   else {
+      LCIsOne = 0;
+      fail= InvModStatus (LCInv, bp[db]);
+      if (fail)
+        return;
+   }
+
+   for (i = 0; i <= da; i++)
+      x[i] = rep(a.rep[i]);
+
+   xp = x.elts();
+
+   dq = da - db;
+
+   for (i = dq; i >= 0; i--) {
+      conv(t, xp[i+db]);
+      if (!LCIsOne)
+        mul(t, t, LCInv);
+      NTL::negate(t, t);
+
+      for (j = db-1; j >= 0; j--) {
+         mul(s, rep(t), rep(bp[j]));
+         add(xp[i+j], xp[i+j], s);
+      }
+   }
+
+   r.rep.SetLength(db);
+   for (i = 0; i < db; i++)
+      conv(r.rep[i], xp[i]);
+   r.normalize();
+}
+
+
+void tryNTLGCD(zz_pEX& x, const zz_pEX& a, const zz_pEX& b, bool& fail)
+{
+   zz_pE t;
+
+   if (IsZero(b))
+      x = a;
+   else if (IsZero(a))
+      x = b;
+   else {
+      long n = max(deg(a),deg(b)) + 1;
+      zz_pEX u(INIT_SIZE, n), v(INIT_SIZE, n);
+
+      vec_zz_pX tmp;
+      SetSize(tmp, n, 2*zz_pE::degree());
+
+      u = a;
+      v = b;
+      do {
+         tryPlainRem(u, u, v, tmp, fail);
+         if (fail)
+           return;
+         swap(u, v);
+      } while (!IsZero(v));
+
+      x = u;
+   }
+
+   if (IsZero(x)) return;
+   if (IsOne(LeadCoeff(x))) return;
+
+   /* make gcd monic */
+
+   fail= InvModStatus (t, LeadCoeff(x));
+   if (fail)
+     return;
+   mul(x, x, t);
+}
+#endif
+
 /// compressing two polynomials F and G, M is used for compressing,
 /// N to reverse the compression
 static
@@ -438,12 +555,30 @@ void tryBrownGCD( const CanonicalForm & F, const CanonicalForm & G, const Canoni
   int mv = f.level();
   if(g.level() > mv)
     mv = g.level();
+#ifdef HAVE_NTL
+  Variable v= M.mvar();
+  zz_p::init (getCharacteristic());
+  zz_pX NTLMipo= convertFacCF2NTLzzpX (M);
+  zz_pE::init (NTLMipo);
+  zz_pEX NTLResult;
+  zz_pEX NTLF;
+  zz_pEX NTLG;
+#endif
   // here: mv is level of the largest variable in f, g
   if(mv == 1) // f,g univariate
   {
+#ifdef HAVE_NTL
+    NTLF= convertFacCF2NTLzz_pEX (f, NTLMipo);
+    NTLG= convertFacCF2NTLzz_pEX (g, NTLMipo);
+    tryNTLGCD (NTLResult, NTLF, NTLG, fail);
+    if (fail)
+      return;
+    result= convertNTLzz_pEX2CF (NTLResult, f.mvar(), v);
+#else
     tryEuclid(f,g,M,result,fail);
     if(fail)
       return;
+#endif
     result= NN (reduce (result, M)); // do not forget to map back
     return;
   }
@@ -455,9 +590,19 @@ void tryBrownGCD( const CanonicalForm & F, const CanonicalForm & G, const Canoni
   if(fail)
     return;
   CanonicalForm c;
+  Variable x= Variable (1);
+#ifdef HAVE_NTL
+  NTLF= convertFacCF2NTLzz_pEX (cf, NTLMipo);
+  NTLG= convertFacCF2NTLzz_pEX (cg, NTLMipo);
+  tryNTLGCD (NTLResult, NTLF, NTLG, fail);
+  if (fail)
+    return;
+  c= convertNTLzz_pEX2CF (NTLResult, x, v);
+#else
   tryEuclid(cf,cg,M,c,fail);
   if(fail)
     return;
+#endif
   // f /= cf
   f.tryDiv (cf, M, fail);
   if(fail)
@@ -489,9 +634,18 @@ void tryBrownGCD( const CanonicalForm & F, const CanonicalForm & G, const Canoni
   L = leadDeg(f, L);
   N = leadDeg(g, N);
   CanonicalForm gamma;
+#ifdef HAVE_NTL
+  NTLF= convertFacCF2NTLzz_pEX (firstLC (f), NTLMipo);
+  NTLG= convertFacCF2NTLzz_pEX (firstLC (g), NTLMipo);
+  tryNTLGCD (NTLResult, NTLF, NTLG, fail);
+  if (fail)
+    return;
+  gamma= convertNTLzz_pEX2CF (NTLResult, x, v);
+#else
   tryEuclid( firstLC(f), firstLC(g), M, gamma, fail );
   if(fail)
     return;
+#endif
   for(int i=2; i<=mv; i++) // entries at i=0,1 not visited
     if(N[i] < L[i])
       L[i] = N[i];
@@ -503,7 +657,6 @@ void tryBrownGCD( const CanonicalForm & F, const CanonicalForm & G, const Canoni
   CanonicalForm gm=0;
   CanonicalForm g_image, alpha, gnew;
   FFGenerator gen = FFGenerator();
-  Variable x= Variable (1);
   bool divides= true;
   for(FFGenerator gen = FFGenerator(); gen.hasItems(); gen.next())
   {
@@ -547,7 +700,7 @@ void tryBrownGCD( const CanonicalForm & F, const CanonicalForm & G, const Canoni
         cf = tryvcontent(gm, Variable(2), M, fail);
         if(fail)
           return;
-        divides = true;
+        divides= true;
         g_image= gm;
         g_image.tryDiv (cf, M, fail);
         if(fail)

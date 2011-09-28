@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: NTLconvert.cc 13655 2010-11-15 15:34:57Z hannes $ */
 #include <config.h>
 
 #include "cf_gmp.h"
@@ -31,6 +31,7 @@
 #include <NTL/GF2EXFactoring.h>
 #include <NTL/tools.h>
 #include <NTL/mat_ZZ.h>
+//#include <NTL/bi_zz_pX.h>
 #include "int_int.h"
 #include <limits.h>
 #include "NTLconvert.h"
@@ -538,19 +539,20 @@ CFFList convertNTLvec_pair_GF2X_long2FacCFFList
 // OUTPUT: The converted Factory-integer of type canonicalform                //
 ////////////////////////////////////////////////////////////////////////////////
 
-static char *cf_stringtemp;
+/*static char *cf_stringtemp;
 static char *cf_stringtemp2;
 static int cf_stringtemp_l=0;
-CanonicalForm convertZZ2CF(ZZ coefficient)
+CanonicalForm convertZZ2CF2(ZZ coefficient)
 {
   long coeff_long;
   //CanonicalForm tmp=0;
   char dummy[2];
   int minusremainder=0;
-  char numbers[]="0123456789abcdef";
+  char numbers[]= "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"; //"0123456789abcdef";
 
   coeff_long=to_long(coefficient);
 
+  clock_t start;
   //Test whether coefficient can be represented as an immediate integer in Factory
   if ( (NumBits(coefficient)<((long)NTL_ZZ_NBITS))
   && (coeff_long>((long)MINIMMEDIATE))
@@ -582,12 +584,17 @@ CanonicalForm convertZZ2CF(ZZ coefficient)
     }
 
     int l=0;
-    while (coefficient>15)
+    start= clock();
+    while (coefficient>61)
     {
       ZZ quotient,remaind;
-      ZZ ten;ten=16;
+      ZZ ten;ten=62;
+      //quotient= (coefficient >> 4);
+      //trunc (remaind, coefficient, 4);
       DivRem(quotient,remaind,coefficient,ten);
+      //cout << "to_long (remaind)= " << to_long (remaind) << "\n";
       dummy[0]=numbers[to_long(remaind)];
+      //cout << "dummy= " << dummy[0] << "\n";
       //tmp*=10; tmp+=to_long(remaind);
 
       l++;
@@ -608,6 +615,8 @@ CanonicalForm convertZZ2CF(ZZ coefficient)
 
       coefficient=quotient;
     }
+    //cout << "time for trunc shift= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
+    start= clock();
     //built up the string in dummy[0]
     dummy[0]=numbers[to_long(coefficient)];
     //NTL_SNS
@@ -631,11 +640,11 @@ CanonicalForm convertZZ2CF(ZZ coefficient)
     }
     cf_stringtemp2[l+minusremainder]='\0';
   }
-
+  //cout << "time for stuff after trunc and shift= " << (double) (clock() - start)/CLOCKS_PER_SEC << "\n";
   //convert the string to canonicalform using the char*-Constructor
-  return CanonicalForm(cf_stringtemp2,16);
+  return CanonicalForm(cf_stringtemp2,62);
   //return tmp;
-}
+}*/
 
 ////////////////////////////////////////////////////////////////////////////////
 // NAME: convertFacCF2NTLZZX                                                  //
@@ -1178,4 +1187,261 @@ CFMatrix* convertNTLmat_zz_pE2FacCFMatrix(mat_zz_pE &m, Variable alpha)
   }
   return res;
 }
+
+struct _ZZ_local_stack {
+   long top;
+   long alloc;
+   long *elts;
+
+   _ZZ_local_stack() { top = -1; alloc = 0; elts = 0; }
+   ~_ZZ_local_stack() { if (!elts == 0) Free (elts, alloc); }
+
+   long pop() { return elts[top--]; }
+   long empty() { return (top == -1); }
+   void push(long x);
+};
+
+void _ZZ_local_stack::push(long x)
+{
+   if (alloc == 0) {
+      alloc = 100;
+      elts = (long *) Alloc (alloc*sizeof(long));
+   }
+
+   top++;
+
+   if (top + 1 > alloc) {
+      long * tmp= (long*) Alloc (2*alloc*sizeof(long));
+      memcpy(tmp,elts,alloc*sizeof(long));
+      Free (elts, alloc*sizeof(long));
+      alloc = 2*alloc;
+      elts= tmp;
+   }
+
+   if (!elts) {
+      Error("out of space in ZZ output");
+   }
+
+   elts[top] = x;
+}
+
+static long iodigits = 0;
+static long ioradix = 0;
+
+// iodigits is the greatest integer such that 10^{iodigits} < NTL_WSP_BOUND
+// ioradix = 10^{iodigits}
+
+static void InitZZIO()
+{
+   long x;
+
+   x = (NTL_WSP_BOUND-1)/10;
+   iodigits = 0;
+   ioradix = 1;
+
+   while (x) {
+      x = x / 10;
+      iodigits++;
+      ioradix = ioradix * 10;
+   }
+
+   if (iodigits <= 0) Error("problem with I/O");
+   //cout << "ioradix= " << ioradix << "\n";
+}
+
+static
+void PrintDigits(char* buf, long d, int& i)
+{
+   /*if (!buf) {
+      cout << "!buf" << "\n";
+      buf = (char *) NTL_MALLOC(iodigits, 1, 0);
+      if (!buf) Error("out of memory");
+   }*/
+
+   i = 0;
+
+   while (d) {
+      buf[i] = IntValToChar(d % 10);
+      d = d / 10;
+      i++;
+   }
+
+   /*if (justify) {
+      long j = iodigits - i;
+      while (j > 0) {
+         s << "0";
+         j--;
+      }
+   }*/
+
+   /*while (i > 0) {
+      i--;
+      s << buf[i];
+   }*/
+}
+      
+
+   
+
+//static char *cf_stringtemp;
+//static char *cf_stringtemp2;
+//static int cf_stringtemp_l=0;
+CanonicalForm
+convertZZ2CF (ZZ a)
+{
+  long coeff_long=to_long(a);
+
+  CanonicalForm result;
+  //Test whether coefficient can be represented as an immediate integer in Factory
+  if ( (NumBits(a)<((long)NTL_ZZ_NBITS))
+  && (coeff_long>((long)MINIMMEDIATE))
+  && (coeff_long<((long)MAXIMMEDIATE)))
+  {
+    //cout << "imm" << "\n";
+    // coefficient is immediate --> return the coefficient as canonicalform
+    return CanonicalForm(coeff_long);
+  }
+  else
+  {
+    char *cf_stringtemp;
+    char *cf_stringtemp2;
+    int cf_stringtemp_l=0;
+    //cout << "convert2= " << convertZZ2CF2 (a) << "\n";
+    ZZ b;
+    _ZZ_local_stack S;
+    long r;
+    long k;
+
+    if (!iodigits) InitZZIO();
+
+    b = a;
+
+    k = sign(b);
+
+    if (k < 0)
+      NTL::negate(b, b);
+
+    int count= 0;
+    do
+    {
+      r = DivRem(b, b, ioradix);
+      S.push(r);
+      count++;
+    } while (!IsZero(b));
+
+    r = S.pop();
+    //cout << "first r= " << r << "\n";
+    //cf_stringtemp= 0;
+    cf_stringtemp = (char *) Alloc (iodigits); //NTL_MALLOC(iodigits, 1, 0);
+    int i= 0;
+    PrintDigits(cf_stringtemp, r, i);
+    //cout << "i= " << i << "\n";
+    //cout << "iodigits= " << iodigits << "\n";
+    /*for (int j= 0; j < i; j++)
+      cout << cf_stringtemp[j] << "\n";*/
+    cf_stringtemp_l= i+iodigits*(count-1)+1;
+    if (k < 0)
+      cf_stringtemp_l++;
+    cf_stringtemp2=(char *)Alloc(cf_stringtemp_l);
+
+    //cout << "cf_stringtemp_l= " << cf_stringtemp_l << "\n";
+    //cout << "iodigits= " << iodigits << "\n";
+    count= 0;
+    if (k < 0)
+    {
+      cf_stringtemp2[0]='-';
+      for (int j= 1; j < i+1; j++)
+        cf_stringtemp2[j]= cf_stringtemp[i-j];
+      count= i+1;
+    }
+    else
+    {
+      for (int j= 0; j < i; j++)
+        cf_stringtemp2[j]= cf_stringtemp[i-j-1];
+      count= i;
+    }
+
+    while (!S.empty())
+    {
+      r = S.pop();
+      //cout << "r= " << r << "\n";
+      i= 0;
+      //cf_stringtemp= 0; //oder free ??
+      //cf_stringtemp = (char *) NTL_MALLOC(iodigits, 1, 0);
+      PrintDigits(cf_stringtemp, r, i);
+      //cout << "r= " << r << "\n";
+      /*for (int j= 0; j < i; j++)
+        cout << cf_stringtemp [j];
+      cout << "\n";*/
+      for (int j= 0; j < iodigits - i; j++)
+        cf_stringtemp2 [count+j]= '0';
+      for (int j= iodigits - i; j < iodigits; j++)
+        cf_stringtemp2 [count+j]= cf_stringtemp [iodigits - 1 - j];
+      count += iodigits;
+    }
+    cf_stringtemp2 [count]= '\0';
+    //cout << "count= " << count << "\n";
+    //cout << "cf_stringtemp2= ";
+    /*for (int j= 0; j < cf_stringtemp_l; j++)
+      cout << cf_stringtemp2 [j];
+    cout << "\n";*/
+    Free (cf_stringtemp, iodigits);
+    //cout << "cf_stringtemp_l= " << cf_stringtemp_l << "\n";
+    CanonicalForm result= CanonicalForm (cf_stringtemp2, 10);
+    //cout << "result= " << result << "\n";
+    Free (cf_stringtemp2, cf_stringtemp_l);
+    return result;
+  }
+
+  return result;
+}
+
+/*bi_zz_pX convertFacCF2NTLbi_zz_pX (const CanonicalForm& F)
+{
+  ASSERT (getNumVars (F) == 2, "expected bivariate poly");
+
+  CFIterator i= F;
+  bi_zz_pX result;
+  result.rep.SetMaxLength (i.exp() + 1);
+  zz_pX coeff;
+
+  int NTLcurrentExp=i.exp();
+  int largestExp=i.exp();
+  int k;
+  zz_pX null= zz_pX::zero();
+  for (; i.hasTerms(); i++)
+  {
+    for (k=NTLcurrentExp;k>i.exp();k--)
+      SetCoeff(result,k,null);
+    NTLcurrentExp=i.exp();
+    coeff= convertFacCF2NTLzzpX (i.coeff());
+    SetCoeff (result, NTLcurrentExp, coeff);
+    NTLcurrentExp--;
+  }
+  for(k=NTLcurrentExp;k>=0;k--) SetCoeff(result,k,null);
+  return result;
+}
+
+CanonicalForm convertNTLbi_zz_pX2CF (const bi_zz_pX& f, const Variable& x, const Variable& y)
+{
+  CanonicalForm bigone;
+  if (deg (f) > 0)
+  {
+    bigone= 0;
+    bigone= bigone.mapinto();
+    for (int j=0;j<deg(f)+1;j++)
+    {
+      if (coeff(f,j)!=0)
+      {
+        bigone+=(power(x,j)*convertNTLzzpX2CF(coeff(f,j),y));
+      }
+    }
+  }
+  else
+  {
+    bigone= convertNTLzzpX2CF(coeff(f,0),y);
+    bigone= bigone.mapinto();
+  }
+  return bigone;
+}*/
 #endif

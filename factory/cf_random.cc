@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: cf_random.cc 13661 2010-11-22 10:12:46Z mlee $ */
 
 #include <config.h>
 

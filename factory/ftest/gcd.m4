@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: gcd.m4 12231 2009-11-02 10:12:22Z hannes $ */
 
 ftestSetNameOfGame( gcd, `"
 Usage: gcd [<options>] [<envSpec>] <f> <g> [<realResult>]

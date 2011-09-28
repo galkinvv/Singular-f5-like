@@ -1,5 +1,5 @@
 /* emacs edit mode for this file is -*- C++ -*- */
-/* $Id$ */
+/* $Id: int_rat.h 13239 2010-09-21 17:23:17Z hannes $ */
 
 #ifndef INCL_INT_RAT_H
 #define INCL_INT_RAT_H
