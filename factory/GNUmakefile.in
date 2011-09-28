@@ -1,5 +1,5 @@
 # @configure_input@
-# $Id$
+# $Id: GNUmakefile.in 14377 2011-09-01 13:40:30Z mlee $
 
 #
 # GNUmakefile.in - used by `configure' to create `GNUmakefile', the
@@ -183,6 +183,7 @@ basefactorysrc := \
 		facIrredTest.cc \
 		fieldGCD.cc \
 		ffops.cc \
+		FLINTconvert.cc \
 		gf_tabutil.cc \
 		gfops.cc \
 		imm.cc \
@@ -268,6 +269,7 @@ basefactoryincl := \
 		facIrredTest.h \
 		fieldGCD.h \
 		ffops.h \
+		FLINTconvert.h \
 		ftmpl_list.h \
 		ftmpl_matrix.h \
 		gf_tabutil.h \
@@ -611,7 +613,7 @@ gftables:	gengftables
 # the header files from the directory where they should be
 # after installation.
 test_install.o: test_install.cc factory.h
-		$(CXX) -c $< $(TESTCXXFLAGS) -I- -I${prefix} -I$(includedir) -o $@
+		$(CXX) -c $< $(TESTCXXFLAGS) -I -I${prefix} -I$(includedir) -o $@
 
 # the same we do for ftmpl_inst.o which for this reason is named
 # iftmpl_inst.o
