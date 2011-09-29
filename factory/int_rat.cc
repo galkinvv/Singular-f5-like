@@ -626,22 +626,27 @@ InternalCF* InternalRational::mulcoeff( InternalCF* c )
     }
     mpz_init( &g );
     mpz_gcd( &g, &n, &_den );
-    if ( mpz_cmp_si( &g, 1 ) == 0 )
+    if ( mpz_cmp_ui( &g, 1 ) == 0 )
     {
         mpz_mul( &n, &n, &_num );
         mpz_init_set( &d, &_den );
     }
     else
     {
-        mpz_divexact( &n, &n, &g );
-        mpz_mul( &n, &n, &_num );
         mpz_init( &d );
         mpz_divexact( &d, &_den, &g );
     }
-    mpz_clear( &g );
-    if ( deleteObject() ) delete this;
-    if ( mpz_cmp_si( &d, 1 ) == 0 )
+    //mpz_clear( &g );
+    if ( mpz_cmp_ui( &d, 1 ) == 0 )
     {
+        if (mpz_cmp_si ( &g,1) != 0)
+        {
+          mpz_divexact( &n, &n, &g );
+          mpz_mul( &n, &n, &_num );
+        }
+        mpz_clear (&g);
+
+        if ( deleteObject() ) delete this;
         mpz_clear( &d );
         if ( mpz_is_imm( &n ) )
         {
@@ -655,7 +660,32 @@ InternalCF* InternalRational::mulcoeff( InternalCF* c )
         }
     }
     else
-        return new InternalRational( n, d );
+    {
+        if (getRefCount() > 1)
+        {
+          if (mpz_cmp_si ( &g,1) != 0)
+          {
+            mpz_divexact( &n, &n, &g );
+            mpz_mul( &n, &n, &_num );
+          }
+          mpz_clear (&g);
+          decRefCount();
+          return new InternalRational( n, d );
+        }
+        else
+        {
+           if (mpz_cmp_si ( &g,1) != 0)
+           {
+             mpz_divexact( &n, &n, &g );
+             mpz_mul( &_num, &n, &_num );
+           }
+           mpz_set (&_den, &d);
+           mpz_clear (&d);
+           mpz_clear (&g);
+           mpz_clear (&n);
+           return this;
+        }
+    }
 }
 
 InternalCF* InternalRational::dividecoeff( InternalCF* c, bool invert )
