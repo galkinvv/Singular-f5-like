@@ -679,6 +679,8 @@ InternalCF* InternalRational::mulcoeff( InternalCF* c )
              mpz_divexact( &n, &n, &g );
              mpz_mul( &_num, &n, &_num );
            }
+           else
+             mpz_set (&_num, &n);
            mpz_set (&_den, &d);
            mpz_clear (&d);
            mpz_clear (&g);
