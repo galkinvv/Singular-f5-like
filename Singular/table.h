@@ -245,6 +245,7 @@ struct sValCmd1 dArith1[]=
 #endif
 ,{D(jjSTD),        STD_CMD,         IDEAL_CMD,      IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjSTD),        STD_CMD,         MODUL_CMD,      MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
+,{D(jjF5E),        F5E_CMD,         IDEAL_CMD,      IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjDUMMY),      STRING_CMD,      STRING_CMD,     STRING_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjSYSTEM),     SYSTEM_CMD,      NONE,           STRING_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjSYZYGY),     SYZYGY_CMD,      MODUL_CMD,      IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
@@ -1022,6 +1023,7 @@ cmdnames cmds[] =
 #endif /* OLD_RES */
   { "status",      0, STATUS_CMD,         CMD_M},
   { "std",         0, STD_CMD ,           CMD_M},
+  { "f5e",         0, F5E_CMD ,           CMD_1},
   { "string",      0, STRING_CMD ,        ROOT_DECL_LIST},
   { "subst",       0, SUBST_CMD ,         CMD_M},
   { "system",      0, SYSTEM_CMD,         CMD_M},

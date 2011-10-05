@@ -176,7 +176,8 @@
      RETURN = 378,
      PARAMETER = 379,
      SYSVAR = 380,
-     UMINUS = 381
+     UMINUS = 381,
+     F5E_CMD = 382
    };
 #endif
 #define DOTDOT 258
@@ -303,7 +304,7 @@
 #define PARAMETER 379
 #define SYSVAR 380
 #define UMINUS 381
-
+#define F5E_CMD 382
 
 
 

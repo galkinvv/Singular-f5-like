@@ -29,6 +29,11 @@ ideal kNF(ideal F, ideal Q, ideal p,int syzComp=0, int lazyReduce=0);
 ideal kStd(ideal F, ideal Q, tHomog h, intvec ** mw,intvec *hilb=NULL,
           int syzComp=0,int newIdeal=0, intvec *vw=NULL);
 
+#ifdef HAVE_F5E
+ideal f5e(ideal F, ideal Q, tHomog h, intvec ** mw,intvec *hilb=NULL,
+          int syzComp=0,int newIdeal=0, intvec *vw=NULL);
+#endif
+
 ideal kStdShift(ideal F, ideal Q, tHomog h,intvec ** w, intvec *hilb,int syzComp,
 		int newIdeal, intvec *vw, int uptodeg, int lVblock);
 
