@@ -1382,6 +1382,296 @@ BOOLEAN enterOneStrongPoly (int i,poly p,int ecart, int isFromQ,kStrategy strat,
 * put the pair (s[i],p)  into the set B, ecart=ecart(p)
 */
 
+void enterOnePairF5 (int i,poly p,int ecart, int isFromQ,kStrategy strat, int atR = -1)
+{
+  assume(i<=strat->sl);
+  if (strat->interred_flag) return;
+
+  int      l,j,compare;
+  LObject  Lp;
+  Lp.i_r = -1;
+
+#ifdef KDEBUG
+  Lp.ecart=0; Lp.length=0;
+#endif
+  /*- computes the lcm(s[i],p) -*/
+  Lp.lcm = pInit();
+
+#ifndef HAVE_RATGRING
+  pLcm(p,strat->S[i],Lp.lcm);
+#elif defined(HAVE_RATGRING)
+  //  if (rIsRatGRing(currRing))
+  pLcmRat(p,strat->S[i],Lp.lcm, currRing->real_var_start); // int rat_shift
+#endif
+  pSetm(Lp.lcm);
+
+
+  if (strat->sugarCrit && ALLOW_PROD_CRIT(strat))
+  {
+    if((!((strat->ecartS[i]>0)&&(ecart>0)))
+    && pHasNotCF(p,strat->S[i]))
+    {
+    /*
+    *the product criterion has applied for (s,p),
+    *i.e. lcm(s,p)=product of the leading terms of s and p.
+    *Suppose (s,r) is in L and the leading term
+    *of p divides lcm(s,r)
+    *(==> the leading term of p divides the leading term of r)
+    *but the leading term of s does not divide the leading term of r
+    *(notice that tis condition is automatically satisfied if r is still
+    *in S), then (s,r) can be cancelled.
+    *This should be done here because the
+    *case lcm(s,r)=lcm(s,p) is not covered by chainCrit.
+    *
+    *Moreover, skipping (s,r) holds also for the noncommutative case.
+    */
+      strat->cp++;
+      pLmFree(Lp.lcm);
+      Lp.lcm=NULL;
+      return;
+    }
+    else
+      Lp.ecart = si_max(ecart,strat->ecartS[i]);
+    if (strat->fromT && (strat->ecartS[i]>ecart))
+    {
+      pLmFree(Lp.lcm);
+      Lp.lcm=NULL;
+      return;
+      /*the pair is (s[i],t[.]), discard it if the ecart is too big*/
+    }
+    /*
+    *the set B collects the pairs of type (S[j],p)
+    *suppose (r,p) is in B and (s,p) is the new pair and lcm(s,p)#lcm(r,p)
+    *if the leading term of s devides lcm(r,p) then (r,p) will be canceled
+    *if the leading term of r devides lcm(s,p) then (s,p) will not enter B
+    */
+    {
+      j = strat->Bl;
+      loop
+      {
+        if (j < 0)  break;
+        compare=pDivComp(strat->B[j].lcm,Lp.lcm);
+        if ((compare==1)
+        &&(sugarDivisibleBy(strat->B[j].ecart,Lp.ecart)))
+        {
+          strat->c3++;
+          if ((strat->fromQ==NULL) || (isFromQ==0) || (strat->fromQ[i]==0))
+          {
+            pLmFree(Lp.lcm);
+            return;
+          }
+          break;
+        }
+        else
+        if ((compare ==-1)
+        && sugarDivisibleBy(Lp.ecart,strat->B[j].ecart))
+        {
+          deleteInL(strat->B,&strat->Bl,j,strat);
+          strat->c3++;
+        }
+        j--;
+      }
+    }
+  }
+  else /*sugarcrit*/
+  {
+    if (ALLOW_PROD_CRIT(strat))
+    {
+      // if currRing->nc_type!=quasi (or skew)
+      // TODO: enable productCrit for super commutative algebras...
+      if(/*(strat->ak==0) && productCrit(p,strat->S[i])*/
+      pHasNotCF(p,strat->S[i]))
+      {
+      /*
+      *the product criterion has applied for (s,p),
+      *i.e. lcm(s,p)=product of the leading terms of s and p.
+      *Suppose (s,r) is in L and the leading term
+      *of p devides lcm(s,r)
+      *(==> the leading term of p devides the leading term of r)
+      *but the leading term of s does not devide the leading term of r
+      *(notice that tis condition is automatically satisfied if r is still
+      *in S), then (s,r) can be canceled.
+      *This should be done here because the
+      *case lcm(s,r)=lcm(s,p) is not covered by chainCrit.
+      */
+          strat->cp++;
+          pLmFree(Lp.lcm);
+          Lp.lcm=NULL;
+          return;
+      }
+      if (strat->fromT && (strat->ecartS[i]>ecart))
+      {
+        pLmFree(Lp.lcm);
+        Lp.lcm=NULL;
+        return;
+        /*the pair is (s[i],t[.]), discard it if the ecart is too big*/
+      }
+      /*
+      *the set B collects the pairs of type (S[j],p)
+      *suppose (r,p) is in B and (s,p) is the new pair and lcm(s,p)#lcm(r,p)
+      *if the leading term of s devides lcm(r,p) then (r,p) will be canceled
+      *if the leading term of r devides lcm(s,p) then (s,p) will not enter B
+      */
+      for(j = strat->Bl;j>=0;j--)
+      {
+        compare=pDivComp(strat->B[j].lcm,Lp.lcm);
+        if (compare==1)
+        {
+          strat->c3++;
+          if ((strat->fromQ==NULL) || (isFromQ==0) || (strat->fromQ[i]==0))
+          {
+            pLmFree(Lp.lcm);
+            return;
+          }
+          break;
+        }
+        else
+        if (compare ==-1)
+        {
+          deleteInL(strat->B,&strat->Bl,j,strat);
+          strat->c3++;
+        }
+      }
+    }
+  }
+  /*
+  *the pair (S[i],p) enters B if the spoly != 0
+  */
+  /*-  compute the short s-polynomial -*/
+  if (strat->fromT && !TEST_OPT_INTSTRATEGY)
+    pNorm(p);
+
+  if ((strat->S[i]==NULL) || (p==NULL))
+    return;
+
+  if ((strat->fromQ!=NULL) && (isFromQ!=0) && (strat->fromQ[i]!=0))
+    Lp.p=NULL;
+  else
+  {
+    #ifdef HAVE_PLURAL
+    if ( rIsPluralRing(currRing) )
+    {
+      if(pHasNotCF(p, strat->S[i]))
+      {
+         if(ncRingType(currRing) == nc_lie)
+         {
+             // generalized prod-crit for lie-type
+             strat->cp++;
+             Lp.p = nc_p_Bracket_qq(pCopy(p),strat->S[i]);
+         }
+         else
+        if( ALLOW_PROD_CRIT(strat) )
+        {
+            // product criterion for homogeneous case in SCA
+            strat->cp++;
+            Lp.p = NULL;
+        }
+        else
+        {
+          Lp.p = // nc_CreateSpoly(strat->S[i],p,currRing);
+                nc_CreateShortSpoly(strat->S[i], p, currRing);
+
+          assume(pNext(Lp.p)==NULL); // TODO: this may be violated whenever ext.prod.crit. for Lie alg. is used
+          pNext(Lp.p) = strat->tail; // !!!
+        }
+      }
+      else
+      {
+        Lp.p = // nc_CreateSpoly(strat->S[i],p,currRing);
+              nc_CreateShortSpoly(strat->S[i], p, currRing);
+
+        assume(pNext(Lp.p)==NULL); // TODO: this may be violated whenever ext.prod.crit. for Lie alg. is used
+        pNext(Lp.p) = strat->tail; // !!!
+
+      }
+
+
+#if MYTEST
+      if (TEST_OPT_DEBUG)
+      {
+        PrintS("enterOnePairNormal::\n strat->S[i]: "); pWrite(strat->S[i]);
+        PrintS("p: "); pWrite(p);
+        PrintS("SPoly: "); pWrite(Lp.p);
+      }
+#endif
+
+    }
+    else
+    #endif
+    {
+      assume(!rIsPluralRing(currRing));
+      Lp.p = ksCreateShortSpoly(strat->S[i], p, strat->tailRing);
+#if MYTEST
+      if (TEST_OPT_DEBUG)
+      {
+        PrintS("enterOnePairNormal::\n strat->S[i]: "); pWrite(strat->S[i]);
+        PrintS("p: "); pWrite(p);
+        PrintS("commutative SPoly: "); pWrite(Lp.p);
+      }
+#endif
+
+      }
+  }
+  if (Lp.p == NULL)
+  {
+    /*- the case that the s-poly is 0 -*/
+    if (strat->pairtest==NULL) initPairtest(strat);
+    strat->pairtest[i] = TRUE;/*- hint for spoly(S^[i],p)=0 -*/
+    strat->pairtest[strat->sl+1] = TRUE;
+    /*hint for spoly(S[i],p) == 0 for some i,0 <= i <= sl*/
+    /*
+    *suppose we have (s,r),(r,p),(s,p) and spoly(s,p) == 0 and (r,p) is
+    *still in B (i.e. lcm(r,p) == lcm(s,p) or the leading term of s does not
+    *devide lcm(r,p)). In the last case (s,r) can be canceled if the leading
+    *term of p devides the lcm(s,r)
+    *(this canceling should be done here because
+    *the case lcm(s,p) == lcm(s,r) is not covered in chainCrit)
+    *the first case is handeled in chainCrit
+    */
+    if (Lp.lcm!=NULL) pLmFree(Lp.lcm);
+  }
+  else
+  {
+    /*- the pair (S[i],p) enters B -*/
+    Lp.p1 = strat->S[i];
+    Lp.p2 = p;
+
+    if (
+        (!rIsPluralRing(currRing))
+//      ||  (rIsPluralRing(currRing) && (ncRingType(currRing) != nc_lie))
+       )
+    {
+      assume(pNext(Lp.p)==NULL); // TODO: this may be violated whenever ext.prod.crit. for Lie alg. is used
+      pNext(Lp.p) = strat->tail; // !!!
+    }
+
+    if (atR >= 0)
+    {
+      Lp.i_r1 = strat->S_2_R[i];
+      Lp.i_r2 = atR;
+    }
+    else
+    {
+      Lp.i_r1 = -1;
+      Lp.i_r2 = -1;
+    }
+    strat->initEcartPair(&Lp,strat->S[i],p,strat->ecartS[i],ecart);
+
+    if (TEST_OPT_INTSTRATEGY)
+    {
+      if (!rIsPluralRing(currRing))
+        nDelete(&(Lp.p->coef));
+    }
+
+    l = strat->posInL(strat->B,strat->Bl,&Lp,strat);
+    enterL(&strat->B,&strat->Bl,&strat->Bmax,Lp,l);
+  }
+}
+
+/*2
+* put the pair (s[i],p)  into the set B, ecart=ecart(p)
+*/
+
 void enterOnePairNormal (int i,poly p,int ecart, int isFromQ,kStrategy strat, int atR = -1)
 {
   assume(i<=strat->sl);
@@ -1776,6 +2066,222 @@ void kMergeBintoL(kStrategy strat)
   }
   strat->Bl = -1;
 }
+
+/*2
+*the pairset B of pairs of type (s[i],p) is complete now. It will be updated
+*using the chain-criterion in B and L and enters B to L
+*/
+void critF5 (poly p,int ecart,kStrategy strat)
+{
+  int i,j,l;
+  /*
+  *pairtest[i] is TRUE if spoly(S[i],p) == 0.
+  *In this case all elements in B such
+  *that their lcm is divisible by the leading term of S[i] can be canceled
+  */
+  if (strat->pairtest!=NULL)
+  {
+    {
+      /*- i.e. there is an i with pairtest[i]==TRUE -*/
+      for (j=0; j<=strat->sl; j++)
+      {
+        if (strat->pairtest[j])
+        {
+          for (i=strat->Bl; i>=0; i--)
+          {
+            if (pDivisibleBy(strat->S[j],strat->B[i].lcm))
+            {
+              deleteInL(strat->B,&strat->Bl,i,strat);
+              strat->c3++;
+            }
+          }
+        }
+      }
+    }
+    omFreeSize(strat->pairtest,(strat->sl+2)*sizeof(BOOLEAN));
+    strat->pairtest=NULL;
+  }
+  if (strat->f5 || strat->fromT)
+  {
+    if (strat->sugarCrit)
+    {
+    /*
+    *suppose L[j] == (s,r) and p/lcm(s,r)
+    *and lcm(s,r)#lcm(s,p) and lcm(s,r)#lcm(r,p)
+    *and in case the sugar is o.k. then L[j] can be canceled
+    */
+      for (j=strat->Ll; j>=0; j--)
+      {
+        if (sugarDivisibleBy(ecart,strat->L[j].ecart)
+        && ((pNext(strat->L[j].p) == strat->tail) || (pOrdSgn==1))
+        && pCompareChain(p,strat->L[j].p1,strat->L[j].p2,strat->L[j].lcm))
+        {
+          if (strat->L[j].p == strat->tail)
+          {
+              deleteInL(strat->L,&strat->Ll,j,strat);
+              strat->c3++;
+          }
+        }
+      }
+      /*
+      *this is GEBAUER-MOELLER:
+      *in B all elements with the same lcm except the "best"
+      *(i.e. the last one in B with this property) will be canceled
+      */
+      j = strat->Bl;
+      loop // cannot be changed into a for !!! 
+      {
+        if (j <= 0) break;
+        i = j-1;
+        loop
+        {
+          if (i <  0) break;
+          if (pLmEqual(strat->B[j].lcm,strat->B[i].lcm))
+          {
+            strat->c3++;
+            if (sugarDivisibleBy(strat->B[j].ecart,strat->B[i].ecart))
+            {
+              deleteInL(strat->B,&strat->Bl,i,strat);
+              j--;
+            }
+            else
+            {
+              deleteInL(strat->B,&strat->Bl,j,strat);
+              break;
+            }
+          }
+          i--;
+        }
+        j--;
+      }
+    }
+    else /*sugarCrit*/
+    {
+      /*
+      *suppose L[j] == (s,r) and p/lcm(s,r)
+      *and lcm(s,r)#lcm(s,p) and lcm(s,r)#lcm(r,p)
+      *and in case the sugar is o.k. then L[j] can be canceled
+      */
+      for (j=strat->Ll; j>=0; j--)
+      {
+        if (pCompareChain(p,strat->L[j].p1,strat->L[j].p2,strat->L[j].lcm))
+        {
+          if ((pNext(strat->L[j].p) == strat->tail)||(pOrdSgn==1))
+          {
+            deleteInL(strat->L,&strat->Ll,j,strat);
+            strat->c3++;
+          }
+        }
+      }
+      /*
+      *this is GEBAUER-MOELLER:
+      *in B all elements with the same lcm except the "best"
+      *(i.e. the last one in B with this property) will be canceled
+      */
+      j = strat->Bl;
+      loop   // cannot be changed into a for !!! 
+      {
+        if (j <= 0) break;
+        for(i=j-1; i>=0; i--)
+        {
+          if (pLmEqual(strat->B[j].lcm,strat->B[i].lcm))
+          {
+            strat->c3++;
+            deleteInL(strat->B,&strat->Bl,i,strat);
+            j--;
+          }
+        }
+        j--;
+      }
+    }
+    /*
+    *the elements of B enter L
+    */
+    kMergeBintoL(strat);
+  }
+  else
+  {
+    for (j=strat->Ll; j>=0; j--)
+    {
+      if (pCompareChain(p,strat->L[j].p1,strat->L[j].p2,strat->L[j].lcm))
+      {
+        if ((pNext(strat->L[j].p) == strat->tail)||(pOrdSgn==1))
+        {
+          deleteInL(strat->L,&strat->Ll,j,strat);
+          strat->c3++;
+        }
+      }
+    }
+    /*
+    *this is our MODIFICATION of GEBAUER-MOELLER:
+    *First the elements of B enter L,
+    *then we fix a lcm and the "best" element in L
+    *(i.e the last in L with this lcm and of type (s,p))
+    *and cancel all the other elements of type (r,p) with this lcm
+    *except the case the element (s,r) has also the same lcm
+    *and is on the worst position with respect to (s,p) and (r,p)
+    */
+    /*
+    *B enters to L/their order with respect to B is permutated for elements
+    *B[i].p with the same leading term
+    */
+    kMergeBintoL(strat);
+    j = strat->Ll;
+    loop  // cannot be changed into a for !!! 
+    {
+      if (j <= 0)
+      {
+        // now L[0] cannot be canceled any more and the tail can be removed
+        if (strat->L[0].p2 == strat->tail) strat->L[0].p2 = p;
+        break;
+      }
+      if (strat->L[j].p2 == p)
+      {
+        i = j-1;
+        loop
+        {
+          if (i < 0)  break;
+          if ((strat->L[i].p2 == p) && pLmEqual(strat->L[j].lcm,strat->L[i].lcm))
+          {
+            // L[i] could be canceled but we search for a better one to cancel
+            strat->c3++;
+            if (isInPairsetL(i-1,strat->L[j].p1,strat->L[i].p1,&l,strat)
+            && (pNext(strat->L[l].p) == strat->tail)
+            && (!pLmEqual(strat->L[i].p,strat->L[l].p))
+            && pDivisibleBy(p,strat->L[l].lcm))
+            {
+              //
+              // "NOT equal(...)" because in case of "equal" the element L[l]
+              // is "older" and has to be from theoretical point of view behind
+              // L[i], but we do not want to reorder L
+              //
+              strat->L[i].p2 = strat->tail;
+              //
+              // L[l] will be canceled, we cannot cancel L[i] later on,
+              // so we mark it with "tail"
+              //
+              deleteInL(strat->L,&strat->Ll,l,strat);
+              i--;
+            }
+            else
+            {
+              deleteInL(strat->L,&strat->Ll,i,strat);
+            }
+            j--;
+          }
+          i--;
+        }
+      }
+      else if (strat->L[j].p2 == strat->tail)
+      {
+        // now L[j] cannot be canceled any more and the tail can be removed
+        strat->L[j].p2 = p;
+      }
+      j--;
+    }
+  }
+}
+
 /*2
 *the pairset B of pairs of type (s[i],p) is complete now. It will be updated
 *using the chain-criterion in B and L and enters B to L
@@ -4924,6 +5430,114 @@ void initS (ideal F, ideal Q, kStrategy strat)
   }
 }
 
+void initSLREF5 (ideal F, ideal Q, kStrategy strat)
+{
+  int   i,pos;
+
+  if (Q!=NULL) i=((IDELEMS(Q)+(setmaxTinc-1))/setmaxTinc)*setmaxTinc;
+  else i=setmaxT;
+  strat->ecartS = initec(i);
+  strat->sevS   = initsevS(i);
+  strat->sevRew = initsevS(i);
+  strat->sevExt = initsevS(i);
+  strat->S_2_R  = initS_2_R(i);
+  strat->fromQ  = NULL;
+  strat->Shdl   = idInit(i,F->rank);
+  strat->S      = strat->Shdl->m;
+  strat->Shdl   = idInit(i,F->rank);
+  strat->Rew    = strat->Shdl->m;
+  strat->Shdl   = idInit(i,F->rank);
+  strat->Ext    = strat->Shdl->m;
+
+  // enter 1st rewrite rule:
+  // this will be the same in every iteration step,
+  // i.e. the constant polynomial
+  enterRewF5( pOne(), strat );
+  
+  /*- put polys into S -*/
+  if (Q!=NULL)
+  {
+    strat->fromQ=initec(i);
+    memset(strat->fromQ,0,i*sizeof(int));
+    for (i=0; i<IDELEMS(Q); i++)
+    {
+      if (Q->m[i]!=NULL)
+      {
+        LObject h;
+        h.p = pCopy(Q->m[i]);
+        if (pOrdSgn==-1)
+        {
+          deleteHC(&h,strat);
+        }
+        if (TEST_OPT_INTSTRATEGY)
+        {
+          //pContent(h.p);
+          h.pCleardenom(); // also does a pContent
+        }
+        else
+        {
+          h.pNorm();
+        }
+        if (h.p!=NULL)
+        {
+          strat->initEcart(&h);
+          if (strat->sl==-1)
+            pos =0;
+          else
+          {
+            pos = posInS(strat,strat->sl,h.p,h.ecart);
+          }
+          h.sev = pGetShortExpVector(h.p);
+          strat->enterS(h,pos,strat,-1);
+          strat->fromQ[pos]=1;
+        }
+      }
+    }
+  }
+    if (F->m[0]!=NULL)
+    {
+      LObject h;
+      h.p = pCopy(F->m[0]);
+      if (h.p!=NULL)
+      {
+        if (pOrdSgn==-1)
+        {
+          cancelunit(&h);  /*- tries to cancel a unit -*/
+          deleteHC(&h, strat);
+        }
+        if (h.p!=NULL)
+        {
+          if (TEST_OPT_INTSTRATEGY)
+          {
+            //pContent(h.p);
+            h.pCleardenom(); // also does a pContent
+          }
+          else
+          {
+            h.pNorm();
+          }
+          strat->initEcart(&h);
+          if (strat->Ll==-1)
+            pos =0;
+          else
+            pos = strat->posInL(strat->L,strat->Ll,&h,strat);
+          h.sev = pGetShortExpVector(h.p);
+          enterL(&strat->L,&strat->Ll,&strat->Lmax,h,pos);
+        }
+      }
+    }
+  /*- test, if a unit is in F -*/
+
+  if ((strat->Ll>=0)
+#ifdef HAVE_RINGS
+       && nIsUnit(pGetCoeff(strat->L[strat->Ll].p))
+#endif
+       && pIsConstant(strat->L[strat->Ll].p))
+  {
+    while (strat->Ll>0) deleteInL(strat->L,&strat->Ll,strat->Ll-1,strat);
+  }
+}
+
 void initSL (ideal F, ideal Q,kStrategy strat)
 {
   int   i,pos;
@@ -5564,6 +6178,142 @@ void updateS(BOOLEAN toT,kStrategy strat)
 #endif
 }
 
+/*2
+* -puts p to the standardbasis s at position at
+* -saves the result in S
+*/
+void enterSF5 (LObject p,int atS,kStrategy strat, int atR)
+{
+  int i;
+  strat->news = TRUE;
+  /*- puts p to the standardbasis s at position at -*/
+  if (strat->sl == IDELEMS(strat->Shdl)-1)
+  {
+    strat->sevS = (unsigned long*) omRealloc0Size(strat->sevS,
+                                    IDELEMS(strat->Shdl)*sizeof(unsigned long),
+                                    (IDELEMS(strat->Shdl)+setmaxTinc)
+                                                  *sizeof(unsigned long));
+    strat->ecartS = (intset)omReallocSize(strat->ecartS,
+                                          IDELEMS(strat->Shdl)*sizeof(int),
+                                          (IDELEMS(strat->Shdl)+setmaxTinc)
+                                                  *sizeof(int));
+    strat->S_2_R = (int*) omRealloc0Size(strat->S_2_R,
+                                         IDELEMS(strat->Shdl)*sizeof(int),
+                                         (IDELEMS(strat->Shdl)+setmaxTinc)
+                                                  *sizeof(int));
+    if (strat->lenS!=NULL)
+      strat->lenS=(int*)omRealloc0Size(strat->lenS,
+                                       IDELEMS(strat->Shdl)*sizeof(int),
+                                       (IDELEMS(strat->Shdl)+setmaxTinc)
+                                                 *sizeof(int));
+    if (strat->lenSw!=NULL)
+      strat->lenSw=(wlen_type*)omRealloc0Size(strat->lenSw,
+                                       IDELEMS(strat->Shdl)*sizeof(wlen_type),
+                                       (IDELEMS(strat->Shdl)+setmaxTinc)
+                                                 *sizeof(wlen_type));
+    if (strat->fromQ!=NULL)
+    {
+      strat->fromQ = (intset)omReallocSize(strat->fromQ,
+                                    IDELEMS(strat->Shdl)*sizeof(int),
+                                    (IDELEMS(strat->Shdl)+setmaxTinc)*sizeof(int));
+    }
+    pEnlargeSet(&strat->S,IDELEMS(strat->Shdl),setmaxTinc);
+    IDELEMS(strat->Shdl)+=setmaxTinc;
+    strat->Shdl->m=strat->S;
+  }
+  if (atS <= strat->sl)
+  {
+#ifdef ENTER_USE_MEMMOVE
+// #if 0
+    memmove(&(strat->S[atS+1]), &(strat->S[atS]),
+            (strat->sl - atS + 1)*sizeof(poly));
+    memmove(&(strat->ecartS[atS+1]), &(strat->ecartS[atS]),
+            (strat->sl - atS + 1)*sizeof(int));
+    memmove(&(strat->sevS[atS+1]), &(strat->sevS[atS]),
+            (strat->sl - atS + 1)*sizeof(unsigned long));
+    memmove(&(strat->S_2_R[atS+1]), &(strat->S_2_R[atS]),
+            (strat->sl - atS + 1)*sizeof(int));
+    if (strat->lenS!=NULL)
+    memmove(&(strat->lenS[atS+1]), &(strat->lenS[atS]),
+            (strat->sl - atS + 1)*sizeof(int));
+    if (strat->lenSw!=NULL)
+    memmove(&(strat->lenSw[atS+1]), &(strat->lenSw[atS]),
+            (strat->sl - atS + 1)*sizeof(wlen_type));
+#else
+    for (i=strat->sl+1; i>=atS+1; i--)
+    {
+      strat->S[i] = strat->S[i-1];
+      strat->ecartS[i] = strat->ecartS[i-1];
+      strat->sevS[i] = strat->sevS[i-1];
+      strat->S_2_R[i] = strat->S_2_R[i-1];
+    }
+    if (strat->lenS!=NULL)
+    for (i=strat->sl+1; i>=atS+1; i--)
+      strat->lenS[i] = strat->lenS[i-1];
+    if (strat->lenSw!=NULL)
+    for (i=strat->sl+1; i>=atS+1; i--)
+      strat->lenSw[i] = strat->lenSw[i-1];
+#endif
+  }
+  if (strat->fromQ!=NULL)
+  {
+#ifdef ENTER_USE_MEMMOVE
+    memmove(&(strat->fromQ[atS+1]), &(strat->fromQ[atS]),
+                  (strat->sl - atS + 1)*sizeof(int));
+#else
+    for (i=strat->sl+1; i>=atS+1; i--)
+    {
+      strat->fromQ[i] = strat->fromQ[i-1];
+    }
+#endif
+    strat->fromQ[atS]=0;
+  }
+
+  /*- save result -*/
+  strat->S[atS] = p.p;
+  if (strat->honey) strat->ecartS[atS] = p.ecart;
+  if (p.sev == 0)
+    p.sev = pGetShortExpVector(p.p);
+  else
+    assume(p.sev == pGetShortExpVector(p.p));
+  strat->sevS[atS] = p.sev;
+  strat->ecartS[atS] = p.ecart;
+  strat->S_2_R[atS] = atR;
+  strat->sl++;
+}
+
+
+/*2
+* -puts p to the standardbasis s at position at
+* -saves the result in S
+*/
+void enterRewF5 ( poly p, kStrategy strat )
+{
+  int i;
+  unsigned long sev;
+  strat->news = TRUE;
+  /*- puts p to the standardbasis s at position at -*/
+  if (strat->rl == IDELEMS(strat->Shdl)-1)
+  {
+    strat->sevRew = (unsigned long*) omRealloc0Size(strat->sevS,
+                                    IDELEMS(strat->Shdl)*sizeof(unsigned long),
+                                    (IDELEMS(strat->Shdl)+setmaxTinc)
+                                                  *sizeof(unsigned long));
+    pEnlargeSet(&strat->Rew,IDELEMS(strat->Shdl),setmaxTinc);
+    IDELEMS(strat->Shdl)+=setmaxTinc;
+    strat->Shdl->m=strat->Rew;
+  }
+
+  /*- save result -*/
+  strat->Rew[strat->rl] = p;
+  sev = pGetShortExpVector(p);
+  assume(sev == pGetShortExpVector(p));
+  strat->sevRew[strat->rl] = sev;
+  strat->rl++;
+}
+
+
+
 
 /*2
 * -puts p to the standardbasis s at position at
@@ -5748,6 +6498,142 @@ void initHilbCrit(ideal F, ideal Q, intvec **hilb,kStrategy strat)
     *hilb=NULL;
   }
 }
+
+void initF5Crit ( kStrategy strat )
+{
+  strat->enterOnePair=enterOnePairF5;
+  strat->chainCrit=critF5;
+#ifdef HAVE_RINGS
+  if (rField_is_Ring(currRing))
+  {
+    strat->enterOnePair=enterOnePairRing;
+    strat->chainCrit=chainCritRing;
+  }
+#endif
+#ifdef HAVE_RATGRING
+  if (rIsRatGRing(currRing))
+  {
+     strat->chainCrit=chainCritPart;
+     /* enterOnePairNormal get rational part in it */
+  }
+#endif
+
+  strat->sugarCrit =        TEST_OPT_SUGARCRIT;
+  strat->f5        =        strat->homog || strat->sugarCrit;
+  strat->honey     =        !strat->homog || strat->sugarCrit || TEST_OPT_WEIGHTM;
+  if (TEST_OPT_NOT_SUGAR) strat->honey = FALSE;
+  strat->pairtest = NULL;
+  /* alway use tailreduction, except:
+  * - in local rings, - in lex order case, -in ring over extensions */
+  strat->noTailReduction = !TEST_OPT_REDTAIL;
+
+#ifdef HAVE_PLURAL
+  // and r is plural_ring
+  //  hence this holds for r a rational_plural_ring
+  if( rIsPluralRing(currRing) || (rIsSCA(currRing) && !strat->z2homog) )
+  {    //or it has non-quasi-comm type... later
+    strat->sugarCrit = FALSE;
+    strat->Gebauer = FALSE;
+    strat->honey = FALSE;
+  }
+#endif
+
+#ifdef HAVE_RINGS
+  // Coefficient ring?
+  if (rField_is_Ring(currRing))
+  {
+    strat->sugarCrit = FALSE;
+    strat->Gebauer = FALSE ;
+    strat->honey = FALSE;
+  }
+#endif
+  #ifdef KDEBUG
+  if (TEST_OPT_DEBUG)
+  {
+    if (strat->homog) PrintS("ideal/module is homogeneous\n");
+    else              PrintS("ideal/module is not homogeneous\n");
+  }
+  #endif
+}
+
+
+
+void initSTLF5 (ideal F,ideal Q,kStrategy strat)
+{
+  strat->interpt = BTEST1(OPT_INTERRUPT);
+  strat->kHEdge=NULL;
+  if (pOrdSgn==1) strat->kHEdgeFound=FALSE;
+  /*- creating temp data structures------------------- -*/
+  strat->cp = 0;
+  strat->c3 = 0;
+  strat->tail = pInit();
+  /*- set s -*/
+  strat->sl = -1;
+  /*- set sgl -*/
+  // We start this at 0 since the first element will always be an F5 Rule, i.e.
+  // when the first critical pair between the 2nd element and the first one is
+  // built we have the first element in strat->S to be an F5 Rule.
+  strat->sgl = -1;
+  /*- set L -*/
+  strat->Lmax = ((IDELEMS(F)+setmaxLinc-1)/setmaxLinc)*setmaxLinc;
+  strat->Ll = -1;
+  strat->L = initL(((IDELEMS(F)+setmaxLinc-1)/setmaxLinc)*setmaxLinc);
+  /*- set B -*/
+  strat->Bmax = setmaxL;
+  strat->Bl = -1;
+  strat->B = initL();
+  /*- set T -*/
+  strat->tl = -1;
+  /*- set tgl -*/
+  // We start this at 0 since the first element will always be an F5 Rule, i.e.
+  // when the first critical pair between the 2nd element and the first one is
+  // built we have the first element in strat->T to be an F5 Rule.
+  strat->tgl = -1;
+  strat->tmax = setmaxT;
+  strat->T = initT();
+  strat->R = initR();
+  strat->sevT = initsevT();
+  /*- init local data struct.---------------------------------------- -*/
+  strat->P.ecart=0;
+  strat->P.length=0;
+  if (pOrdSgn==-1)
+  {
+    if (strat->kHEdge!=NULL) pSetComp(strat->kHEdge, strat->ak);
+    if (strat->kNoether!=NULL) pSetComp(strat->kNoetherTail(), strat->ak);
+  }
+  if(TEST_OPT_SB_1)
+  {
+    int i;
+    ideal P=idInit(IDELEMS(F)-strat->newIdeal,F->rank);
+    for (i=strat->newIdeal;i<IDELEMS(F);i++)
+    {
+      P->m[i-strat->newIdeal] = F->m[i];
+      F->m[i] = NULL;
+    }
+    initSSpecial(F,Q,P,strat);
+    for (i=strat->newIdeal;i<IDELEMS(F);i++)
+    {
+      F->m[i] = P->m[i-strat->newIdeal];
+      P->m[i-strat->newIdeal] = NULL;
+    }
+    idDelete(&P);
+  }
+  else
+  {
+    /*Shdl=*/initSLREF5(F, Q,strat); /*sets also S, ecartS, fromQ */
+    // /*Shdl=*/initS(F, Q,strat); /*sets also S, ecartS, fromQ */
+  }
+  strat->kIdeal = NULL;
+  strat->fromT = FALSE;
+  strat->noTailReduction = !TEST_OPT_REDTAIL;
+  if (!TEST_OPT_SB_1)
+  {
+    updateS(TRUE,strat);
+  }
+  if (strat->fromQ!=NULL) omFreeSize(strat->fromQ,IDELEMS(strat->Shdl)*sizeof(int));
+  strat->fromQ=NULL;
+}
+
 
 void initBuchMoraCrit(kStrategy strat)
 {

@@ -268,12 +268,26 @@ public:
   ideal Shdl;
   ideal D; /*V(S) is in D(D)*/
   ideal M; /*set of minimal generators*/
+  // RewRules & S are synchronised, i.e.
+  // strat->S[i] has corresponding rule rewRules[i]
+  // NOTE that up to a given bound strat->S & strat->sevS
+  // is just our data for F5 Criterion check:
+  // The bound is just given by all elements computed in a 
+  // previous iteration step.
   polyset S;
+  polyset Rew;   /* for f5c.cc */
+  // these are the rules coming from zero reductions in F5
+  // => adding them to the F5 Criterion check improves F5 for 
+  // highly non-regular input
+  // This idea is adopted from GGV et al. 
+  polyset Ext; /* for f5c.cc */
   intset ecartS;
   intset lenS;
   wlen_set lenSw; /* for tgb.ccc */
   intset fromQ;
   unsigned long* sevS;
+  unsigned long* sevRew;   /* for f5c.cc */
+  unsigned long* sevExt; /* for f5c.cc */
   unsigned long* sevT;
   TSet T;
   LSet L;
@@ -303,7 +317,17 @@ public:
 #endif
   int cp,c3;
   int cv; // in shift bases: counting V criterion
+  // rl resp. el denote the number of elements in R resp. E
+  int rl, el;
+  // sgl is the number of elements in strat->S after an iteration step of F5
+  // has finished. This is needed to distinguish between elements of previous
+  // and current index
+  int sgl;
   int sl,mu;
+  // tgl is the number of reducers in strat->T after an iteration step of F5
+  // has finished. This is needed to distinguish between reducers of previous
+  // and current index
+  int tgl;
   int tl,tmax;
   int Ll,Lmax;
   int Bl,Bmax;
@@ -324,6 +348,7 @@ public:
   BOOLEAN kHEdgeFound;
   BOOLEAN honey,sugarCrit;
   BOOLEAN Gebauer,noTailReduction;
+  BOOLEAN f5;
   BOOLEAN fromT;
   BOOLEAN noetherSet;
   BOOLEAN update;
@@ -370,7 +395,9 @@ static inline LSet initL (int nr=setmaxL)
 { return (LSet)omAlloc(nr*sizeof(LObject)); }
 void deleteInL(LSet set, int *length, int j,kStrategy strat);
 void enterL (LSet *set,int *length, int *LSetmax, LObject p,int at);
+void enterRewF5 ( poly p, kStrategy strat );
 void enterSBba (LObject p,int atS,kStrategy strat, int atR = -1);
+void enterSF5 (LObject p,int atS,kStrategy strat, int atR = -1);
 void initEcartPairBba (LObject* Lp,poly f,poly g,int ecartF,int ecartG);
 void initEcartPairMora (LObject* Lp,poly f,poly g,int ecartF,int ecartG);
 int posInS (const kStrategy strat, const int length, const poly p, 
@@ -450,6 +477,7 @@ void initEcartNormal (LObject* h);
 void initEcartBBA (LObject* h);
 void initS (ideal F, ideal Q,kStrategy strat);
 void initSL (ideal F, ideal Q,kStrategy strat);
+void initSLREF5 (ideal F, ideal Q,kStrategy strat);
 void updateS(BOOLEAN toT,kStrategy strat);
 void enterT (LObject p,kStrategy strat, int atT = -1);
 void cancelunit (LObject* p,BOOLEAN inNF=FALSE);
@@ -458,12 +486,16 @@ void initBuchMoraCrit(kStrategy strat);
 void initHilbCrit(ideal F, ideal Q, intvec **hilb,kStrategy strat);
 void initBuchMoraPos(kStrategy strat);
 void initBuchMora (ideal F, ideal Q,kStrategy strat);
+void initSTLF5 (ideal F, ideal Q,kStrategy strat);
+void initF5Crit ( kStrategy strat );
 void exitBuchMora (kStrategy strat);
 void updateResult(ideal r,ideal Q,kStrategy strat);
 void completeReduce (kStrategy strat, BOOLEAN withT=FALSE);
 void kFreeStrat(kStrategy strat);
+void enterOnePairF5 (int i,poly p,int ecart, int isFromQ,kStrategy strat, int atR);
 void enterOnePairNormal (int i,poly p,int ecart, int isFromQ,kStrategy strat, int atR);
 void chainCritNormal (poly p,int ecart,kStrategy strat);
+void critF5 (poly p,int ecart,kStrategy strat);
 BOOLEAN homogTest(polyset F, int Fmax);
 BOOLEAN newHEdge(polyset S, kStrategy strat);
 // returns index of p in TSet, or -1 if not found
@@ -541,6 +573,7 @@ poly kFindZeroPoly(poly input_p, ring leadRing, ring tailRing);
 ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat);
 poly kNF2 (ideal F, ideal Q, poly q, kStrategy strat, int lazyReduce);
 ideal kNF2 (ideal F,ideal Q,ideal q, kStrategy strat, int lazyReduce);
+void initF5(ideal F,kStrategy strat);
 void initBba(ideal F,kStrategy strat);
 
 /***************************************************************
