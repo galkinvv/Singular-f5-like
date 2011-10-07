@@ -461,6 +461,7 @@ long twoPow(long arg);
 ideal createG0();
 #endif
 int redLazy (LObject* h,kStrategy strat);
+int redF5 (LObject* h,kStrategy strat);
 int redHomog (LObject* h,kStrategy strat);
 void enterpairs (poly h, int k, int ec, int pos,kStrategy strat, int atR = -1);
 void entersets (LObject h);
