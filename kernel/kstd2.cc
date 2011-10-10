@@ -985,7 +985,7 @@ ideal f5e (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   int hilbeledeg=1,hilbcount=0,minimcnt=0;
   BOOLEAN withT = FALSE;
 
-  initBuchMoraCrit(strat); /*set Gebauer, honey, sugarCrit*/
+  initF5eCrit(strat); /*set F5's criteria*/
   initBuchMoraPos(strat);
   initHilbCrit(F,Q,&hilb,strat);
   initBba(F,strat);
@@ -1304,7 +1304,7 @@ ideal f5e (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 /*2
 *  reduction procedure for the F5 Algorithm
 */
-int redF5 (LObject* h,kStrategy strat)
+int redF5e (LObject* h,kStrategy strat)
 {
   if (strat->tl<0) return 1;
   //if (h->GetLmTailRing()==NULL) return 0; // HS: SHOULD NOT BE NEEDED!

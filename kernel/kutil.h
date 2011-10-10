@@ -395,9 +395,9 @@ static inline LSet initL (int nr=setmaxL)
 { return (LSet)omAlloc(nr*sizeof(LObject)); }
 void deleteInL(LSet set, int *length, int j,kStrategy strat);
 void enterL (LSet *set,int *length, int *LSetmax, LObject p,int at);
-void enterRewF5 ( poly p, kStrategy strat );
+void enterRewF5e ( poly p, kStrategy strat );
 void enterSBba (LObject p,int atS,kStrategy strat, int atR = -1);
-void enterSF5 (LObject p,int atS,kStrategy strat, int atR = -1);
+void enterSF5e (LObject p,int atS,kStrategy strat, int atR = -1);
 void initEcartPairBba (LObject* Lp,poly f,poly g,int ecartF,int ecartG);
 void initEcartPairMora (LObject* Lp,poly f,poly g,int ecartF,int ecartG);
 int posInS (const kStrategy strat, const int length, const poly p, 
@@ -461,7 +461,7 @@ long twoPow(long arg);
 ideal createG0();
 #endif
 int redLazy (LObject* h,kStrategy strat);
-int redF5 (LObject* h,kStrategy strat);
+int redF5e (LObject* h,kStrategy strat);
 int redHomog (LObject* h,kStrategy strat);
 void enterpairs (poly h, int k, int ec, int pos,kStrategy strat, int atR = -1);
 void entersets (LObject h);
@@ -478,7 +478,7 @@ void initEcartNormal (LObject* h);
 void initEcartBBA (LObject* h);
 void initS (ideal F, ideal Q,kStrategy strat);
 void initSL (ideal F, ideal Q,kStrategy strat);
-void initSLREF5 (ideal F, ideal Q,kStrategy strat);
+void initSLREF5e (ideal F, ideal Q,kStrategy strat);
 void updateS(BOOLEAN toT,kStrategy strat);
 void enterT (LObject p,kStrategy strat, int atT = -1);
 void cancelunit (LObject* p,BOOLEAN inNF=FALSE);
@@ -487,16 +487,16 @@ void initBuchMoraCrit(kStrategy strat);
 void initHilbCrit(ideal F, ideal Q, intvec **hilb,kStrategy strat);
 void initBuchMoraPos(kStrategy strat);
 void initBuchMora (ideal F, ideal Q,kStrategy strat);
-void initSTLF5 (ideal F, ideal Q,kStrategy strat);
-void initF5Crit ( kStrategy strat );
+void initSTLF5e (ideal F, ideal Q,kStrategy strat);
+void initF5eCrit ( kStrategy strat );
 void exitBuchMora (kStrategy strat);
 void updateResult(ideal r,ideal Q,kStrategy strat);
 void completeReduce (kStrategy strat, BOOLEAN withT=FALSE);
 void kFreeStrat(kStrategy strat);
-void enterOnePairF5 (int i,poly p,int ecart, int isFromQ,kStrategy strat, int atR);
+void enterOnePairF5e (int i,poly p,int ecart, int isFromQ,kStrategy strat, int atR);
 void enterOnePairNormal (int i,poly p,int ecart, int isFromQ,kStrategy strat, int atR);
 void chainCritNormal (poly p,int ecart,kStrategy strat);
-void critF5 (poly p,int ecart,kStrategy strat);
+void critF5e (poly p,int ecart,kStrategy strat);
 BOOLEAN homogTest(polyset F, int Fmax);
 BOOLEAN newHEdge(polyset S, kStrategy strat);
 // returns index of p in TSet, or -1 if not found

@@ -1866,8 +1866,8 @@ ideal testF5e(ideal F, ideal Q, tHomog h,intvec ** w, intvec *hilb,int syzComp,
   else
     strat->LazyPass=2;
   strat->LazyDegree = 1;
-  strat->enterOnePair=enterOnePairF5;
-  strat->chainCrit=critF5;
+  strat->enterOnePair=enterOnePairF5e;
+  strat->chainCrit=critF5e;
   strat->ak = idRankFreeModule(F);
   strat->kModW=kModW=NULL;
   strat->kHomW=kHomW=NULL;
@@ -1977,7 +1977,7 @@ void initF5e(ideal F,kStrategy strat)
   int i;
   idhdl h;
  /* setting global variables ------------------- */
-  strat->enterS = enterSF5;
+  strat->enterS = enterSF5e;
     strat->red = redHoney;
   if (strat->honey)
     strat->red = redHoney;
@@ -1991,7 +1991,7 @@ void initF5e(ideal F,kStrategy strat)
     // smaller than strat->gl. For all other elements
     // we have to check the criteria before we are allowed
     // to reduce with them. 
-    strat->red      =   redF5;
+    strat->red      =   redF5e;
   }
 #ifdef HAVE_RINGS  //TODO Oliver
   if (rField_is_Ring(currRing))

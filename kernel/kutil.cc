@@ -1382,7 +1382,7 @@ BOOLEAN enterOneStrongPoly (int i,poly p,int ecart, int isFromQ,kStrategy strat,
 /*2
 * put the pair (s[i],p)  into the set B, ecart=ecart(p)
 */
-void enterOnePairF5 (int i,poly p,int ecart, int isFromQ,kStrategy strat, int atR = -1)
+void enterOnePairF5e (int i,poly p,int ecart, int isFromQ,kStrategy strat, int atR = -1)
 {
   assume(i<=strat->sl);
   if (strat->interred_flag) return;
@@ -1589,7 +1589,7 @@ void enterOnePairF5 (int i,poly p,int ecart, int isFromQ,kStrategy strat, int at
 #if MYTEST
       if (TEST_OPT_DEBUG)
       {
-        PrintS("enterOnePairNormal::\n strat->S[i]: "); pWrite(strat->S[i]);
+        PrintS("enterOnePairF5e::\n strat->S[i]: "); pWrite(strat->S[i]);
         PrintS("p: "); pWrite(p);
         PrintS("SPoly: "); pWrite(Lp.p);
       }
@@ -1604,7 +1604,7 @@ void enterOnePairF5 (int i,poly p,int ecart, int isFromQ,kStrategy strat, int at
 #if MYTEST
       if (TEST_OPT_DEBUG)
       {
-        PrintS("enterOnePairNormal::\n strat->S[i]: "); pWrite(strat->S[i]);
+        PrintS("enterOnePairF5e::\n strat->S[i]: "); pWrite(strat->S[i]);
         PrintS("p: "); pWrite(p);
         PrintS("commutative SPoly: "); pWrite(Lp.p);
       }
@@ -2073,7 +2073,7 @@ void kMergeBintoL(kStrategy strat)
 *the pairset B of pairs of type (s[i],p) is complete now. It will be updated
 *using the chain-criterion in B and L and enters B to L
 */
-void critF5 (poly p,int ecart,kStrategy strat)
+void critF5e (poly p,int ecart,kStrategy strat)
 {
   int i,j,l;
   /*
@@ -5434,7 +5434,7 @@ void initS (ideal F, ideal Q, kStrategy strat)
 }
 
 #ifdef HAVE_F5E
-void initSLREF5 (ideal F, ideal Q, kStrategy strat)
+void initSLREF5e (ideal F, ideal Q, kStrategy strat)
 {
   int   i,pos;
 
@@ -5456,7 +5456,7 @@ void initSLREF5 (ideal F, ideal Q, kStrategy strat)
   // enter 1st rewrite rule:
   // this will be the same in every iteration step,
   // i.e. the constant polynomial
-  enterRewF5( pOne(), strat );
+  enterRewF5e( pOne(), strat );
   
   /*- put polys into S -*/
   if (Q!=NULL)
@@ -6188,7 +6188,7 @@ void updateS(BOOLEAN toT,kStrategy strat)
 * -puts p to the standardbasis s at position at
 * -saves the result in S
 */
-void enterSF5 (LObject p,int atS,kStrategy strat, int atR)
+void enterSF5e (LObject p,int atS,kStrategy strat, int atR)
 {
   int i;
   strat->news = TRUE;
@@ -6295,7 +6295,7 @@ void enterSF5 (LObject p,int atS,kStrategy strat, int atR)
 * -puts p to the standardbasis s at position at
 * -saves the result in S
 */
-void enterRewF5 ( poly p, kStrategy strat )
+void enterRewF5e ( poly p, kStrategy strat )
 {
   int i;
   unsigned long sev;
@@ -6509,10 +6509,10 @@ void initHilbCrit(ideal F, ideal Q, intvec **hilb,kStrategy strat)
 }
 
 #ifdef HAVE_F5E
-void initF5Crit ( kStrategy strat )
+void initF5eCrit ( kStrategy strat )
 {
-  strat->enterOnePair=enterOnePairF5;
-  strat->chainCrit=critF5;
+  strat->enterOnePair=enterOnePairF5e;
+  strat->chainCrit=critF5e;
 #ifdef HAVE_RINGS
   if (rField_is_Ring(currRing))
   {
@@ -6570,7 +6570,7 @@ void initF5Crit ( kStrategy strat )
 
 
 #ifdef HAVE_F5E
-void initSTLF5 (ideal F,ideal Q,kStrategy strat)
+void initSTLF5e (ideal F,ideal Q,kStrategy strat)
 {
   strat->interpt = BTEST1(OPT_INTERRUPT);
   strat->kHEdge=NULL;
@@ -6632,7 +6632,7 @@ void initSTLF5 (ideal F,ideal Q,kStrategy strat)
   }
   else
   {
-    /*Shdl=*/initSLREF5(F, Q,strat); /*sets also S, ecartS, fromQ */
+    /*Shdl=*/initSLREF5e(F, Q,strat); /*sets also S, ecartS, fromQ */
     // /*Shdl=*/initS(F, Q,strat); /*sets also S, ecartS, fromQ */
   }
   strat->kIdeal = NULL;
