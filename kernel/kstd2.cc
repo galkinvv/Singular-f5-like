@@ -988,7 +988,7 @@ ideal f5e (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   initF5eCrit(strat); /*set F5's criteria*/
   initBuchMoraPos(strat);
   initHilbCrit(F,Q,&hilb,strat);
-  initBba(F,strat);
+  initF5e(F,strat);
   /*set enterS, spSpolyShort, reduce, red, initEcart, initEcartPair*/
   /*Shdl=*/initBuchMora(F, Q,strat);
   if (strat->minim>0) strat->M=idInit(IDELEMS(F),F->rank);
