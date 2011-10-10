@@ -4631,7 +4631,7 @@ static BOOLEAN jjF5E(leftv res, leftv v)
       w=ivCopy(w);
     }
   }
-  result=f5e(v_id,currQuotient,hom,&w);
+  result=testF5e(v_id,currQuotient,hom,&w);
   idSkipZeroes(result);
   res->data = (char *)result;
   if(!TEST_OPT_DEGBOUND) setFlag(res,FLAG_STD);

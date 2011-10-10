@@ -29,8 +29,15 @@ ideal kNF(ideal F, ideal Q, ideal p,int syzComp=0, int lazyReduce=0);
 ideal kStd(ideal F, ideal Q, tHomog h, intvec ** mw,intvec *hilb=NULL,
           int syzComp=0,int newIdeal=0, intvec *vw=NULL);
 
+/*
+ * testF5e() is nothing else but kStd() calling the specialized
+ * subroutines for F5E standard basis computations. This is, as the name
+ * suggests for testing only and should be removed after the
+ * implementation is more or less stable. From this point onwards f5e is
+ * just a variant of kStd().
+ */
 #ifdef HAVE_F5E
-ideal f5e(ideal F, ideal Q, tHomog h, intvec ** mw,intvec *hilb=NULL,
+ideal testF5e(ideal F, ideal Q, tHomog h, intvec ** mw,intvec *hilb=NULL,
           int syzComp=0,int newIdeal=0, intvec *vw=NULL);
 #endif
 

@@ -1378,10 +1378,10 @@ BOOLEAN enterOneStrongPoly (int i,poly p,int ecart, int isFromQ,kStrategy strat,
 }
 #endif
 
+#ifdef HAVE_F5E
 /*2
 * put the pair (s[i],p)  into the set B, ecart=ecart(p)
 */
-
 void enterOnePairF5 (int i,poly p,int ecart, int isFromQ,kStrategy strat, int atR = -1)
 {
   assume(i<=strat->sl);
@@ -1667,6 +1667,7 @@ void enterOnePairF5 (int i,poly p,int ecart, int isFromQ,kStrategy strat, int at
     enterL(&strat->B,&strat->Bl,&strat->Bmax,Lp,l);
   }
 }
+#endif
 
 /*2
 * put the pair (s[i],p)  into the set B, ecart=ecart(p)
@@ -2067,6 +2068,7 @@ void kMergeBintoL(kStrategy strat)
   strat->Bl = -1;
 }
 
+#ifdef HAVE_F5E
 /*2
 *the pairset B of pairs of type (s[i],p) is complete now. It will be updated
 *using the chain-criterion in B and L and enters B to L
@@ -2281,6 +2283,7 @@ void critF5 (poly p,int ecart,kStrategy strat)
     }
   }
 }
+#endif
 
 /*2
 *the pairset B of pairs of type (s[i],p) is complete now. It will be updated
@@ -5430,6 +5433,7 @@ void initS (ideal F, ideal Q, kStrategy strat)
   }
 }
 
+#ifdef HAVE_F5E
 void initSLREF5 (ideal F, ideal Q, kStrategy strat)
 {
   int   i,pos;
@@ -5537,6 +5541,7 @@ void initSLREF5 (ideal F, ideal Q, kStrategy strat)
     while (strat->Ll>0) deleteInL(strat->L,&strat->Ll,strat->Ll-1,strat);
   }
 }
+#endif
 
 void initSL (ideal F, ideal Q,kStrategy strat)
 {
@@ -6178,6 +6183,7 @@ void updateS(BOOLEAN toT,kStrategy strat)
 #endif
 }
 
+#ifdef HAVE_F5E
 /*2
 * -puts p to the standardbasis s at position at
 * -saves the result in S
@@ -6281,8 +6287,10 @@ void enterSF5 (LObject p,int atS,kStrategy strat, int atR)
   strat->S_2_R[atS] = atR;
   strat->sl++;
 }
+#endif
 
 
+#ifdef HAVE_F5E
 /*2
 * -puts p to the standardbasis s at position at
 * -saves the result in S
@@ -6311,6 +6319,7 @@ void enterRewF5 ( poly p, kStrategy strat )
   strat->sevRew[strat->rl] = sev;
   strat->rl++;
 }
+#endif
 
 
 
@@ -6499,6 +6508,7 @@ void initHilbCrit(ideal F, ideal Q, intvec **hilb,kStrategy strat)
   }
 }
 
+#ifdef HAVE_F5E
 void initF5Crit ( kStrategy strat )
 {
   strat->enterOnePair=enterOnePairF5;
@@ -6555,9 +6565,11 @@ void initF5Crit ( kStrategy strat )
   }
   #endif
 }
+#endif
 
 
 
+#ifdef HAVE_F5E
 void initSTLF5 (ideal F,ideal Q,kStrategy strat)
 {
   strat->interpt = BTEST1(OPT_INTERRUPT);
@@ -6633,6 +6645,7 @@ void initSTLF5 (ideal F,ideal Q,kStrategy strat)
   if (strat->fromQ!=NULL) omFreeSize(strat->fromQ,IDELEMS(strat->Shdl)*sizeof(int));
   strat->fromQ=NULL;
 }
+#endif
 
 
 void initBuchMoraCrit(kStrategy strat)

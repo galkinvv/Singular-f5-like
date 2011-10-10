@@ -572,9 +572,10 @@ BOOLEAN kTest_S(kStrategy strat);
  ***************************************************************/
 poly kFindZeroPoly(poly input_p, ring leadRing, ring tailRing);
 ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat);
+ideal f5e (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat);
 poly kNF2 (ideal F, ideal Q, poly q, kStrategy strat, int lazyReduce);
 ideal kNF2 (ideal F,ideal Q,ideal q, kStrategy strat, int lazyReduce);
-void initF5(ideal F,kStrategy strat);
+void initF5e(ideal F,kStrategy strat);
 void initBba(ideal F,kStrategy strat);
 
 /***************************************************************
