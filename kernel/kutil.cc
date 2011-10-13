@@ -3955,6 +3955,46 @@ int posInL0 (const LSet set, const int length,
 * looks up the position of polynomial p in set
 * e is the ecart of p
 * set[length] is the smallest element in set with respect
+* to the signature order
+*/
+int posInLF5 (const LSet set, const int length,
+              LObject* p,const kStrategy strat)
+{
+  if (length<0) return 0;
+
+  int o = p->GetpFDeg();
+  int op = set[length].GetpFDeg();
+
+  if ((op > o)
+  || ((op == o) && (pLmCmp(set[length].p,p->p) != -pOrdSgn)))
+    return length+1;
+  int i;
+  int an = 0;
+  int en= length;
+  loop
+  {
+    if (an >= en-1)
+    {
+      op = set[an].GetpFDeg();
+      if ((op > o)
+      || ((op == o) && (pLmCmp(set[an].p,p->p) != -pOrdSgn)))
+        return en;
+      return an;
+    }
+    i=(an+en) / 2;
+    op = set[i].GetpFDeg();
+    if ((op > o)
+    || ((op == o) && (pLmCmp(set[i].p,p->p) != -pOrdSgn)))
+      an=i;
+    else
+      en=i;
+  }
+}
+
+/*2
+* looks up the position of polynomial p in set
+* e is the ecart of p
+* set[length] is the smallest element in set with respect
 * to the ordering-procedure totaldegree,pComp
 */
 int posInL11 (const LSet set, const int length,

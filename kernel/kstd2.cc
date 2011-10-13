@@ -1133,8 +1133,8 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       /* statistic */
       if (TEST_OPT_PROT) PrintS("s");
 
-      //int pos=posInS(strat,strat->sl,strat->P.p,strat->P.ecart);
-      int pos = strat->sl+1;
+      int pos=posInS(strat,strat->sl,strat->P.p,strat->P.ecart);
+      //int pos = strat->sl+1;
 
 #ifdef KDEBUG
 #if MYTEST
