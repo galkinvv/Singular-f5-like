@@ -385,6 +385,11 @@ sTObject::ShallowCopyDelete(ring new_tailRing, omBin new_tailBin,
   tailRing = new_tailRing;
 }
 
+KINLINE long sTObject::pSigDeg() const
+{
+  if (sig != NULL) return ::pFDeg(sig, currRing);
+  return tailRing->pFDeg(sig, tailRing);
+}
 KINLINE long sTObject::pFDeg() const
 {
   if (p != NULL) return ::pFDeg(p, currRing);
@@ -395,10 +400,20 @@ KINLINE long sTObject::pTotalDeg() const
   if (p != NULL) return p_Totaldegree(p, currRing);
   return p_Totaldegree(t_p,tailRing);
 }
+KINLINE long sTObject::SetpSigDeg()
+{
+  sigDeg = this->pSigDeg();
+  return sigDeg;
+}
 KINLINE long sTObject::SetpFDeg()
 {
   FDeg = this->pFDeg();
   return FDeg;
+}
+KINLINE long sTObject::GetpSigDeg() const
+{
+  assume(sigDeg == this->pSigDeg());
+  return sigDeg;
 }
 KINLINE long sTObject::GetpFDeg() const
 {
