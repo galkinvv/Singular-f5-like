@@ -166,7 +166,8 @@ public:
   unsigned long sev;
   poly  p1,p2; /*- the pair p comes from,
                  lm(pi) in currRing, tail(pi) in tailring -*/
-
+  poly sig; // signature of the critical pair
+  unsigned long sevSig; // short exponent vector of signature
   poly  lcm;   /*- the lcm of p1,p2 -*/
   poly last;   // pLast(p) during reductions
   kBucket_pt bucket;
