@@ -387,6 +387,7 @@ int posInT0 (const TSet set,const int length,LObject &p);
 int posInT1 (const TSet set,const int length,LObject &p);
 int posInT2 (const TSet set,const int length,LObject &p);
 int posInT11 (const TSet set,const int length,LObject &p);
+int posInTSig (const TSet set,const int length,LObject &p);
 int posInT110 (const TSet set,const int length,LObject &p);
 int posInT13 (const TSet set,const int length,LObject &p);
 int posInT15 (const TSet set,const int length,LObject &p);
@@ -402,6 +403,8 @@ int posInT_pLength(const TSet set,const int length,LObject &p);
 
 
 void reorderS (int* suc,kStrategy strat);
+int posInLSig (const LSet set, const int length,
+               LObject* L,const kStrategy strat);
 int posInL0 (const LSet set, const int length,
              LObject* L,const kStrategy strat);
 int posInL11 (const LSet set, const int length,
