@@ -3392,6 +3392,46 @@ int posInT2 (const TSet set,const int length,LObject &p)
 * set[0] is the smallest with respect to the ordering-procedure
 * totaldegree,pComp
 */
+int posInTSig (const TSet set,const int length,LObject &p)
+{
+  if (length==-1) return 0;
+
+  int o = p.GetpFDeg();
+  int op = set[length].GetpFDeg();
+
+  if ((op < o)
+  || ((op == o) && (pLmCmp(set[length].p,p.p) != pOrdSgn)))
+    return length+1;
+
+  int i;
+  int an = 0;
+  int en= length;
+
+  loop
+  {
+    if (an >= en-1)
+    {
+      op= set[an].GetpFDeg();
+      if ((op > o)
+      || (( op == o) && (pLmCmp(set[an].p,p.p) == pOrdSgn)))
+        return an;
+      return en;
+    }
+    i=(an+en) / 2;
+    op = set[i].GetpFDeg();
+    if (( op > o)
+    || (( op == o) && (pLmCmp(set[i].p,p.p) == pOrdSgn)))
+      en=i;
+    else
+      an=i;
+  }
+}
+
+/*2
+* looks up the position of p in T
+* set[0] is the smallest with respect to the ordering-procedure
+* totaldegree,pComp
+*/
 int posInT11 (const TSet set,const int length,LObject &p)
 /*{
  * int j=0;
@@ -3957,7 +3997,7 @@ int posInL0 (const LSet set, const int length,
 * set[length] is the smallest element in set with respect
 * to the signature order
 */
-int posInLF5 (const LSet set, const int length,
+int posInLSig (const LSet set, const int length,
               LObject* p,const kStrategy strat)
 {
   if (length<0) return 0;
@@ -5859,94 +5899,9 @@ BOOLEAN kPosInLDependsOnLength(int (*pos_in_l)
 
 void initBuchMoraPos (kStrategy strat)
 {
-  if (pOrdSgn==1)
-  {
-    if (strat->honey)
-    {
-      strat->posInL = posInL15;
-      // ok -- here is the deal: from my experiments for Singular-2-0
-      // I conclude that that posInT_EcartpLength is the best of
-      // posInT15, posInT_EcartFDegpLength, posInT_FDegLength, posInT_pLength
-      // see the table at the end of this file
-      if (TEST_OPT_OLDSTD)
-        strat->posInT = posInT15;
-      else
-        strat->posInT = posInT_EcartpLength;
-    }
-    else if (pLexOrder && !TEST_OPT_INTSTRATEGY)
-    {
-      strat->posInL = posInL11;
-      strat->posInT = posInT11;
-    }
-    else if (TEST_OPT_INTSTRATEGY)
-    {
-      strat->posInL = posInL11;
-      strat->posInT = posInT11;
-    }
-    else
-    {
-      strat->posInL = posInL0;
-      strat->posInT = posInT0;
-    }
-    //if (strat->minim>0) strat->posInL =posInLSpecial;
-    if (strat->homog)
-    {
-       strat->posInL = posInL110;
-       strat->posInT = posInT110;
-    }
-  }
-  else
-  {
-    if (strat->homog)
-    {
-      strat->posInL = posInL11;
-      strat->posInT = posInT11;
-    }
-    else
-    {
-      if ((currRing->order[0]==ringorder_c)
-      ||(currRing->order[0]==ringorder_C))
-      {
-        strat->posInL = posInL17_c;
-        strat->posInT = posInT17_c;
-      }
-      else
-      {
-        strat->posInL = posInL17;
-        strat->posInT = posInT17;
-      }
-    }
-  }
-  if (strat->minim>0) strat->posInL =posInLSpecial;
-  // for further tests only
-  if ((BTEST1(11)) || (BTEST1(12)))
-    strat->posInL = posInL11;
-  else if ((BTEST1(13)) || (BTEST1(14)))
-    strat->posInL = posInL13;
-  else if ((BTEST1(15)) || (BTEST1(16)))
-    strat->posInL = posInL15;
-  else if ((BTEST1(17)) || (BTEST1(18)))
-    strat->posInL = posInL17;
-  if (BTEST1(11))
-    strat->posInT = posInT11;
-  else if (BTEST1(13))
-    strat->posInT = posInT13;
-  else if (BTEST1(15))
-    strat->posInT = posInT15;
-  else if ((BTEST1(17)))
-    strat->posInT = posInT17;
-  else if ((BTEST1(19)))
-    strat->posInT = posInT19;
-  else if (BTEST1(12) || BTEST1(14) || BTEST1(16) || BTEST1(18))
-    strat->posInT = posInT1;
-#ifdef HAVE_RINGS
-  if (rField_is_Ring(currRing))
-  {
-    strat->posInL = posInL11;
-    strat->posInT = posInT11;
-  }
-#endif
-  strat->posInLDependsOnLength = kPosInLDependsOnLength(strat->posInL);
+  strat->posInLDependsOnLength = FALSE;
+  strat->posInL = posInLSig;
+  strat->posInT = posInTSig;
 }
 
 void initBuchMora (ideal F,ideal Q,kStrategy strat)
