@@ -1133,8 +1133,10 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       /* statistic */
       if (TEST_OPT_PROT) PrintS("s");
 
-      int pos=posInS(strat,strat->sl,strat->P.p,strat->P.ecart);
-      //int pos = strat->sl+1;
+      //int pos=posInS(strat,strat->sl,strat->P.p,strat->P.ecart);
+      // in F5E we know that the last reduced element is already the
+      // the one with highest signature
+      int pos = strat->sl+1;
 
 #ifdef KDEBUG
 #if MYTEST
