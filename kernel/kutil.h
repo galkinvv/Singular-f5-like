@@ -67,11 +67,8 @@ public:
   poly p;       // Lm(p) \in currRing Tail(p) \in tailRing
   poly t_p;     // t_p \in tailRing: as monomials Lm(t_p) == Lm(p)
   poly max;     // p_GetMaxExpP(pNext(p))
-  poly sig; // signature of the critical pair
-  unsigned long sevSig; // short exponent vector of signature
   ring tailRing;
   long FDeg;    // pFDeg(p)
-  long sigDeg; 
   int ecart,
     length,     // as of pLDeg
     pLength,    // either == 0, or == pLength(p)
@@ -131,12 +128,6 @@ public:
   // deg stuff
   // compute pTotalDegree
   KINLINE long pTotalDeg() const;
-  // computes sigDeg
-  KINLINE long pSigDeg() const;
-  // computes and sets sigDeg
-  KINLINE long SetpSigDeg();
-  // gets stored sigDeg
-  KINLINE long GetpSigDeg() const;
   // computes pFDeg
   KINLINE long pFDeg() const;
   // computes and sets FDeg
@@ -277,11 +268,13 @@ public:
   ideal D; /*V(S) is in D(D)*/
   ideal M; /*set of minimal generators*/
   polyset S;
+  polyset sig;
   intset ecartS;
   intset lenS;
   wlen_set lenSw; /* for tgb.ccc */
   intset fromQ;
   unsigned long* sevS;
+  unsigned long* sevSig;
   unsigned long* sevT;
   TSet T;
   LSet L;
