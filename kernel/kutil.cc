@@ -4903,6 +4903,7 @@ void initS (ideal F, ideal Q, kStrategy strat)
   strat->fromQ=NULL;
   strat->Shdl=idInit(i,F->rank);
   strat->S=strat->Shdl->m;
+  strat->sig=(poly *)omAlloc0(i*sizeof(poly));
   /*- put polys into S -*/
   if (Q!=NULL)
   {
@@ -5000,8 +5001,7 @@ void initSL (ideal F, ideal Q,kStrategy strat)
   strat->fromQ=NULL;
   strat->Shdl=idInit(i,F->rank);
   strat->S=strat->Shdl->m;
-  // the following step corresponds to a strat->Shdl->m
-  //strat->sig=(poly *)omAlloc0((F->rank)*sizeof(poly));
+  strat->sig=(poly *)omAlloc0(i*sizeof(poly));
   /*- put polys into S -*/
   if (Q!=NULL)
   {
@@ -5107,9 +5107,7 @@ void initSSpecial (ideal F, ideal Q, ideal P,kStrategy strat)
   strat->fromQ=NULL;
   strat->Shdl=idInit(i,F->rank);
   strat->S=strat->Shdl->m;
-  // the following step corresponds to an strat->Shdl->m
-  //strat->sig=(poly *)omAlloc0((F->rank)*sizeof(poly));
-
+  strat->sig=(poly *)omAlloc0(i*sizeof(poly));
   /*- put polys into S -*/
   if (Q!=NULL)
   {
