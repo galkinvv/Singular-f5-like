@@ -3110,6 +3110,38 @@ void enterpairs (poly h,int k,int ecart,int pos,kStrategy strat, int atR)
 /*2
 *(s[0],h),...,(s[k],h) will be put to the pairset L(via initenterpairs)
 *superfluous elements in S will be deleted
+*this is a special variant of signature-based algorithms including the
+*signatures for criteria checks
+*/
+void enterpairsSig (poly h,poly hSig,int k,int ecart,int pos,kStrategy strat, int atR)
+{
+  int j=pos;
+
+#ifdef HAVE_RINGS
+  assume (!rField_is_Ring(currRing));
+#endif
+
+  initenterpairs(h,k,ecart,0,strat, atR);
+  if ( (!strat->fromT)
+  && ((strat->syzComp==0)
+    ||(pGetComp(h)<=strat->syzComp)))
+  {
+    //Print("start clearS k=%d, pos=%d, sl=%d\n",k,pos,strat->sl);
+    unsigned long h_sev = pGetShortExpVector(h);
+    loop
+    {
+      if (j > k) break;
+      clearS(h,h_sev, &j,&k,strat);
+      j++;
+    }
+    //Print("end clearS sl=%d\n",strat->sl);
+  }
+ // PrintS("end enterpairs\n");
+}
+
+/*2
+*(s[0],h),...,(s[k],h) will be put to the pairset L(via initenterpairs)
+*superfluous elements in S will be deleted
 */
 void enterpairsSpecial (poly h,int k,int ecart,int pos,kStrategy strat, int atR = -1)
 {
