@@ -1200,7 +1200,7 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
         superenterpairs(strat->P.p,strat->sl,strat->P.ecart,pos,strat, strat->tl);
       else
 #endif
-        enterpairs(strat->P.p,strat->sl,strat->P.ecart,pos,strat, strat->tl);
+        enterpairsSig(strat->P.p,strat->P.sig,strat->sl,strat->P.ecart,pos,strat, strat->tl);
       // posInS only depends on the leading term
       strat->enterS(strat->P, pos, strat, strat->tl);
 #if 0

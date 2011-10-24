@@ -168,6 +168,7 @@ public:
                  lm(pi) in currRing, tail(pi) in tailring -*/
   poly  lcm;   /*- the lcm of p1,p2 -*/
   poly last;   // pLast(p) during reductions
+  poly sig;   // the signature of the element
   kBucket_pt bucket;
   int   i_r1, i_r2;
 
@@ -439,6 +440,8 @@ ideal createG0();
 #endif
 int redLazy (LObject* h,kStrategy strat);
 int redHomog (LObject* h,kStrategy strat);
+//adds hSig to be able to check with F5's criteria when entering pairs!
+void enterpairsSig (poly h, poly hSig, int k, int ec, int pos,kStrategy strat, int atR = -1);
 void enterpairs (poly h, int k, int ec, int pos,kStrategy strat, int atR = -1);
 void entersets (LObject h);
 void pairs ();
