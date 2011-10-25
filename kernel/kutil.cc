@@ -6019,6 +6019,8 @@ void exitBuchMora (kStrategy strat)
   omFreeSize(strat->L,(strat->Lmax)*sizeof(LObject));
   /*- set B: should be empty -*/
   omFreeSize(strat->B,(strat->Bmax)*sizeof(LObject));
+  /*- set sig: no need for the signatures anymore -*/
+  omFreeSize(strat->sig,IDELEMS(strat->Shdl)*sizeof(poly));
   pLmDelete(&strat->tail);
   strat->syzComp=0;
   if (strat->kIdeal!=NULL)
