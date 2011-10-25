@@ -3115,28 +3115,28 @@ void enterpairs (poly h,int k,int ecart,int pos,kStrategy strat, int atR)
 */
 void enterpairsSig (poly h,poly hSig,int k,int ecart,int pos,kStrategy strat, int atR)
 {
-  int j=pos;
+int j=pos;
 
 #ifdef HAVE_RINGS
-  assume (!rField_is_Ring(currRing));
+assume (!rField_is_Ring(currRing));
 #endif
 
-  initenterpairs(h,k,ecart,0,strat, atR);
-  if ( (!strat->fromT)
-  && ((strat->syzComp==0)
-    ||(pGetComp(h)<=strat->syzComp)))
+initenterpairs(h,k,ecart,0,strat, atR);
+if ( (!strat->fromT)
+&& ((strat->syzComp==0)
+  ||(pGetComp(h)<=strat->syzComp)))
+{
+  //Print("start clearS k=%d, pos=%d, sl=%d\n",k,pos,strat->sl);
+  unsigned long h_sev = pGetShortExpVector(h);
+  loop
   {
-    //Print("start clearS k=%d, pos=%d, sl=%d\n",k,pos,strat->sl);
-    unsigned long h_sev = pGetShortExpVector(h);
-    loop
-    {
-      if (j > k) break;
-      clearS(h,h_sev, &j,&k,strat);
-      j++;
-    }
-    //Print("end clearS sl=%d\n",strat->sl);
+    if (j > k) break;
+    clearS(h,h_sev, &j,&k,strat);
+    j++;
   }
- // PrintS("end enterpairs\n");
+  //Print("end clearS sl=%d\n",strat->sl);
+}
+// PrintS("end enterpairs\n");
 }
 
 /*2
@@ -3145,54 +3145,54 @@ void enterpairsSig (poly h,poly hSig,int k,int ecart,int pos,kStrategy strat, in
 */
 void enterpairsSpecial (poly h,int k,int ecart,int pos,kStrategy strat, int atR = -1)
 {
-  int j;
-  const int iCompH = pGetComp(h);
+int j;
+const int iCompH = pGetComp(h);
 
-  for (j=0; j<=k; j++)
+for (j=0; j<=k; j++)
+{
+  const int iCompSj = pGetComp(strat->S[j]);
+  if ((iCompH==iCompSj)
+      || (0==iCompH) // TODO: what about this case???
+      || (0==iCompSj))
   {
-    const int iCompSj = pGetComp(strat->S[j]);
-    if ((iCompH==iCompSj)
-        || (0==iCompH) // TODO: what about this case???
-        || (0==iCompSj))
-    {
-      enterOnePairSpecial(j,h,ecart,strat, atR);
-    }
+    enterOnePairSpecial(j,h,ecart,strat, atR);
   }
+}
 
-  if (strat->noClearS) return;
+if (strat->noClearS) return;
 
 //   #ifdef HAVE_PLURAL
 /*
-  if (rIsPluralRing(currRing))
+if (rIsPluralRing(currRing))
+{
+  j=pos;
+  loop
   {
-    j=pos;
-    loop
+    if (j > k) break;
+
+    if (pLmDivisibleBy(h, strat->S[j]))
     {
-      if (j > k) break;
-
-      if (pLmDivisibleBy(h, strat->S[j]))
-      {
-        deleteInS(j, strat);
-        j--;
-        k--;
-      }
-
-      j++;
+      deleteInS(j, strat);
+      j--;
+      k--;
     }
+
+    j++;
   }
-  else
+}
+else
 */
 //   #endif // ??? Why was the following cancelation disabled for non-commutative rings?
+{
+  j=pos;
+  loop
   {
-    j=pos;
-    loop
-    {
-      unsigned long h_sev = pGetShortExpVector(h);
-      if (j > k) break;
-      clearS(h,h_sev,&j,&k,strat);
-      j++;
-    }
+    unsigned long h_sev = pGetShortExpVector(h);
+    if (j > k) break;
+    clearS(h,h_sev,&j,&k,strat);
+    j++;
   }
+}
 }
 
 /*2
@@ -3202,48 +3202,48 @@ void enterpairsSpecial (poly h,int k,int ecart,int pos,kStrategy strat, int atR 
 
 void reorderS (int* suc,kStrategy strat)
 {
-  int i,j,at,ecart, s2r;
-  int fq=0;
-  unsigned long sev;
-  poly  p;
-  int new_suc=strat->sl+1;
-  i= *suc;
-  if (i<0) i=0;
+int i,j,at,ecart, s2r;
+int fq=0;
+unsigned long sev;
+poly  p;
+int new_suc=strat->sl+1;
+i= *suc;
+if (i<0) i=0;
 
-  for (; i<=strat->sl; i++)
+for (; i<=strat->sl; i++)
+{
+  at = posInS(strat,i-1,strat->S[i],strat->ecartS[i]);
+  if (at != i)
   {
-    at = posInS(strat,i-1,strat->S[i],strat->ecartS[i]);
-    if (at != i)
+    if (new_suc > at) new_suc = at;
+    p = strat->S[i];
+    ecart = strat->ecartS[i];
+    sev = strat->sevS[i];
+    s2r = strat->S_2_R[i];
+    if (strat->fromQ!=NULL) fq=strat->fromQ[i];
+    for (j=i; j>=at+1; j--)
     {
-      if (new_suc > at) new_suc = at;
-      p = strat->S[i];
-      ecart = strat->ecartS[i];
-      sev = strat->sevS[i];
-      s2r = strat->S_2_R[i];
-      if (strat->fromQ!=NULL) fq=strat->fromQ[i];
+      strat->S[j] = strat->S[j-1];
+      strat->ecartS[j] = strat->ecartS[j-1];
+      strat->sevS[j] = strat->sevS[j-1];
+      strat->S_2_R[j] = strat->S_2_R[j-1];
+    }
+    strat->S[at] = p;
+    strat->ecartS[at] = ecart;
+    strat->sevS[at] = sev;
+    strat->S_2_R[at] = s2r;
+    if (strat->fromQ!=NULL)
+    {
       for (j=i; j>=at+1; j--)
       {
-        strat->S[j] = strat->S[j-1];
-        strat->ecartS[j] = strat->ecartS[j-1];
-        strat->sevS[j] = strat->sevS[j-1];
-        strat->S_2_R[j] = strat->S_2_R[j-1];
+        strat->fromQ[j] = strat->fromQ[j-1];
       }
-      strat->S[at] = p;
-      strat->ecartS[at] = ecart;
-      strat->sevS[at] = sev;
-      strat->S_2_R[at] = s2r;
-      if (strat->fromQ!=NULL)
-      {
-        for (j=i; j>=at+1; j--)
-        {
-          strat->fromQ[j] = strat->fromQ[j-1];
-        }
-        strat->fromQ[at]=fq;
-      }
+      strat->fromQ[at]=fq;
     }
   }
-  if (new_suc <= strat->sl) *suc=new_suc;
-  else                      *suc=-1;
+}
+if (new_suc <= strat->sl) *suc=new_suc;
+else                      *suc=-1;
 }
 
 
@@ -3254,104 +3254,104 @@ void reorderS (int* suc,kStrategy strat)
 *             otherwise, bba has to be changed
 */
 int posInS (const kStrategy strat, const int length,const poly p,
-            const int ecart_p)
+          const int ecart_p)
 {
-  if(length==-1) return 0;
-  polyset set=strat->S;
-  int i;
-  int an = 0;
-  int en = length;
-  int cmp_int = pOrdSgn;
-  int pc=pGetComp(p);
-  if ((currRing->MixedOrder)
+if(length==-1) return 0;
+polyset set=strat->S;
+int i;
+int an = 0;
+int en = length;
+int cmp_int = pOrdSgn;
+int pc=pGetComp(p);
+if ((currRing->MixedOrder)
 #ifdef HAVE_PLURAL
-  && (currRing->real_var_start==0)
+&& (currRing->real_var_start==0)
 #endif
 #if 0
-  || ((strat->ak>0) && ((currRing->order[0]==ringorder_c)||((currRing->order[0]==ringorder_C))))
+|| ((strat->ak>0) && ((currRing->order[0]==ringorder_c)||((currRing->order[0]==ringorder_C))))
 #endif
-  )
+)
+{
+  int o=pDeg(p);
+  int oo=pDeg(set[length]);
+
+  if ((oo<o)
+  || ((o==oo) && (pLmCmp(set[length],p)!= cmp_int)))
+    return length+1;
+
+  loop
   {
-    int o=pDeg(p);
-    int oo=pDeg(set[length]);
-
-    if ((oo<o)
-    || ((o==oo) && (pLmCmp(set[length],p)!= cmp_int)))
+    if (an >= en-1)
+    {
+      if ((pDeg(set[an])>=o) && (pLmCmp(set[an],p) == cmp_int))
+      {
+        return an;
+      }
+      return en;
+    }
+    i=(an+en) / 2;
+    if ((pDeg(set[i])>=o) && (pLmCmp(set[i],p) == cmp_int)) en=i;
+    else                              an=i;
+  }
+}
+else
+{
+#ifdef HAVE_RINGS
+  if (rField_is_Ring(currRing))
+  {
+    if (pLmCmp(set[length],p)== -cmp_int)
       return length+1;
-
+    int cmp;
     loop
     {
       if (an >= en-1)
       {
-        if ((pDeg(set[an])>=o) && (pLmCmp(set[an],p) == cmp_int))
-        {
-          return an;
-        }
-        return en;
+        cmp = pLmCmp(set[an],p);
+        if (cmp == cmp_int)  return an;
+        if (cmp == -cmp_int) return en;
+        if (nDivBy(pGetCoeff(p), pGetCoeff(set[an]))) return en;
+        return an;
       }
-      i=(an+en) / 2;
-      if ((pDeg(set[i])>=o) && (pLmCmp(set[i],p) == cmp_int)) en=i;
-      else                              an=i;
+      i = (an+en) / 2;
+      cmp = pLmCmp(set[i],p);
+      if (cmp == cmp_int)         en = i;
+      else if (cmp == -cmp_int)   an = i;
+      else
+      {
+        if (nDivBy(pGetCoeff(p), pGetCoeff(set[i]))) an = i;
+        else en = i;
+      }
     }
   }
   else
-  {
-#ifdef HAVE_RINGS
-    if (rField_is_Ring(currRing))
-    {
-      if (pLmCmp(set[length],p)== -cmp_int)
-        return length+1;
-      int cmp;
-      loop
-      {
-        if (an >= en-1)
-        {
-          cmp = pLmCmp(set[an],p);
-          if (cmp == cmp_int)  return an;
-          if (cmp == -cmp_int) return en;
-          if (nDivBy(pGetCoeff(p), pGetCoeff(set[an]))) return en;
-          return an;
-        }
-        i = (an+en) / 2;
-        cmp = pLmCmp(set[i],p);
-        if (cmp == cmp_int)         en = i;
-        else if (cmp == -cmp_int)   an = i;
-        else
-        {
-          if (nDivBy(pGetCoeff(p), pGetCoeff(set[i]))) an = i;
-          else en = i;
-        }
-      }
-    }
-    else
 #endif
-    if (pLmCmp(set[length],p)== -cmp_int)
-      return length+1;
+  if (pLmCmp(set[length],p)== -cmp_int)
+    return length+1;
 
-    loop
+  loop
+  {
+    if (an >= en-1)
     {
-      if (an >= en-1)
-      {
-        if (pLmCmp(set[an],p) == cmp_int) return an;
-        if (pLmCmp(set[an],p) == -cmp_int) return en;
-        if ((cmp_int!=1)
-        && ((strat->ecartS[an])>ecart_p))
-          return an;
-        return en;
-      }
-      i=(an+en) / 2;
-      if (pLmCmp(set[i],p) == cmp_int) en=i;
-      else if (pLmCmp(set[i],p) == -cmp_int) an=i;
+      if (pLmCmp(set[an],p) == cmp_int) return an;
+      if (pLmCmp(set[an],p) == -cmp_int) return en;
+      if ((cmp_int!=1)
+      && ((strat->ecartS[an])>ecart_p))
+        return an;
+      return en;
+    }
+    i=(an+en) / 2;
+    if (pLmCmp(set[i],p) == cmp_int) en=i;
+    else if (pLmCmp(set[i],p) == -cmp_int) an=i;
+    else
+    {
+      if ((cmp_int!=1)
+      &&((strat->ecartS[i])<ecart_p))
+        en=i;
       else
-      {
-        if ((cmp_int!=1)
-        &&((strat->ecartS[i])<ecart_p))
-          en=i;
-        else
-          an=i;
-      }
+        an=i;
     }
   }
+}
 }
 
 
@@ -3361,7 +3361,7 @@ int posInS (const kStrategy strat, const int length,const poly p,
 */
 int posInT0 (const TSet set,const int length,LObject &p)
 {
-  return (length+1);
+return (length+1);
 }
 
 
@@ -3372,25 +3372,25 @@ int posInT0 (const TSet set,const int length,LObject &p)
 */
 int posInT1 (const TSet set,const int length,LObject &p)
 {
-  if (length==-1) return 0;
+if (length==-1) return 0;
 
-  if (pLmCmp(set[length].p,p.p)!= pOrdSgn) return length+1;
+if (pLmCmp(set[length].p,p.p)!= pOrdSgn) return length+1;
 
-  int i;
-  int an = 0;
-  int en= length;
+int i;
+int an = 0;
+int en= length;
 
-  loop
+loop
+{
+  if (an >= en-1)
   {
-    if (an >= en-1)
-    {
-      if (pLmCmp(set[an].p,p.p) == pOrdSgn) return an;
-      return en;
-    }
-    i=(an+en) / 2;
-    if (pLmCmp(set[i].p,p.p) == pOrdSgn) en=i;
-    else                                 an=i;
+    if (pLmCmp(set[an].p,p.p) == pOrdSgn) return an;
+    return en;
   }
+  i=(an+en) / 2;
+  if (pLmCmp(set[i].p,p.p) == pOrdSgn) en=i;
+  else                                 an=i;
+}
 }
 
 /*2
@@ -3400,27 +3400,27 @@ int posInT1 (const TSet set,const int length,LObject &p)
 */
 int posInT2 (const TSet set,const int length,LObject &p)
 {
-  p.GetpLength();
-  if (length==-1)
-    return 0;
-  if (set[length].length<p.length)
-    return length+1;
+p.GetpLength();
+if (length==-1)
+  return 0;
+if (set[length].length<p.length)
+  return length+1;
 
-  int i;
-  int an = 0;
-  int en= length;
+int i;
+int an = 0;
+int en= length;
 
-  loop
+loop
+{
+  if (an >= en-1)
   {
-    if (an >= en-1)
-    {
-      if (set[an].length>p.length) return an;
-      return en;
-    }
-    i=(an+en) / 2;
-    if (set[i].length>p.length) en=i;
-    else                        an=i;
+    if (set[an].length>p.length) return an;
+    return en;
   }
+  i=(an+en) / 2;
+  if (set[i].length>p.length) en=i;
+  else                        an=i;
+}
 }
 
 /*2
@@ -3430,25 +3430,25 @@ int posInT2 (const TSet set,const int length,LObject &p)
 */
 int posInTSig (const TSet set,const int length,LObject &p)
 {
-  if (length==-1) return 0;
+if (length==-1) return 0;
 
-  if (pLmCmp(set[length].p,p.p)!= pOrdSgn) return length+1;
+if (pLmCmp(set[length].p,p.p)!= pOrdSgn) return length+1;
 
-  int i;
-  int an = 0;
-  int en= length;
+int i;
+int an = 0;
+int en= length;
 
-  loop
+loop
+{
+  if (an >= en-1)
   {
-    if (an >= en-1)
-    {
-      if (pLmCmp(set[an].p,p.p) == pOrdSgn) return an;
-      return en;
-    }
-    i=(an+en) / 2;
-    if (pLmCmp(set[i].p,p.p) == pOrdSgn) en=i;
-    else                                 an=i;
+    if (pLmCmp(set[an].p,p.p) == pOrdSgn) return an;
+    return en;
   }
+  i=(an+en) / 2;
+  if (pLmCmp(set[i].p,p.p) == pOrdSgn) en=i;
+  else                                 an=i;
+}
 }
 
 /*2
@@ -3458,54 +3458,54 @@ int posInTSig (const TSet set,const int length,LObject &p)
 */
 int posInT11 (const TSet set,const int length,LObject &p)
 /*{
- * int j=0;
- * int o;
- *
- * o = p.GetpFDeg();
- * loop
- * {
- *   if ((pFDeg(set[j].p) > o)
- *   || ((pFDeg(set[j].p) == o) && (pLmCmp(set[j].p,p.p) == pOrdSgn)))
- *   {
- *     return j;
- *   }
- *   j++;
- *   if (j > length) return j;
- * }
- *}
- */
+* int j=0;
+* int o;
+*
+* o = p.GetpFDeg();
+* loop
+* {
+*   if ((pFDeg(set[j].p) > o)
+*   || ((pFDeg(set[j].p) == o) && (pLmCmp(set[j].p,p.p) == pOrdSgn)))
+*   {
+*     return j;
+*   }
+*   j++;
+*   if (j > length) return j;
+* }
+*}
+*/
 {
-  if (length==-1) return 0;
+if (length==-1) return 0;
 
-  int o = p.GetpFDeg();
-  int op = set[length].GetpFDeg();
+int o = p.GetpFDeg();
+int op = set[length].GetpFDeg();
 
-  if ((op < o)
-  || ((op == o) && (pLmCmp(set[length].p,p.p) != pOrdSgn)))
-    return length+1;
+if ((op < o)
+|| ((op == o) && (pLmCmp(set[length].p,p.p) != pOrdSgn)))
+  return length+1;
 
-  int i;
-  int an = 0;
-  int en= length;
+int i;
+int an = 0;
+int en= length;
 
-  loop
+loop
+{
+  if (an >= en-1)
   {
-    if (an >= en-1)
-    {
-      op= set[an].GetpFDeg();
-      if ((op > o)
-      || (( op == o) && (pLmCmp(set[an].p,p.p) == pOrdSgn)))
-        return an;
-      return en;
-    }
-    i=(an+en) / 2;
-    op = set[i].GetpFDeg();
-    if (( op > o)
-    || (( op == o) && (pLmCmp(set[i].p,p.p) == pOrdSgn)))
-      en=i;
-    else
-      an=i;
+    op= set[an].GetpFDeg();
+    if ((op > o)
+    || (( op == o) && (pLmCmp(set[an].p,p.p) == pOrdSgn)))
+      return an;
+    return en;
   }
+  i=(an+en) / 2;
+  op = set[i].GetpFDeg();
+  if (( op > o)
+  || (( op == o) && (pLmCmp(set[i].p,p.p) == pOrdSgn)))
+    en=i;
+  else
+    an=i;
+}
 }
 
 /*2 Pos for rings T: Here I am
@@ -3515,75 +3515,75 @@ int posInT11 (const TSet set,const int length,LObject &p)
 */
 int posInTrg0 (const TSet set,const int length,LObject &p)
 {
-  if (length==-1) return 0;
-  int o = p.GetpFDeg();
-  int op = set[length].GetpFDeg();
-  int i;
-  int an = 0;
-  int en = length;
-  int cmp_int = pOrdSgn;
-  if ((op < o) || (pLmCmp(set[length].p,p.p)== -cmp_int))
-    return length+1;
-  int cmp;
-  loop
+if (length==-1) return 0;
+int o = p.GetpFDeg();
+int op = set[length].GetpFDeg();
+int i;
+int an = 0;
+int en = length;
+int cmp_int = pOrdSgn;
+if ((op < o) || (pLmCmp(set[length].p,p.p)== -cmp_int))
+  return length+1;
+int cmp;
+loop
+{
+  if (an >= en-1)
   {
-    if (an >= en-1)
-    {
-      op = set[an].GetpFDeg();
-      if (op > o) return an;
-      if (op < 0) return en;
-      cmp = pLmCmp(set[an].p,p.p);
-      if (cmp == cmp_int)  return an;
-      if (cmp == -cmp_int) return en;
-      if (nGreater(pGetCoeff(p.p), pGetCoeff(set[an].p))) return en;
-      return an;
-    }
-    i = (an + en) / 2;
-    op = set[i].GetpFDeg();
-    if (op > o)       en = i;
-    else if (op < o)  an = i;
-    else
-    {
-      cmp = pLmCmp(set[i].p,p.p);
-      if (cmp == cmp_int)                                     en = i;
-      else if (cmp == -cmp_int)                               an = i;
-      else if (nGreater(pGetCoeff(p.p), pGetCoeff(set[i].p))) an = i;
-      else                                                    en = i;
-    }
+    op = set[an].GetpFDeg();
+    if (op > o) return an;
+    if (op < 0) return en;
+    cmp = pLmCmp(set[an].p,p.p);
+    if (cmp == cmp_int)  return an;
+    if (cmp == -cmp_int) return en;
+    if (nGreater(pGetCoeff(p.p), pGetCoeff(set[an].p))) return en;
+    return an;
   }
+  i = (an + en) / 2;
+  op = set[i].GetpFDeg();
+  if (op > o)       en = i;
+  else if (op < o)  an = i;
+  else
+  {
+    cmp = pLmCmp(set[i].p,p.p);
+    if (cmp == cmp_int)                                     en = i;
+    else if (cmp == -cmp_int)                               an = i;
+    else if (nGreater(pGetCoeff(p.p), pGetCoeff(set[i].p))) an = i;
+    else                                                    en = i;
+  }
+}
 }
 /*
-  int o = p.GetpFDeg();
-  int op = set[length].GetpFDeg();
+int o = p.GetpFDeg();
+int op = set[length].GetpFDeg();
 
-  if ((op < o)
-  || ((op == o) && (pLmCmp(set[length].p,p.p) != pOrdSgn)))
-    return length+1;
+if ((op < o)
+|| ((op == o) && (pLmCmp(set[length].p,p.p) != pOrdSgn)))
+  return length+1;
 
-  int i;
-  int an = 0;
-  int en= length;
+int i;
+int an = 0;
+int en= length;
 
-  loop
+loop
+{
+  if (an >= en-1)
   {
-    if (an >= en-1)
-    {
-      op= set[an].GetpFDeg();
-      if ((op > o)
-      || (( op == o) && (pLmCmp(set[an].p,p.p) == pOrdSgn)))
-        return an;
-      return en;
-    }
-    i=(an+en) / 2;
-    op = set[i].GetpFDeg();
-    if (( op > o)
-    || (( op == o) && (pLmCmp(set[i].p,p.p) == pOrdSgn)))
-      en=i;
-    else
-      an=i;
+    op= set[an].GetpFDeg();
+    if ((op > o)
+    || (( op == o) && (pLmCmp(set[an].p,p.p) == pOrdSgn)))
+      return an;
+    return en;
   }
+  i=(an+en) / 2;
+  op = set[i].GetpFDeg();
+  if (( op > o)
+  || (( op == o) && (pLmCmp(set[i].p,p.p) == pOrdSgn)))
+    en=i;
+  else
+    an=i;
 }
-  */
+}
+*/
 /*2
 * looks up the position of p in T
 * set[0] is the smallest with respect to the ordering-procedure
@@ -3591,43 +3591,43 @@ int posInTrg0 (const TSet set,const int length,LObject &p)
 */
 int posInT110 (const TSet set,const int length,LObject &p)
 {
-  p.GetpLength();
-  if (length==-1) return 0;
+p.GetpLength();
+if (length==-1) return 0;
 
-  int o = p.GetpFDeg();
-  int op = set[length].GetpFDeg();
+int o = p.GetpFDeg();
+int op = set[length].GetpFDeg();
 
-  if (( op < o)
-  || (( op == o) && (set[length].length<p.length))
-  || (( op == o) && (set[length].length == p.length)
-     && (pLmCmp(set[length].p,p.p) != pOrdSgn)))
-    return length+1;
+if (( op < o)
+|| (( op == o) && (set[length].length<p.length))
+|| (( op == o) && (set[length].length == p.length)
+    && (pLmCmp(set[length].p,p.p) != pOrdSgn)))
+  return length+1;
 
-  int i;
-  int an = 0;
-  int en= length;
-  loop
+int i;
+int an = 0;
+int en= length;
+loop
+{
+  if (an >= en-1)
   {
-    if (an >= en-1)
-    {
-      op = set[an].GetpFDeg();
-      if (( op > o)
-      || (( op == o) && (set[an].length > p.length))
-      || (( op == o) && (set[an].length == p.length)
-         && (pLmCmp(set[an].p,p.p) == pOrdSgn)))
-        return an;
-      return en;
-    }
-    i=(an+en) / 2;
-    op = set[i].GetpFDeg();
+    op = set[an].GetpFDeg();
     if (( op > o)
-    || (( op == o) && (set[i].length > p.length))
-    || (( op == o) && (set[i].length == p.length)
-       && (pLmCmp(set[i].p,p.p) == pOrdSgn)))
-      en=i;
-    else
-      an=i;
+    || (( op == o) && (set[an].length > p.length))
+    || (( op == o) && (set[an].length == p.length)
+        && (pLmCmp(set[an].p,p.p) == pOrdSgn)))
+      return an;
+    return en;
   }
+  i=(an+en) / 2;
+  op = set[i].GetpFDeg();
+  if (( op > o)
+  || (( op == o) && (set[i].length > p.length))
+  || (( op == o) && (set[i].length == p.length)
+      && (pLmCmp(set[i].p,p.p) == pOrdSgn)))
+    en=i;
+  else
+    an=i;
+}
 }
 
 /*2
@@ -3637,65 +3637,65 @@ int posInT110 (const TSet set,const int length,LObject &p)
 */
 int posInT13 (const TSet set,const int length,LObject &p)
 {
-  if (length==-1) return 0;
+if (length==-1) return 0;
 
-  int o = p.GetpFDeg();
+int o = p.GetpFDeg();
 
-  if (set[length].GetpFDeg() <= o)
-    return length+1;
+if (set[length].GetpFDeg() <= o)
+  return length+1;
 
-  int i;
-  int an = 0;
-  int en= length;
-  loop
+int i;
+int an = 0;
+int en= length;
+loop
+{
+  if (an >= en-1)
   {
-    if (an >= en-1)
-    {
-      if (set[an].GetpFDeg() > o)
-        return an;
-      return en;
-    }
-    i=(an+en) / 2;
-    if (set[i].GetpFDeg() > o)
-      en=i;
-    else
-      an=i;
+    if (set[an].GetpFDeg() > o)
+      return an;
+    return en;
   }
+  i=(an+en) / 2;
+  if (set[i].GetpFDeg() > o)
+    en=i;
+  else
+    an=i;
+}
 }
 
 // determines the position based on: 1.) Ecart 2.) pLength
 int posInT_EcartpLength(const TSet set,const int length,LObject &p)
 {
-  int ol = p.GetpLength();
-  if (length==-1) return 0;
+int ol = p.GetpLength();
+if (length==-1) return 0;
 
-  int op=p.ecart;
+int op=p.ecart;
 
-  int oo=set[length].ecart;
-  if ((oo < op) || ((oo==op) && (set[length].length < ol)))
-    return length+1;
+int oo=set[length].ecart;
+if ((oo < op) || ((oo==op) && (set[length].length < ol)))
+  return length+1;
 
-  int i;
-  int an = 0;
-  int en= length;
-  loop
+int i;
+int an = 0;
+int en= length;
+loop
+  {
+    if (an >= en-1)
     {
-      if (an >= en-1)
-      {
-        int oo=set[an].ecart;
-        if((oo > op)
-           || ((oo==op) && (set[an].pLength > ol)))
-          return an;
-        return en;
-      }
-      i=(an+en) / 2;
-      int oo=set[i].ecart;
-      if ((oo > op)
-          || ((oo == op) && (set[i].pLength > ol)))
-        en=i;
-      else
-        an=i;
+      int oo=set[an].ecart;
+      if((oo > op)
+          || ((oo==op) && (set[an].pLength > ol)))
+        return an;
+      return en;
     }
+    i=(an+en) / 2;
+    int oo=set[i].ecart;
+    if ((oo > op)
+        || ((oo == op) && (set[i].pLength > ol)))
+      en=i;
+    else
+      an=i;
+  }
 }
 
 /*2
@@ -3705,55 +3705,55 @@ int posInT_EcartpLength(const TSet set,const int length,LObject &p)
 */
 int posInT15 (const TSet set,const int length,LObject &p)
 /*{
- *int j=0;
- * int o;
- *
- * o = p.GetpFDeg()+p.ecart;
- * loop
- * {
- *   if ((set[j].GetpFDeg()+set[j].ecart > o)
- *   || ((set[j].GetpFDeg()+set[j].ecart == o)
- *     && (pLmCmp(set[j].p,p.p) == pOrdSgn)))
- *   {
- *     return j;
- *   }
- *   j++;
- *   if (j > length) return j;
- * }
- *}
- */
+*int j=0;
+* int o;
+*
+* o = p.GetpFDeg()+p.ecart;
+* loop
+* {
+*   if ((set[j].GetpFDeg()+set[j].ecart > o)
+*   || ((set[j].GetpFDeg()+set[j].ecart == o)
+*     && (pLmCmp(set[j].p,p.p) == pOrdSgn)))
+*   {
+*     return j;
+*   }
+*   j++;
+*   if (j > length) return j;
+* }
+*}
+*/
 {
-  if (length==-1) return 0;
+if (length==-1) return 0;
 
-  int o = p.GetpFDeg() + p.ecart;
-  int op = set[length].GetpFDeg()+set[length].ecart;
+int o = p.GetpFDeg() + p.ecart;
+int op = set[length].GetpFDeg()+set[length].ecart;
 
-  if ((op < o)
-  || ((op == o)
-     && (pLmCmp(set[length].p,p.p) != pOrdSgn)))
-    return length+1;
+if ((op < o)
+|| ((op == o)
+    && (pLmCmp(set[length].p,p.p) != pOrdSgn)))
+  return length+1;
 
-  int i;
-  int an = 0;
-  int en= length;
-  loop
+int i;
+int an = 0;
+int en= length;
+loop
+{
+  if (an >= en-1)
   {
-    if (an >= en-1)
-    {
-      op = set[an].GetpFDeg()+set[an].ecart;
-      if (( op > o)
-      || (( op  == o) && (pLmCmp(set[an].p,p.p) == pOrdSgn)))
-        return an;
-      return en;
-    }
-    i=(an+en) / 2;
-    op = set[i].GetpFDeg()+set[i].ecart;
+    op = set[an].GetpFDeg()+set[an].ecart;
     if (( op > o)
-    || (( op == o) && (pLmCmp(set[i].p,p.p) == pOrdSgn)))
-      en=i;
-    else
-      an=i;
+    || (( op  == o) && (pLmCmp(set[an].p,p.p) == pOrdSgn)))
+      return an;
+    return en;
   }
+  i=(an+en) / 2;
+  op = set[i].GetpFDeg()+set[i].ecart;
+  if (( op > o)
+  || (( op == o) && (pLmCmp(set[i].p,p.p) == pOrdSgn)))
+    en=i;
+  else
+    an=i;
+}
 }
 
 /*2
@@ -3783,42 +3783,42 @@ int posInT17 (const TSet set,const int length,LObject &p)
 * }
 */
 {
-  if (length==-1) return 0;
+if (length==-1) return 0;
 
-  int o = p.GetpFDeg() + p.ecart;
-  int op = set[length].GetpFDeg()+set[length].ecart;
+int o = p.GetpFDeg() + p.ecart;
+int op = set[length].GetpFDeg()+set[length].ecart;
 
-  if ((op < o)
-  || (( op == o) && (set[length].ecart > p.ecart))
-  || (( op == o) && (set[length].ecart==p.ecart)
-     && (pLmCmp(set[length].p,p.p) != pOrdSgn)))
-    return length+1;
+if ((op < o)
+|| (( op == o) && (set[length].ecart > p.ecart))
+|| (( op == o) && (set[length].ecart==p.ecart)
+    && (pLmCmp(set[length].p,p.p) != pOrdSgn)))
+  return length+1;
 
-  int i;
-  int an = 0;
-  int en= length;
-  loop
+int i;
+int an = 0;
+int en= length;
+loop
+{
+  if (an >= en-1)
   {
-    if (an >= en-1)
-    {
-      op = set[an].GetpFDeg()+set[an].ecart;
-      if (( op > o)
-      || (( op == o) && (set[an].ecart < p.ecart))
-      || (( op  == o) && (set[an].ecart==p.ecart)
-         && (pLmCmp(set[an].p,p.p) == pOrdSgn)))
-        return an;
-      return en;
-    }
-    i=(an+en) / 2;
-    op = set[i].GetpFDeg()+set[i].ecart;
-    if ((op > o)
-    || (( op == o) && (set[i].ecart < p.ecart))
-    || (( op == o) && (set[i].ecart == p.ecart)
-       && (pLmCmp(set[i].p,p.p) == pOrdSgn)))
-      en=i;
-    else
-      an=i;
+    op = set[an].GetpFDeg()+set[an].ecart;
+    if (( op > o)
+    || (( op == o) && (set[an].ecart < p.ecart))
+    || (( op  == o) && (set[an].ecart==p.ecart)
+        && (pLmCmp(set[an].p,p.p) == pOrdSgn)))
+      return an;
+    return en;
   }
+  i=(an+en) / 2;
+  op = set[i].GetpFDeg()+set[i].ecart;
+  if ((op > o)
+  || (( op == o) && (set[i].ecart < p.ecart))
+  || (( op == o) && (set[i].ecart == p.ecart)
+      && (pLmCmp(set[i].p,p.p) == pOrdSgn)))
+    en=i;
+  else
+    an=i;
+}
 }
 /*2
 * looks up the position of p in set
@@ -3827,62 +3827,62 @@ int posInT17 (const TSet set,const int length,LObject &p)
 */
 int posInT17_c (const TSet set,const int length,LObject &p)
 {
-  if (length==-1) return 0;
+if (length==-1) return 0;
 
-  int cc = (-1+2*currRing->order[0]==ringorder_c);
-  /* cc==1 for (c,..), cc==-1 for (C,..) */
-  int o = p.GetpFDeg() + p.ecart;
-  int c = pGetComp(p.p)*cc;
+int cc = (-1+2*currRing->order[0]==ringorder_c);
+/* cc==1 for (c,..), cc==-1 for (C,..) */
+int o = p.GetpFDeg() + p.ecart;
+int c = pGetComp(p.p)*cc;
 
-  if (pGetComp(set[length].p)*cc < c)
+if (pGetComp(set[length].p)*cc < c)
+  return length+1;
+if (pGetComp(set[length].p)*cc == c)
+{
+  int op = set[length].GetpFDeg()+set[length].ecart;
+  if ((op < o)
+  || ((op == o) && (set[length].ecart > p.ecart))
+  || ((op == o) && (set[length].ecart==p.ecart)
+      && (pLmCmp(set[length].p,p.p) != pOrdSgn)))
     return length+1;
-  if (pGetComp(set[length].p)*cc == c)
-  {
-    int op = set[length].GetpFDeg()+set[length].ecart;
-    if ((op < o)
-    || ((op == o) && (set[length].ecart > p.ecart))
-    || ((op == o) && (set[length].ecart==p.ecart)
-       && (pLmCmp(set[length].p,p.p) != pOrdSgn)))
-      return length+1;
-  }
+}
 
-  int i;
-  int an = 0;
-  int en= length;
-  loop
+int i;
+int an = 0;
+int en= length;
+loop
+{
+  if (an >= en-1)
   {
-    if (an >= en-1)
-    {
-      if (pGetComp(set[an].p)*cc < c)
-        return en;
-      if (pGetComp(set[an].p)*cc == c)
-      {
-        int op = set[an].GetpFDeg()+set[an].ecart;
-        if ((op > o)
-        || ((op == o) && (set[an].ecart < p.ecart))
-        || ((op == o) && (set[an].ecart==p.ecart)
-           && (pLmCmp(set[an].p,p.p) == pOrdSgn)))
-          return an;
-      }
+    if (pGetComp(set[an].p)*cc < c)
       return en;
-    }
-    i=(an+en) / 2;
-    if (pGetComp(set[i].p)*cc > c)
-      en=i;
-    else if (pGetComp(set[i].p)*cc == c)
+    if (pGetComp(set[an].p)*cc == c)
     {
-      int op = set[i].GetpFDeg()+set[i].ecart;
+      int op = set[an].GetpFDeg()+set[an].ecart;
       if ((op > o)
-      || ((op == o) && (set[i].ecart < p.ecart))
-      || ((op == o) && (set[i].ecart == p.ecart)
-         && (pLmCmp(set[i].p,p.p) == pOrdSgn)))
-        en=i;
-      else
-        an=i;
+      || ((op == o) && (set[an].ecart < p.ecart))
+      || ((op == o) && (set[an].ecart==p.ecart)
+          && (pLmCmp(set[an].p,p.p) == pOrdSgn)))
+        return an;
     }
+    return en;
+  }
+  i=(an+en) / 2;
+  if (pGetComp(set[i].p)*cc > c)
+    en=i;
+  else if (pGetComp(set[i].p)*cc == c)
+  {
+    int op = set[i].GetpFDeg()+set[i].ecart;
+    if ((op > o)
+    || ((op == o) && (set[i].ecart < p.ecart))
+    || ((op == o) && (set[i].ecart == p.ecart)
+        && (pLmCmp(set[i].p,p.p) == pOrdSgn)))
+      en=i;
     else
       an=i;
   }
+  else
+    an=i;
+}
 }
 
 /*2
@@ -3892,54 +3892,54 @@ int posInT17_c (const TSet set,const int length,LObject &p)
 */
 int posInT19 (const TSet set,const int length,LObject &p)
 {
-  p.GetpLength();
-  if (length==-1) return 0;
+p.GetpLength();
+if (length==-1) return 0;
 
-  int o = p.ecart;
-  int op=p.GetpFDeg();
+int o = p.ecart;
+int op=p.GetpFDeg();
 
-  if (set[length].ecart < o)
-    return length+1;
-  if (set[length].ecart == o)
+if (set[length].ecart < o)
+  return length+1;
+if (set[length].ecart == o)
+{
+    int oo=set[length].GetpFDeg();
+    if ((oo < op) || ((oo==op) && (set[length].length < p.length)))
+      return length+1;
+}
+
+int i;
+int an = 0;
+int en= length;
+loop
+{
+  if (an >= en-1)
   {
-     int oo=set[length].GetpFDeg();
-     if ((oo < op) || ((oo==op) && (set[length].length < p.length)))
-       return length+1;
+    if (set[an].ecart > o)
+      return an;
+    if (set[an].ecart == o)
+    {
+        int oo=set[an].GetpFDeg();
+        if((oo > op)
+        || ((oo==op) && (set[an].length > p.length)))
+          return an;
+    }
+    return en;
   }
-
-  int i;
-  int an = 0;
-  int en= length;
-  loop
+  i=(an+en) / 2;
+  if (set[i].ecart > o)
+    en=i;
+  else if (set[i].ecart == o)
   {
-    if (an >= en-1)
-    {
-      if (set[an].ecart > o)
-        return an;
-      if (set[an].ecart == o)
-      {
-         int oo=set[an].GetpFDeg();
-         if((oo > op)
-         || ((oo==op) && (set[an].length > p.length)))
-           return an;
-      }
-      return en;
-    }
-    i=(an+en) / 2;
-    if (set[i].ecart > o)
-      en=i;
-    else if (set[i].ecart == o)
-    {
-       int oo=set[i].GetpFDeg();
-       if ((oo > op)
-       || ((oo == op) && (set[i].length > p.length)))
-         en=i;
-       else
-        an=i;
-    }
-    else
+      int oo=set[i].GetpFDeg();
+      if ((oo > op)
+      || ((oo == op) && (set[i].length > p.length)))
+        en=i;
+      else
       an=i;
   }
+  else
+    an=i;
+}
 }
 
 /*2
@@ -3948,41 +3948,41 @@ int posInT19 (const TSet set,const int length,LObject &p)
 *to the ordering-procedure pComp
 */
 int posInLSpecial (const LSet set, const int length,
-                   LObject *p,const kStrategy strat)
+                  LObject *p,const kStrategy strat)
 {
-  if (length<0) return 0;
+if (length<0) return 0;
 
-  int d=p->GetpFDeg();
-  int op=set[length].GetpFDeg();
+int d=p->GetpFDeg();
+int op=set[length].GetpFDeg();
 
-  if ((op > d)
-  || ((op == d) && (p->p1!=NULL)&&(set[length].p1==NULL))
-  || (pLmCmp(set[length].p,p->p)== pOrdSgn))
-     return length+1;
+if ((op > d)
+|| ((op == d) && (p->p1!=NULL)&&(set[length].p1==NULL))
+|| (pLmCmp(set[length].p,p->p)== pOrdSgn))
+    return length+1;
 
-  int i;
-  int an = 0;
-  int en= length;
-  loop
+int i;
+int an = 0;
+int en= length;
+loop
+{
+  if (an >= en-1)
   {
-    if (an >= en-1)
-    {
-      op=set[an].GetpFDeg();
-      if ((op > d)
-      || ((op == d) && (p->p1!=NULL) && (set[an].p1==NULL))
-      || (pLmCmp(set[an].p,p->p)== pOrdSgn))
-         return en;
-      return an;
-    }
-    i=(an+en) / 2;
-    op=set[i].GetpFDeg();
-    if ((op>d)
-    || ((op==d) && (p->p1!=NULL) && (set[i].p1==NULL))
-    || (pLmCmp(set[i].p,p->p) == pOrdSgn))
-      an=i;
-    else
-      en=i;
+    op=set[an].GetpFDeg();
+    if ((op > d)
+    || ((op == d) && (p->p1!=NULL) && (set[an].p1==NULL))
+    || (pLmCmp(set[an].p,p->p)== pOrdSgn))
+        return en;
+    return an;
   }
+  i=(an+en) / 2;
+  op=set[i].GetpFDeg();
+  if ((op>d)
+  || ((op==d) && (p->p1!=NULL) && (set[i].p1==NULL))
+  || (pLmCmp(set[i].p,p->p) == pOrdSgn))
+    an=i;
+  else
+    en=i;
+}
 }
 
 /*2
@@ -3991,28 +3991,28 @@ int posInLSpecial (const LSet set, const int length,
 *to the ordering-procedure pComp
 */
 int posInL0 (const LSet set, const int length,
-             LObject* p,const kStrategy strat)
+            LObject* p,const kStrategy strat)
 {
-  if (length<0) return 0;
+if (length<0) return 0;
 
-  if (pLmCmp(set[length].p,p->p)== pOrdSgn)
-    return length+1;
+if (pLmCmp(set[length].p,p->p)== pOrdSgn)
+  return length+1;
 
-  int i;
-  int an = 0;
-  int en= length;
-  loop
+int i;
+int an = 0;
+int en= length;
+loop
+{
+  if (an >= en-1)
   {
-    if (an >= en-1)
-    {
-      if (pLmCmp(set[an].p,p->p) == pOrdSgn) return en;
-      return an;
-    }
-    i=(an+en) / 2;
-    if (pLmCmp(set[i].p,p->p) == pOrdSgn) an=i;
-    else                                 en=i;
-    /*aend. fuer lazy == in !=- machen */
+    if (pLmCmp(set[an].p,p->p) == pOrdSgn) return en;
+    return an;
   }
+  i=(an+en) / 2;
+  if (pLmCmp(set[i].p,p->p) == pOrdSgn) an=i;
+  else                                 en=i;
+  /*aend. fuer lazy == in !=- machen */
+}
 }
 
 /*2
@@ -4022,28 +4022,28 @@ int posInL0 (const LSet set, const int length,
 * to the signature order
 */
 int posInLSig (const LSet set, const int length,
-              LObject* p,const kStrategy strat)
+            LObject* p,const kStrategy strat)
 {
-  if (length<0) return 0;
+if (length<0) return 0;
 
-  if (pLmCmp(set[length].p,p->p)== pOrdSgn)
-    return length+1;
+if (pLmCmp(set[length].p,p->p)== pOrdSgn)
+  return length+1;
 
-  int i;
-  int an = 0;
-  int en= length;
-  loop
+int i;
+int an = 0;
+int en= length;
+loop
+{
+  if (an >= en-1)
   {
-    if (an >= en-1)
-    {
-      if (pLmCmp(set[an].p,p->p) == pOrdSgn) return en;
-      return an;
-    }
-    i=(an+en) / 2;
-    if (pLmCmp(set[i].p,p->p) == pOrdSgn) an=i;
-    else                                 en=i;
-    /*aend. fuer lazy == in !=- machen */
+    if (pLmCmp(set[an].p,p->p) == pOrdSgn) return en;
+    return an;
   }
+  i=(an+en) / 2;
+  if (pLmCmp(set[i].p,p->p) == pOrdSgn) an=i;
+  else                                 en=i;
+  /*aend. fuer lazy == in !=- machen */
+}
 }
 
 /*2
@@ -4053,54 +4053,54 @@ int posInLSig (const LSet set, const int length,
 * to the ordering-procedure totaldegree,pComp
 */
 int posInL11 (const LSet set, const int length,
-              LObject* p,const kStrategy strat)
+            LObject* p,const kStrategy strat)
 /*{
- * int j=0;
- * int o;
- *
- * o = p->GetpFDeg();
- * loop
- * {
- *   if (j > length)            return j;
- *   if ((set[j].GetpFDeg() < o)) return j;
- *   if ((set[j].GetpFDeg() == o) && (pLmCmp(set[j].p,p->p) == -pOrdSgn))
- *   {
- *     return j;
- *   }
- *   j++;
- * }
- *}
- */
+* int j=0;
+* int o;
+*
+* o = p->GetpFDeg();
+* loop
+* {
+*   if (j > length)            return j;
+*   if ((set[j].GetpFDeg() < o)) return j;
+*   if ((set[j].GetpFDeg() == o) && (pLmCmp(set[j].p,p->p) == -pOrdSgn))
+*   {
+*     return j;
+*   }
+*   j++;
+* }
+*}
+*/
 {
-  if (length<0) return 0;
+if (length<0) return 0;
 
-  int o = p->GetpFDeg();
-  int op = set[length].GetpFDeg();
+int o = p->GetpFDeg();
+int op = set[length].GetpFDeg();
 
-  if ((op > o)
-  || ((op == o) && (pLmCmp(set[length].p,p->p) != -pOrdSgn)))
-    return length+1;
-  int i;
-  int an = 0;
-  int en= length;
-  loop
+if ((op > o)
+|| ((op == o) && (pLmCmp(set[length].p,p->p) != -pOrdSgn)))
+  return length+1;
+int i;
+int an = 0;
+int en= length;
+loop
+{
+  if (an >= en-1)
   {
-    if (an >= en-1)
-    {
-      op = set[an].GetpFDeg();
-      if ((op > o)
-      || ((op == o) && (pLmCmp(set[an].p,p->p) != -pOrdSgn)))
-        return en;
-      return an;
-    }
-    i=(an+en) / 2;
-    op = set[i].GetpFDeg();
+    op = set[an].GetpFDeg();
     if ((op > o)
-    || ((op == o) && (pLmCmp(set[i].p,p->p) != -pOrdSgn)))
-      an=i;
-    else
-      en=i;
+    || ((op == o) && (pLmCmp(set[an].p,p->p) != -pOrdSgn)))
+      return en;
+    return an;
   }
+  i=(an+en) / 2;
+  op = set[i].GetpFDeg();
+  if ((op > o)
+  || ((op == o) && (pLmCmp(set[i].p,p->p) != -pOrdSgn)))
+    an=i;
+  else
+    en=i;
+}
 }
 
 /*2 Position for rings L: Here I am
@@ -4111,94 +4111,94 @@ int posInL11 (const LSet set, const int length,
 */
 inline int getIndexRng(long coeff)
 {
-  if (coeff == 0) return -1;
-  long tmp = coeff;
-  int ind = 0;
-  while (tmp % 2 == 0)
-  {
-    tmp = tmp / 2;
-    ind++;
-  }
-  return ind;
+if (coeff == 0) return -1;
+long tmp = coeff;
+int ind = 0;
+while (tmp % 2 == 0)
+{
+  tmp = tmp / 2;
+  ind++;
+}
+return ind;
 }
 
 int posInLrg0 (const LSet set, const int length,
-              LObject* p,const kStrategy strat)
+            LObject* p,const kStrategy strat)
 /*          if (nGreater(pGetCoeff(p), pGetCoeff(set[an]))) return en;
-        if (pLmCmp(set[i],p) == cmp_int)         en = i;
-        else if (pLmCmp(set[i],p) == -cmp_int)   an = i;
-        else
-        {
-          if (nGreater(pGetCoeff(p), pGetCoeff(set[i]))) an = i;
-          else en = i;
-        }*/
+      if (pLmCmp(set[i],p) == cmp_int)         en = i;
+      else if (pLmCmp(set[i],p) == -cmp_int)   an = i;
+      else
+      {
+        if (nGreater(pGetCoeff(p), pGetCoeff(set[i]))) an = i;
+        else en = i;
+      }*/
 {
-  if (length < 0) return 0;
+if (length < 0) return 0;
 
-  int o = p->GetpFDeg();
-  int op = set[length].GetpFDeg();
+int o = p->GetpFDeg();
+int op = set[length].GetpFDeg();
 
-  if ((op > o) || ((op == o) && (pLmCmp(set[length].p,p->p) != -pOrdSgn)))
-    return length + 1;
-  int i;
-  int an = 0;
-  int en = length;
-  loop
+if ((op > o) || ((op == o) && (pLmCmp(set[length].p,p->p) != -pOrdSgn)))
+  return length + 1;
+int i;
+int an = 0;
+int en = length;
+loop
+{
+  if (an >= en - 1)
   {
-    if (an >= en - 1)
-    {
-      op = set[an].GetpFDeg();
-      if ((op > o) || ((op == o) && (pLmCmp(set[an].p,p->p) != -pOrdSgn)))
-        return en;
-      return an;
-    }
-    i = (an+en) / 2;
-    op = set[i].GetpFDeg();
-    if ((op > o) || ((op == o) && (pLmCmp(set[i].p,p->p) != -pOrdSgn)))
-      an = i;
-    else
-      en = i;
+    op = set[an].GetpFDeg();
+    if ((op > o) || ((op == o) && (pLmCmp(set[an].p,p->p) != -pOrdSgn)))
+      return en;
+    return an;
   }
+  i = (an+en) / 2;
+  op = set[i].GetpFDeg();
+  if ((op > o) || ((op == o) && (pLmCmp(set[i].p,p->p) != -pOrdSgn)))
+    an = i;
+  else
+    en = i;
+}
 }
 
 /*{
-  if (length < 0) return 0;
+if (length < 0) return 0;
 
-  int o = p->GetpFDeg();
-  int op = set[length].GetpFDeg();
+int o = p->GetpFDeg();
+int op = set[length].GetpFDeg();
 
-  int inde = getIndexRng((unsigned long) pGetCoeff(set[length].p));
-  int indp = getIndexRng((unsigned long) pGetCoeff(p->p));
-  int inda;
-  int indi;
+int inde = getIndexRng((unsigned long) pGetCoeff(set[length].p));
+int indp = getIndexRng((unsigned long) pGetCoeff(p->p));
+int inda;
+int indi;
 
-  if ((inda > indp) || ((inda == inde) && ((op > o) || ((op == o) && (pLmCmp(set[length].p,p->p) != -pOrdSgn)))))
-    return length + 1;
-  int i;
-  int an = 0;
-  inda = getIndexRng((unsigned long) pGetCoeff(set[an].p));
-  int en = length;
-  loop
+if ((inda > indp) || ((inda == inde) && ((op > o) || ((op == o) && (pLmCmp(set[length].p,p->p) != -pOrdSgn)))))
+  return length + 1;
+int i;
+int an = 0;
+inda = getIndexRng((unsigned long) pGetCoeff(set[an].p));
+int en = length;
+loop
+{
+  if (an >= en-1)
   {
-    if (an >= en-1)
-    {
-      op = set[an].GetpFDeg();
-      if ((indp > inda) || ((indp == inda) && ((op > o) || ((op == o) && (pLmCmp(set[an].p,p->p) != -pOrdSgn)))))
-        return en;
-      return an;
-    }
-    i = (an + en) / 2;
-    indi = getIndexRng((unsigned long) pGetCoeff(set[i].p));
-    op = set[i].GetpFDeg();
-    if ((indi > indp) || ((indi == indp) && ((op > o) || ((op == o) && (pLmCmp(set[i].p,p->p) != -pOrdSgn)))))
-    // if ((op > o) || ((op == o) && (pLmCmp(set[i].p,p->p) != -pOrdSgn)))
-    {
-      an = i;
-      inda = getIndexRng((unsigned long) pGetCoeff(set[an].p));
-    }
-    else
-      en = i;
+    op = set[an].GetpFDeg();
+    if ((indp > inda) || ((indp == inda) && ((op > o) || ((op == o) && (pLmCmp(set[an].p,p->p) != -pOrdSgn)))))
+      return en;
+    return an;
   }
+  i = (an + en) / 2;
+  indi = getIndexRng((unsigned long) pGetCoeff(set[i].p));
+  op = set[i].GetpFDeg();
+  if ((indi > indp) || ((indi == indp) && ((op > o) || ((op == o) && (pLmCmp(set[i].p,p->p) != -pOrdSgn)))))
+  // if ((op > o) || ((op == o) && (pLmCmp(set[i].p,p->p) != -pOrdSgn)))
+  {
+    an = i;
+    inda = getIndexRng((unsigned long) pGetCoeff(set[an].p));
+  }
+  else
+    en = i;
+}
 } */
 
 /*2
@@ -4207,43 +4207,43 @@ int posInLrg0 (const LSet set, const int length,
 * to the ordering-procedure totaldegree,pLength0
 */
 int posInL110 (const LSet set, const int length,
-               LObject* p,const kStrategy strat)
+              LObject* p,const kStrategy strat)
 {
-  if (length<0) return 0;
+if (length<0) return 0;
 
-  int o = p->GetpFDeg();
-  int op = set[length].GetpFDeg();
+int o = p->GetpFDeg();
+int op = set[length].GetpFDeg();
 
-  if ((op > o)
-  || ((op == o) && (set[length].length >p->length))
-  || ((op == o) && (set[length].length <= p->length)
-     && (pLmCmp(set[length].p,p->p) != -pOrdSgn)))
-    return length+1;
-  int i;
-  int an = 0;
-  int en= length;
-  loop
+if ((op > o)
+|| ((op == o) && (set[length].length >p->length))
+|| ((op == o) && (set[length].length <= p->length)
+    && (pLmCmp(set[length].p,p->p) != -pOrdSgn)))
+  return length+1;
+int i;
+int an = 0;
+int en= length;
+loop
+{
+  if (an >= en-1)
   {
-    if (an >= en-1)
-    {
-      op = set[an].GetpFDeg();
-      if ((op > o)
-      || ((op == o) && (set[an].length >p->length))
-      || ((op == o) && (set[an].length <=p->length)
-         && (pLmCmp(set[an].p,p->p) != -pOrdSgn)))
-        return en;
-      return an;
-    }
-    i=(an+en) / 2;
-    op = set[i].GetpFDeg();
+    op = set[an].GetpFDeg();
     if ((op > o)
-    || ((op == o) && (set[i].length > p->length))
-    || ((op == o) && (set[i].length <= p->length)
-       && (pLmCmp(set[i].p,p->p) != -pOrdSgn)))
-      an=i;
-    else
-      en=i;
+    || ((op == o) && (set[an].length >p->length))
+    || ((op == o) && (set[an].length <=p->length)
+        && (pLmCmp(set[an].p,p->p) != -pOrdSgn)))
+      return en;
+    return an;
   }
+  i=(an+en) / 2;
+  op = set[i].GetpFDeg();
+  if ((op > o)
+  || ((op == o) && (set[i].length > p->length))
+  || ((op == o) && (set[i].length <= p->length)
+      && (pLmCmp(set[i].p,p->p) != -pOrdSgn)))
+    an=i;
+  else
+    en=i;
+}
 }
 
 /*2
@@ -4253,32 +4253,32 @@ int posInL110 (const LSet set, const int length,
 * to the ordering-procedure totaldegree
 */
 int posInL13 (const LSet set, const int length,
-              LObject* p,const kStrategy strat)
+            LObject* p,const kStrategy strat)
 {
-  if (length<0) return 0;
+if (length<0) return 0;
 
-  int o = p->GetpFDeg();
+int o = p->GetpFDeg();
 
-  if (set[length].GetpFDeg() > o)
-    return length+1;
+if (set[length].GetpFDeg() > o)
+  return length+1;
 
-  int i;
-  int an = 0;
-  int en= length;
-  loop
+int i;
+int an = 0;
+int en= length;
+loop
+{
+  if (an >= en-1)
   {
-    if (an >= en-1)
-    {
-      if (set[an].GetpFDeg() >= o)
-        return en;
-      return an;
-    }
-    i=(an+en) / 2;
-    if (set[i].GetpFDeg() >= o)
-      an=i;
-    else
-      en=i;
+    if (set[an].GetpFDeg() >= o)
+      return en;
+    return an;
   }
+  i=(an+en) / 2;
+  if (set[i].GetpFDeg() >= o)
+    an=i;
+  else
+    en=i;
+}
 }
 
 /*2
@@ -4288,55 +4288,55 @@ int posInL13 (const LSet set, const int length,
 * to the ordering-procedure maximaldegree,pComp
 */
 int posInL15 (const LSet set, const int length,
-              LObject* p,const kStrategy strat)
+            LObject* p,const kStrategy strat)
 /*{
- * int j=0;
- * int o;
- *
- * o = p->ecart+p->GetpFDeg();
- * loop
- * {
- *   if (j > length)                       return j;
- *   if (set[j].GetpFDeg()+set[j].ecart < o) return j;
- *   if ((set[j].GetpFDeg()+set[j].ecart == o)
- *   && (pLmCmp(set[j].p,p->p) == -pOrdSgn))
- *   {
- *     return j;
- *   }
- *   j++;
- * }
- *}
- */
+* int j=0;
+* int o;
+*
+* o = p->ecart+p->GetpFDeg();
+* loop
+* {
+*   if (j > length)                       return j;
+*   if (set[j].GetpFDeg()+set[j].ecart < o) return j;
+*   if ((set[j].GetpFDeg()+set[j].ecart == o)
+*   && (pLmCmp(set[j].p,p->p) == -pOrdSgn))
+*   {
+*     return j;
+*   }
+*   j++;
+* }
+*}
+*/
 {
-  if (length<0) return 0;
+if (length<0) return 0;
 
-  int o = p->GetpFDeg() + p->ecart;
-  int op = set[length].GetpFDeg() + set[length].ecart;
+int o = p->GetpFDeg() + p->ecart;
+int op = set[length].GetpFDeg() + set[length].ecart;
 
-  if ((op > o)
-  || ((op == o) && (pLmCmp(set[length].p,p->p) != -pOrdSgn)))
-    return length+1;
-  int i;
-  int an = 0;
-  int en= length;
-  loop
+if ((op > o)
+|| ((op == o) && (pLmCmp(set[length].p,p->p) != -pOrdSgn)))
+  return length+1;
+int i;
+int an = 0;
+int en= length;
+loop
+{
+  if (an >= en-1)
   {
-    if (an >= en-1)
-    {
-      op = set[an].GetpFDeg() + set[an].ecart;
-      if ((op > o)
-      || ((op == o) && (pLmCmp(set[an].p,p->p) != -pOrdSgn)))
-        return en;
-      return an;
-    }
-    i=(an+en) / 2;
-    op = set[i].GetpFDeg() + set[i].ecart;
+    op = set[an].GetpFDeg() + set[an].ecart;
     if ((op > o)
-    || ((op == o) && (pLmCmp(set[i].p,p->p) != -pOrdSgn)))
-      an=i;
-    else
-      en=i;
+    || ((op == o) && (pLmCmp(set[an].p,p->p) != -pOrdSgn)))
+      return en;
+    return an;
   }
+  i=(an+en) / 2;
+  op = set[i].GetpFDeg() + set[i].ecart;
+  if ((op > o)
+  || ((op == o) && (pLmCmp(set[i].p,p->p) != -pOrdSgn)))
+    an=i;
+  else
+    en=i;
+}
 }
 
 /*2
@@ -4346,46 +4346,46 @@ int posInL15 (const LSet set, const int length,
 * to the ordering-procedure totaldegree
 */
 int posInL17 (const LSet set, const int length,
-              LObject* p,const kStrategy strat)
+            LObject* p,const kStrategy strat)
 {
-  if (length<0) return 0;
+if (length<0) return 0;
 
-  int o = p->GetpFDeg() + p->ecart;
+int o = p->GetpFDeg() + p->ecart;
 
-  if ((set[length].GetpFDeg() + set[length].ecart > o)
-  || ((set[length].GetpFDeg() + set[length].ecart == o)
-     && (set[length].ecart > p->ecart))
-  || ((set[length].GetpFDeg() + set[length].ecart == o)
-     && (set[length].ecart == p->ecart)
-     && (pLmCmp(set[length].p,p->p) != -pOrdSgn)))
-    return length+1;
-  int i;
-  int an = 0;
-  int en= length;
-  loop
+if ((set[length].GetpFDeg() + set[length].ecart > o)
+|| ((set[length].GetpFDeg() + set[length].ecart == o)
+    && (set[length].ecart > p->ecart))
+|| ((set[length].GetpFDeg() + set[length].ecart == o)
+    && (set[length].ecart == p->ecart)
+    && (pLmCmp(set[length].p,p->p) != -pOrdSgn)))
+  return length+1;
+int i;
+int an = 0;
+int en= length;
+loop
+{
+  if (an >= en-1)
   {
-    if (an >= en-1)
-    {
-      if ((set[an].GetpFDeg() + set[an].ecart > o)
-      || ((set[an].GetpFDeg() + set[an].ecart == o)
-         && (set[an].ecart > p->ecart))
-      || ((set[an].GetpFDeg() + set[an].ecart == o)
-         && (set[an].ecart == p->ecart)
-         && (pLmCmp(set[an].p,p->p) != -pOrdSgn)))
-        return en;
-      return an;
-    }
-    i=(an+en) / 2;
-    if ((set[i].GetpFDeg() + set[i].ecart > o)
-    || ((set[i].GetpFDeg() + set[i].ecart == o)
-       && (set[i].ecart > p->ecart))
-    || ((set[i].GetpFDeg() +set[i].ecart == o)
-       && (set[i].ecart == p->ecart)
-       && (pLmCmp(set[i].p,p->p) != -pOrdSgn)))
-      an=i;
-    else
-      en=i;
+    if ((set[an].GetpFDeg() + set[an].ecart > o)
+    || ((set[an].GetpFDeg() + set[an].ecart == o)
+        && (set[an].ecart > p->ecart))
+    || ((set[an].GetpFDeg() + set[an].ecart == o)
+        && (set[an].ecart == p->ecart)
+        && (pLmCmp(set[an].p,p->p) != -pOrdSgn)))
+      return en;
+    return an;
   }
+  i=(an+en) / 2;
+  if ((set[i].GetpFDeg() + set[i].ecart > o)
+  || ((set[i].GetpFDeg() + set[i].ecart == o)
+      && (set[i].ecart > p->ecart))
+  || ((set[i].GetpFDeg() +set[i].ecart == o)
+      && (set[i].ecart == p->ecart)
+      && (pLmCmp(set[i].p,p->p) != -pOrdSgn)))
+    an=i;
+  else
+    en=i;
+}
 }
 /*2
 * looks up the position of polynomial p in set
@@ -4394,424 +4394,424 @@ int posInL17 (const LSet set, const int length,
 * to the ordering-procedure pComp
 */
 int posInL17_c (const LSet set, const int length,
-                LObject* p,const kStrategy strat)
+              LObject* p,const kStrategy strat)
 {
-  if (length<0) return 0;
+if (length<0) return 0;
 
-  int cc = (-1+2*currRing->order[0]==ringorder_c);
-  /* cc==1 for (c,..), cc==-1 for (C,..) */
-  int c = pGetComp(p->p)*cc;
-  int o = p->GetpFDeg() + p->ecart;
+int cc = (-1+2*currRing->order[0]==ringorder_c);
+/* cc==1 for (c,..), cc==-1 for (C,..) */
+int c = pGetComp(p->p)*cc;
+int o = p->GetpFDeg() + p->ecart;
 
-  if (pGetComp(set[length].p)*cc > c)
+if (pGetComp(set[length].p)*cc > c)
+  return length+1;
+if (pGetComp(set[length].p)*cc == c)
+{
+  if ((set[length].GetpFDeg() + set[length].ecart > o)
+  || ((set[length].GetpFDeg() + set[length].ecart == o)
+      && (set[length].ecart > p->ecart))
+  || ((set[length].GetpFDeg() + set[length].ecart == o)
+      && (set[length].ecart == p->ecart)
+      && (pLmCmp(set[length].p,p->p) != -pOrdSgn)))
     return length+1;
-  if (pGetComp(set[length].p)*cc == c)
+}
+int i;
+int an = 0;
+int en= length;
+loop
+{
+  if (an >= en-1)
   {
-    if ((set[length].GetpFDeg() + set[length].ecart > o)
-    || ((set[length].GetpFDeg() + set[length].ecart == o)
-       && (set[length].ecart > p->ecart))
-    || ((set[length].GetpFDeg() + set[length].ecart == o)
-       && (set[length].ecart == p->ecart)
-       && (pLmCmp(set[length].p,p->p) != -pOrdSgn)))
-      return length+1;
-  }
-  int i;
-  int an = 0;
-  int en= length;
-  loop
-  {
-    if (an >= en-1)
+    if (pGetComp(set[an].p)*cc > c)
+      return en;
+    if (pGetComp(set[an].p)*cc == c)
     {
-      if (pGetComp(set[an].p)*cc > c)
+      if ((set[an].GetpFDeg() + set[an].ecart > o)
+      || ((set[an].GetpFDeg() + set[an].ecart == o)
+          && (set[an].ecart > p->ecart))
+      || ((set[an].GetpFDeg() + set[an].ecart == o)
+          && (set[an].ecart == p->ecart)
+          && (pLmCmp(set[an].p,p->p) != -pOrdSgn)))
         return en;
-      if (pGetComp(set[an].p)*cc == c)
-      {
-        if ((set[an].GetpFDeg() + set[an].ecart > o)
-        || ((set[an].GetpFDeg() + set[an].ecart == o)
-           && (set[an].ecart > p->ecart))
-        || ((set[an].GetpFDeg() + set[an].ecart == o)
-           && (set[an].ecart == p->ecart)
-           && (pLmCmp(set[an].p,p->p) != -pOrdSgn)))
-          return en;
-      }
-      return an;
     }
-    i=(an+en) / 2;
-    if (pGetComp(set[i].p)*cc > c)
+    return an;
+  }
+  i=(an+en) / 2;
+  if (pGetComp(set[i].p)*cc > c)
+    an=i;
+  else if (pGetComp(set[i].p)*cc == c)
+  {
+    if ((set[i].GetpFDeg() + set[i].ecart > o)
+    || ((set[i].GetpFDeg() + set[i].ecart == o)
+        && (set[i].ecart > p->ecart))
+    || ((set[i].GetpFDeg() +set[i].ecart == o)
+        && (set[i].ecart == p->ecart)
+        && (pLmCmp(set[i].p,p->p) != -pOrdSgn)))
       an=i;
-    else if (pGetComp(set[i].p)*cc == c)
-    {
-      if ((set[i].GetpFDeg() + set[i].ecart > o)
-      || ((set[i].GetpFDeg() + set[i].ecart == o)
-         && (set[i].ecart > p->ecart))
-      || ((set[i].GetpFDeg() +set[i].ecart == o)
-         && (set[i].ecart == p->ecart)
-         && (pLmCmp(set[i].p,p->p) != -pOrdSgn)))
-        an=i;
-      else
-        en=i;
-    }
     else
       en=i;
   }
+  else
+    en=i;
+}
 }
 
 /***************************************************************
- *
- * Tail reductions
- *
- ***************************************************************/
+*
+* Tail reductions
+*
+***************************************************************/
 TObject*
 kFindDivisibleByInS(kStrategy strat, int pos, LObject* L, TObject *T,
-                    long ecart)
+                  long ecart)
 {
-  int j = 0;
-  const unsigned long not_sev = ~L->sev;
-  const unsigned long* sev = strat->sevS;
-  poly p;
-  ring r;
-  L->GetLm(p, r);
+int j = 0;
+const unsigned long not_sev = ~L->sev;
+const unsigned long* sev = strat->sevS;
+poly p;
+ring r;
+L->GetLm(p, r);
 
-  assume(~not_sev == p_GetShortExpVector(p, r));
+assume(~not_sev == p_GetShortExpVector(p, r));
 
-  if (r == currRing)
+if (r == currRing)
+{
+  loop
   {
-    loop
-    {
-      if (j > pos) return NULL;
+    if (j > pos) return NULL;
 #if defined(PDEBUG) || defined(PDIV_DEBUG)
-      if (p_LmShortDivisibleBy(strat->S[j], sev[j], p, not_sev, r) &&
-          (ecart== LONG_MAX || ecart>= strat->ecartS[j]))
-        break;
+    if (p_LmShortDivisibleBy(strat->S[j], sev[j], p, not_sev, r) &&
+        (ecart== LONG_MAX || ecart>= strat->ecartS[j]))
+      break;
 #else
-      if (!(sev[j] & not_sev) &&
-          (ecart== LONG_MAX || ecart>= strat->ecartS[j]) &&
-          p_LmDivisibleBy(strat->S[j], p, r))
-        break;
+    if (!(sev[j] & not_sev) &&
+        (ecart== LONG_MAX || ecart>= strat->ecartS[j]) &&
+        p_LmDivisibleBy(strat->S[j], p, r))
+      break;
 
 #endif
-      j++;
-    }
-    // if called from NF, T objects do not exist:
-    if (strat->tl < 0 || strat->S_2_R[j] == -1)
-    {
-      T->Set(strat->S[j], r, strat->tailRing);
-      return T;
-    }
-    else
-    {
-/////      assume (j >= 0 && j <= strat->tl && strat->S_2_T(j) != NULL
-/////      && strat->S_2_T(j)->p == strat->S[j]); // wrong?
-//      assume (j >= 0 && j <= strat->sl && strat->S_2_T(j) != NULL && strat->S_2_T(j)->p == strat->S[j]);
-      return strat->S_2_T(j);
-    }
+    j++;
+  }
+  // if called from NF, T objects do not exist:
+  if (strat->tl < 0 || strat->S_2_R[j] == -1)
+  {
+    T->Set(strat->S[j], r, strat->tailRing);
+    return T;
   }
   else
   {
-    TObject* t;
-    loop
-    {
-      if (j > pos) return NULL;
-      assume(strat->S_2_R[j] != -1);
-#if defined(PDEBUG) || defined(PDIV_DEBUG)
-      t = strat->S_2_T(j);
-      assume(t != NULL && t->t_p != NULL && t->tailRing == r);
-      if (p_LmShortDivisibleBy(t->t_p, sev[j], p, not_sev, r) &&
-          (ecart== LONG_MAX || ecart>= strat->ecartS[j]))
-        return t;
-#else
-      if (! (sev[j] & not_sev) && (ecart== LONG_MAX || ecart>= strat->ecartS[j]))
-      {
-        t = strat->S_2_T(j);
-        assume(t != NULL && t->t_p != NULL && t->tailRing == r && t->p == strat->S[j]);
-        if (p_LmDivisibleBy(t->t_p, p, r)) return t;
-      }
-#endif
-      j++;
-    }
+/////      assume (j >= 0 && j <= strat->tl && strat->S_2_T(j) != NULL
+/////      && strat->S_2_T(j)->p == strat->S[j]); // wrong?
+//      assume (j >= 0 && j <= strat->sl && strat->S_2_T(j) != NULL && strat->S_2_T(j)->p == strat->S[j]);
+    return strat->S_2_T(j);
   }
+}
+else
+{
+  TObject* t;
+  loop
+  {
+    if (j > pos) return NULL;
+    assume(strat->S_2_R[j] != -1);
+#if defined(PDEBUG) || defined(PDIV_DEBUG)
+    t = strat->S_2_T(j);
+    assume(t != NULL && t->t_p != NULL && t->tailRing == r);
+    if (p_LmShortDivisibleBy(t->t_p, sev[j], p, not_sev, r) &&
+        (ecart== LONG_MAX || ecart>= strat->ecartS[j]))
+      return t;
+#else
+    if (! (sev[j] & not_sev) && (ecart== LONG_MAX || ecart>= strat->ecartS[j]))
+    {
+      t = strat->S_2_T(j);
+      assume(t != NULL && t->t_p != NULL && t->tailRing == r && t->p == strat->S[j]);
+      if (p_LmDivisibleBy(t->t_p, p, r)) return t;
+    }
+#endif
+    j++;
+  }
+}
 }
 
 poly redtail (LObject* L, int pos, kStrategy strat)
 {
-  poly h, hn;
-  int j;
-  unsigned long not_sev;
-  strat->redTailChange=FALSE;
+poly h, hn;
+int j;
+unsigned long not_sev;
+strat->redTailChange=FALSE;
 
-  poly p = L->p;
-  if (strat->noTailReduction || pNext(p) == NULL)
-    return p;
+poly p = L->p;
+if (strat->noTailReduction || pNext(p) == NULL)
+  return p;
 
-  LObject Ln(strat->tailRing);
-  TObject* With;
-  // placeholder in case strat->tl < 0
-  TObject  With_s(strat->tailRing);
-  h = p;
-  hn = pNext(h);
-  long op = strat->tailRing->pFDeg(hn, strat->tailRing);
-  long e;
-  int l;
-  BOOLEAN save_HE=strat->kHEdgeFound;
-  strat->kHEdgeFound |=
-    ((Kstd1_deg>0) && (op<=Kstd1_deg)) || TEST_OPT_INFREDTAIL;
+LObject Ln(strat->tailRing);
+TObject* With;
+// placeholder in case strat->tl < 0
+TObject  With_s(strat->tailRing);
+h = p;
+hn = pNext(h);
+long op = strat->tailRing->pFDeg(hn, strat->tailRing);
+long e;
+int l;
+BOOLEAN save_HE=strat->kHEdgeFound;
+strat->kHEdgeFound |=
+  ((Kstd1_deg>0) && (op<=Kstd1_deg)) || TEST_OPT_INFREDTAIL;
 
-  while(hn != NULL)
+while(hn != NULL)
+{
+  op = strat->tailRing->pFDeg(hn, strat->tailRing);
+  if ((Kstd1_deg>0)&&(op>Kstd1_deg)) goto all_done;
+  e = strat->tailRing->pLDeg(hn, &l, strat->tailRing) - op;
+  loop
   {
+    Ln.Set(hn, strat->tailRing);
+    Ln.sev = p_GetShortExpVector(hn, strat->tailRing);
+    if (strat->kHEdgeFound)
+      With = kFindDivisibleByInS(strat, pos, &Ln, &With_s);
+    else
+      With = kFindDivisibleByInS(strat, pos, &Ln, &With_s, e);
+    if (With == NULL) break;
+    With->length=0;
+    With->pLength=0;
+    strat->redTailChange=TRUE;
+    if (ksReducePolyTail(L, With, h, strat->kNoetherTail()))
+    {
+      // reducing the tail would violate the exp bound
+      if (kStratChangeTailRing(strat, L))
+      {
+        strat->kHEdgeFound = save_HE;
+        return redtail(L, pos, strat);
+      }
+      else
+        return NULL;
+    }
+    hn = pNext(h);
+    if (hn == NULL) goto all_done;
     op = strat->tailRing->pFDeg(hn, strat->tailRing);
     if ((Kstd1_deg>0)&&(op>Kstd1_deg)) goto all_done;
     e = strat->tailRing->pLDeg(hn, &l, strat->tailRing) - op;
-    loop
-    {
-      Ln.Set(hn, strat->tailRing);
-      Ln.sev = p_GetShortExpVector(hn, strat->tailRing);
-      if (strat->kHEdgeFound)
-        With = kFindDivisibleByInS(strat, pos, &Ln, &With_s);
-      else
-        With = kFindDivisibleByInS(strat, pos, &Ln, &With_s, e);
-      if (With == NULL) break;
-      With->length=0;
-      With->pLength=0;
-      strat->redTailChange=TRUE;
-      if (ksReducePolyTail(L, With, h, strat->kNoetherTail()))
-      {
-        // reducing the tail would violate the exp bound
-        if (kStratChangeTailRing(strat, L))
-        {
-          strat->kHEdgeFound = save_HE;
-          return redtail(L, pos, strat);
-        }
-        else
-          return NULL;
-      }
-      hn = pNext(h);
-      if (hn == NULL) goto all_done;
-      op = strat->tailRing->pFDeg(hn, strat->tailRing);
-      if ((Kstd1_deg>0)&&(op>Kstd1_deg)) goto all_done;
-      e = strat->tailRing->pLDeg(hn, &l, strat->tailRing) - op;
-    }
-    h = hn;
-    hn = pNext(h);
   }
+  h = hn;
+  hn = pNext(h);
+}
 
-  all_done:
-  if (strat->redTailChange)
-  {
-    L->last = NULL;
-    L->pLength = 0;
-  }
-  strat->kHEdgeFound = save_HE;
-  return p;
+all_done:
+if (strat->redTailChange)
+{
+  L->last = NULL;
+  L->pLength = 0;
+}
+strat->kHEdgeFound = save_HE;
+return p;
 }
 
 poly redtail (poly p, int pos, kStrategy strat)
 {
-  LObject L(p, currRing);
-  return redtail(&L, pos, strat);
+LObject L(p, currRing);
+return redtail(&L, pos, strat);
 }
 
 poly redtailBba (LObject* L, int pos, kStrategy strat, BOOLEAN withT, BOOLEAN normalize)
 {
 #define REDTAIL_CANONICALIZE 100
-  strat->redTailChange=FALSE;
-  if (strat->noTailReduction) return L->GetLmCurrRing();
-  poly h, p;
-  p = h = L->GetLmTailRing();
-  if ((h==NULL) || (pNext(h)==NULL))
-    return L->GetLmCurrRing();
-
-  TObject* With;
-  // placeholder in case strat->tl < 0
-  TObject  With_s(strat->tailRing);
-
-  LObject Ln(pNext(h), strat->tailRing);
-  Ln.pLength = L->GetpLength() - 1;
-
-  pNext(h) = NULL;
-  if (L->p != NULL) pNext(L->p) = NULL;
-  L->pLength = 1;
-
-  Ln.PrepareRed(strat->use_buckets);
-
-  int cnt=REDTAIL_CANONICALIZE;
-  while(!Ln.IsNull())
-  {
-    loop
-    {
-      Ln.SetShortExpVector();
-      if (withT)
-      {
-        int j;
-        j = kFindDivisibleByInT(strat->T, strat->sevT, strat->tl, &Ln);
-        if (j < 0) break;
-        With = &(strat->T[j]);
-      }
-      else
-      {
-        With = kFindDivisibleByInS(strat, pos, &Ln, &With_s);
-        if (With == NULL) break;
-      }
-      cnt--;
-      if (cnt==0)
-      {
-        cnt=REDTAIL_CANONICALIZE;
-        poly tmp=Ln.CanonicalizeP();
-        if (normalize)
-        {
-          Ln.Normalize();
-          //pNormalize(tmp);
-          //if (TEST_OPT_PROT) { PrintS("n"); mflush(); }
-        }
-      }
-      if (normalize && (!TEST_OPT_INTSTRATEGY) && (!nIsOne(pGetCoeff(With->p))))
-      {
-        With->pNorm();
-      }
-      strat->redTailChange=TRUE;
-      if (ksReducePolyTail(L, With, &Ln))
-      {
-        // reducing the tail would violate the exp bound
-        //  set a flag and hope for a retry (in bba)
-        strat->completeReduce_retry=TRUE;
-        if ((Ln.p != NULL) && (Ln.t_p != NULL)) Ln.p=NULL;
-        do
-        {
-          pNext(h) = Ln.LmExtractAndIter();
-          pIter(h);
-          L->pLength++;
-        } while (!Ln.IsNull());
-        goto all_done;
-      }
-      if (Ln.IsNull()) goto all_done;
-      if (! withT) With_s.Init(currRing);
-    }
-    pNext(h) = Ln.LmExtractAndIter();
-    pIter(h);
-    pNormalize(h);
-    L->pLength++;
-  }
-
-  all_done:
-  Ln.Delete();
-  if (L->p != NULL) pNext(L->p) = pNext(p);
-
-  if (strat->redTailChange)
-  {
-    L->last = NULL;
-    L->length = 0;
-  }
-
-  //if (TEST_OPT_PROT) { PrintS("N"); mflush(); }
-  //L->Normalize(); // HANNES: should have a test
-  kTest_L(L);
+strat->redTailChange=FALSE;
+if (strat->noTailReduction) return L->GetLmCurrRing();
+poly h, p;
+p = h = L->GetLmTailRing();
+if ((h==NULL) || (pNext(h)==NULL))
   return L->GetLmCurrRing();
+
+TObject* With;
+// placeholder in case strat->tl < 0
+TObject  With_s(strat->tailRing);
+
+LObject Ln(pNext(h), strat->tailRing);
+Ln.pLength = L->GetpLength() - 1;
+
+pNext(h) = NULL;
+if (L->p != NULL) pNext(L->p) = NULL;
+L->pLength = 1;
+
+Ln.PrepareRed(strat->use_buckets);
+
+int cnt=REDTAIL_CANONICALIZE;
+while(!Ln.IsNull())
+{
+  loop
+  {
+    Ln.SetShortExpVector();
+    if (withT)
+    {
+      int j;
+      j = kFindDivisibleByInT(strat->T, strat->sevT, strat->tl, &Ln);
+      if (j < 0) break;
+      With = &(strat->T[j]);
+    }
+    else
+    {
+      With = kFindDivisibleByInS(strat, pos, &Ln, &With_s);
+      if (With == NULL) break;
+    }
+    cnt--;
+    if (cnt==0)
+    {
+      cnt=REDTAIL_CANONICALIZE;
+      poly tmp=Ln.CanonicalizeP();
+      if (normalize)
+      {
+        Ln.Normalize();
+        //pNormalize(tmp);
+        //if (TEST_OPT_PROT) { PrintS("n"); mflush(); }
+      }
+    }
+    if (normalize && (!TEST_OPT_INTSTRATEGY) && (!nIsOne(pGetCoeff(With->p))))
+    {
+      With->pNorm();
+    }
+    strat->redTailChange=TRUE;
+    if (ksReducePolyTail(L, With, &Ln))
+    {
+      // reducing the tail would violate the exp bound
+      //  set a flag and hope for a retry (in bba)
+      strat->completeReduce_retry=TRUE;
+      if ((Ln.p != NULL) && (Ln.t_p != NULL)) Ln.p=NULL;
+      do
+      {
+        pNext(h) = Ln.LmExtractAndIter();
+        pIter(h);
+        L->pLength++;
+      } while (!Ln.IsNull());
+      goto all_done;
+    }
+    if (Ln.IsNull()) goto all_done;
+    if (! withT) With_s.Init(currRing);
+  }
+  pNext(h) = Ln.LmExtractAndIter();
+  pIter(h);
+  pNormalize(h);
+  L->pLength++;
+}
+
+all_done:
+Ln.Delete();
+if (L->p != NULL) pNext(L->p) = pNext(p);
+
+if (strat->redTailChange)
+{
+  L->last = NULL;
+  L->length = 0;
+}
+
+//if (TEST_OPT_PROT) { PrintS("N"); mflush(); }
+//L->Normalize(); // HANNES: should have a test
+kTest_L(L);
+return L->GetLmCurrRing();
 }
 
 #ifdef HAVE_RINGS
 poly redtailBba_Z (LObject* L, int pos, kStrategy strat )
 // normalize=FALSE, withT=FALSE, coeff=Z
 {
-  strat->redTailChange=FALSE;
-  if (strat->noTailReduction) return L->GetLmCurrRing();
-  poly h, p;
-  p = h = L->GetLmTailRing();
-  if ((h==NULL) || (pNext(h)==NULL))
-    return L->GetLmCurrRing();
+strat->redTailChange=FALSE;
+if (strat->noTailReduction) return L->GetLmCurrRing();
+poly h, p;
+p = h = L->GetLmTailRing();
+if ((h==NULL) || (pNext(h)==NULL))
+  return L->GetLmCurrRing();
 
-  TObject* With;
-  // placeholder in case strat->tl < 0
-  TObject  With_s(strat->tailRing);
+TObject* With;
+// placeholder in case strat->tl < 0
+TObject  With_s(strat->tailRing);
 
-  LObject Ln(pNext(h), strat->tailRing);
-  Ln.pLength = L->GetpLength() - 1;
+LObject Ln(pNext(h), strat->tailRing);
+Ln.pLength = L->GetpLength() - 1;
 
-  pNext(h) = NULL;
-  if (L->p != NULL) pNext(L->p) = NULL;
-  L->pLength = 1;
+pNext(h) = NULL;
+if (L->p != NULL) pNext(L->p) = NULL;
+L->pLength = 1;
 
-  Ln.PrepareRed(strat->use_buckets);
+Ln.PrepareRed(strat->use_buckets);
 
-  int cnt=REDTAIL_CANONICALIZE;
-  while(!Ln.IsNull())
+int cnt=REDTAIL_CANONICALIZE;
+while(!Ln.IsNull())
+{
+  loop
   {
-    loop
+    Ln.SetShortExpVector();
+    With = kFindDivisibleByInS(strat, pos, &Ln, &With_s);
+    if (With == NULL) break;
+    cnt--;
+    if (cnt==0)
     {
-      Ln.SetShortExpVector();
-      With = kFindDivisibleByInS(strat, pos, &Ln, &With_s);
-      if (With == NULL) break;
-      cnt--;
-      if (cnt==0)
+      cnt=REDTAIL_CANONICALIZE;
+      poly tmp=Ln.CanonicalizeP();
+    }
+    // we are in Z, do not Ccall pNorm
+    strat->redTailChange=TRUE;
+    // test divisibility of coefs:
+    poly p_Ln=Ln.GetLmCurrRing();
+    poly p_With=With->GetLmCurrRing();
+    number z=nIntMod(pGetCoeff(p_Ln),pGetCoeff(p_With));
+    if (!nIsZero(z))
+    {
+      // subtract z*Ln, add z.Ln to L
+      poly m=pHead(p_Ln);
+      pSetCoeff(m,z);
+      poly mm=pHead(m);
+      pNext(h) = m;
+      pIter(h);
+      L->pLength++;
+      mm=pNeg(mm);
+      if (Ln.bucket!=NULL)
       {
-        cnt=REDTAIL_CANONICALIZE;
-        poly tmp=Ln.CanonicalizeP();
-      }
-      // we are in Z, do not Ccall pNorm
-      strat->redTailChange=TRUE;
-      // test divisibility of coefs:
-      poly p_Ln=Ln.GetLmCurrRing();
-      poly p_With=With->GetLmCurrRing();
-      number z=nIntMod(pGetCoeff(p_Ln),pGetCoeff(p_With));
-      if (!nIsZero(z))
-      {
-        // subtract z*Ln, add z.Ln to L
-        poly m=pHead(p_Ln);
-        pSetCoeff(m,z);
-        poly mm=pHead(m);
-        pNext(h) = m;
-        pIter(h);
-        L->pLength++;
-        mm=pNeg(mm);
-        if (Ln.bucket!=NULL)
-        {
-          int dummy=1;
-          kBucket_Add_q(Ln.bucket,mm,&dummy);
-        }
-        else
-        {
-          if (Ln.p!=NULL) Ln.p=pAdd(Ln.p,mm);
-          else if (Ln.t_p!=NULL)  Ln.t_p=p_Add_q(Ln.t_p,mm,strat->tailRing);
-        }
+        int dummy=1;
+        kBucket_Add_q(Ln.bucket,mm,&dummy);
       }
       else
-        nDelete(&z);
-
-      if (ksReducePolyTail(L, With, &Ln))
       {
-        // reducing the tail would violate the exp bound
-        //  set a flag and hope for a retry (in bba)
-        strat->completeReduce_retry=TRUE;
-        if ((Ln.p != NULL) && (Ln.t_p != NULL)) Ln.p=NULL;
-        do
-        {
-          pNext(h) = Ln.LmExtractAndIter();
-          pIter(h);
-          L->pLength++;
-        } while (!Ln.IsNull());
-        goto all_done;
+        if (Ln.p!=NULL) Ln.p=pAdd(Ln.p,mm);
+        else if (Ln.t_p!=NULL)  Ln.t_p=p_Add_q(Ln.t_p,mm,strat->tailRing);
       }
-      if (Ln.IsNull()) goto all_done;
-      With_s.Init(currRing);
     }
-    pNext(h) = Ln.LmExtractAndIter();
-    pIter(h);
-    pNormalize(h);
-    L->pLength++;
+    else
+      nDelete(&z);
+
+    if (ksReducePolyTail(L, With, &Ln))
+    {
+      // reducing the tail would violate the exp bound
+      //  set a flag and hope for a retry (in bba)
+      strat->completeReduce_retry=TRUE;
+      if ((Ln.p != NULL) && (Ln.t_p != NULL)) Ln.p=NULL;
+      do
+      {
+        pNext(h) = Ln.LmExtractAndIter();
+        pIter(h);
+        L->pLength++;
+      } while (!Ln.IsNull());
+      goto all_done;
+    }
+    if (Ln.IsNull()) goto all_done;
+    With_s.Init(currRing);
   }
+  pNext(h) = Ln.LmExtractAndIter();
+  pIter(h);
+  pNormalize(h);
+  L->pLength++;
+}
 
-  all_done:
-  Ln.Delete();
-  if (L->p != NULL) pNext(L->p) = pNext(p);
+all_done:
+Ln.Delete();
+if (L->p != NULL) pNext(L->p) = pNext(p);
 
-  if (strat->redTailChange)
-  {
-    L->last = NULL;
-    L->length = 0;
-  }
+if (strat->redTailChange)
+{
+  L->last = NULL;
+  L->length = 0;
+}
 
-  //if (TEST_OPT_PROT) { PrintS("N"); mflush(); }
-  //L->Normalize(); // HANNES: should have a test
-  kTest_L(L);
-  return L->GetLmCurrRing();
+//if (TEST_OPT_PROT) { PrintS("N"); mflush(); }
+//L->Normalize(); // HANNES: should have a test
+kTest_L(L);
+return L->GetLmCurrRing();
 }
 #endif
 
@@ -4820,40 +4820,40 @@ poly redtailBba_Z (LObject* L, int pos, kStrategy strat )
 */
 void message (int i,int* reduc,int* olddeg,kStrategy strat, int red_result)
 {
-  if (i != *olddeg)
+if (i != *olddeg)
+{
+  Print("%d",i);
+  *olddeg = i;
+}
+if (TEST_OPT_OLDSTD)
+{
+  if (strat->Ll != *reduc)
   {
-    Print("%d",i);
-    *olddeg = i;
-  }
-  if (TEST_OPT_OLDSTD)
-  {
-    if (strat->Ll != *reduc)
-    {
-      if (strat->Ll != *reduc-1)
-        Print("(%d)",strat->Ll+1);
-      else
-        PrintS("-");
-      *reduc = strat->Ll;
-    }
+    if (strat->Ll != *reduc-1)
+      Print("(%d)",strat->Ll+1);
     else
-      PrintS(".");
-    mflush();
+      PrintS("-");
+    *reduc = strat->Ll;
   }
   else
+    PrintS(".");
+  mflush();
+}
+else
+{
+  if (red_result == 0)
+    PrintS("-");
+  else if (red_result < 0)
+    PrintS(".");
+  if ((red_result > 0) || ((strat->Ll % 100)==99))
   {
-    if (red_result == 0)
-      PrintS("-");
-    else if (red_result < 0)
-      PrintS(".");
-    if ((red_result > 0) || ((strat->Ll % 100)==99))
+    if (strat->Ll != *reduc && strat->Ll > 0)
     {
-      if (strat->Ll != *reduc && strat->Ll > 0)
-      {
-        Print("(%d)",strat->Ll+1);
-        *reduc = strat->Ll;
-      }
+      Print("(%d)",strat->Ll+1);
+      *reduc = strat->Ll;
     }
   }
+}
 }
 
 /*2
@@ -4861,14 +4861,14 @@ void message (int i,int* reduc,int* olddeg,kStrategy strat, int red_result)
 */
 void messageStat (int srmax,int lrmax,int hilbcount,kStrategy strat)
 {
-  //PrintS("\nUsage/Allocation of temporary storage:\n");
-  //Print("%d/%d polynomials in standard base\n",srmax,IDELEMS(Shdl));
-  //Print("%d/%d polynomials in set L (for lazy alg.)",lrmax+1,strat->Lmax);
-  Print("product criterion:%d chain criterion:%d\n",strat->cp,strat->c3);
-  if (hilbcount!=0) Print("hilbert series criterion:%d\n",hilbcount);
-  /* in usual case strat->cv is 0, it gets changed only in shift routines */
-  if (strat->cv!=0) Print("shift V criterion:%d\n",strat->cv);
-  /*mflush();*/
+//PrintS("\nUsage/Allocation of temporary storage:\n");
+//Print("%d/%d polynomials in standard base\n",srmax,IDELEMS(Shdl));
+//Print("%d/%d polynomials in set L (for lazy alg.)",lrmax+1,strat->Lmax);
+Print("product criterion:%d chain criterion:%d\n",strat->cp,strat->c3);
+if (hilbcount!=0) Print("hilbert series criterion:%d\n",hilbcount);
+/* in usual case strat->cv is 0, it gets changed only in shift routines */
+if (strat->cv!=0) Print("shift V criterion:%d\n",strat->cv);
+/*mflush();*/
 }
 
 #ifdef KDEBUG
@@ -4878,43 +4878,43 @@ void messageStat (int srmax,int lrmax,int hilbcount,kStrategy strat)
 */
 void messageSets (kStrategy strat)
 {
-  int i;
-  if (strat->news)
+int i;
+if (strat->news)
+{
+  PrintS("set S");
+  for (i=0; i<=strat->sl; i++)
   {
-    PrintS("set S");
-    for (i=0; i<=strat->sl; i++)
-    {
-      Print("\n  %d:",i);
-      p_wrp(strat->S[i], currRing, strat->tailRing);
-    }
-    strat->news = FALSE;
+    Print("\n  %d:",i);
+    p_wrp(strat->S[i], currRing, strat->tailRing);
   }
-  if (strat->newt)
+  strat->news = FALSE;
+}
+if (strat->newt)
+{
+  PrintS("\nset T");
+  for (i=0; i<=strat->tl; i++)
   {
-    PrintS("\nset T");
-    for (i=0; i<=strat->tl; i++)
-    {
-      Print("\n  %d:",i);
-      strat->T[i].wrp();
-      Print(" o:%ld e:%d l:%d",
-        strat->T[i].pFDeg(),strat->T[i].ecart,strat->T[i].length);
-    }
-    strat->newt = FALSE;
+    Print("\n  %d:",i);
+    strat->T[i].wrp();
+    Print(" o:%ld e:%d l:%d",
+      strat->T[i].pFDeg(),strat->T[i].ecart,strat->T[i].length);
   }
-  PrintS("\nset L");
-  for (i=strat->Ll; i>=0; i--)
-  {
-    Print("\n%d:",i);
-    p_wrp(strat->L[i].p1, currRing, strat->tailRing);
-    PrintS("  ");
-    p_wrp(strat->L[i].p2, currRing, strat->tailRing);
-    PrintS(" lcm: ");p_wrp(strat->L[i].lcm, currRing);
-    PrintS("\n  p : ");
-    strat->L[i].wrp();
-    Print("  o:%ld e:%d l:%d",
-          strat->L[i].pFDeg(),strat->L[i].ecart,strat->L[i].length);
-  }
-  PrintLn();
+  strat->newt = FALSE;
+}
+PrintS("\nset L");
+for (i=strat->Ll; i>=0; i--)
+{
+  Print("\n%d:",i);
+  p_wrp(strat->L[i].p1, currRing, strat->tailRing);
+  PrintS("  ");
+  p_wrp(strat->L[i].p2, currRing, strat->tailRing);
+  PrintS(" lcm: ");p_wrp(strat->L[i].lcm, currRing);
+  PrintS("\n  p : ");
+  strat->L[i].wrp();
+  Print("  o:%ld e:%d l:%d",
+        strat->L[i].pFDeg(),strat->L[i].ecart,strat->L[i].length);
+}
+PrintLn();
 }
 
 #endif
@@ -4925,99 +4925,99 @@ void messageSets (kStrategy strat)
 */
 void initS (ideal F, ideal Q, kStrategy strat)
 {
-  int   i,pos;
+int   i,pos;
 
-  if (Q!=NULL) i=((IDELEMS(F)+IDELEMS(Q)+(setmaxTinc-1))/setmaxTinc)*setmaxTinc;
-  else         i=((IDELEMS(F)+(setmaxTinc-1))/setmaxTinc)*setmaxTinc;
-  strat->ecartS=initec(i);
-  strat->sevS=initsevS(i);
-  strat->S_2_R=initS_2_R(i);
-  strat->fromQ=NULL;
-  strat->Shdl=idInit(i,F->rank);
-  strat->S=strat->Shdl->m;
-  strat->sig=(poly *)omAlloc0(i*sizeof(poly));
-  /*- put polys into S -*/
-  if (Q!=NULL)
+if (Q!=NULL) i=((IDELEMS(F)+IDELEMS(Q)+(setmaxTinc-1))/setmaxTinc)*setmaxTinc;
+else         i=((IDELEMS(F)+(setmaxTinc-1))/setmaxTinc)*setmaxTinc;
+strat->ecartS=initec(i);
+strat->sevS=initsevS(i);
+strat->S_2_R=initS_2_R(i);
+strat->fromQ=NULL;
+strat->Shdl=idInit(i,F->rank);
+strat->S=strat->Shdl->m;
+strat->sig=(poly *)omAlloc0(i*sizeof(poly));
+/*- put polys into S -*/
+if (Q!=NULL)
+{
+  strat->fromQ=initec(i);
+  memset(strat->fromQ,0,i*sizeof(int));
+  for (i=0; i<IDELEMS(Q); i++)
   {
-    strat->fromQ=initec(i);
-    memset(strat->fromQ,0,i*sizeof(int));
-    for (i=0; i<IDELEMS(Q); i++)
-    {
-      if (Q->m[i]!=NULL)
-      {
-        LObject h;
-        h.p = pCopy(Q->m[i]);
-        if (TEST_OPT_INTSTRATEGY)
-        {
-          //pContent(h.p);
-          h.pCleardenom(); // also does a pContent
-        }
-        else
-        {
-          h.pNorm();
-        }
-        if (pOrdSgn==-1)
-        {
-          deleteHC(&h, strat);
-        }
-        if (h.p!=NULL)
-        {
-          strat->initEcart(&h);
-          if (strat->sl==-1)
-            pos =0;
-          else
-          {
-            pos = posInS(strat,strat->sl,h.p,h.ecart);
-          }
-          h.sev = pGetShortExpVector(h.p);
-          strat->enterS(h,pos,strat,-1);
-          strat->fromQ[pos]=1;
-        }
-      }
-    }
-  }
-  for (i=0; i<IDELEMS(F); i++)
-  {
-    if (F->m[i]!=NULL)
+    if (Q->m[i]!=NULL)
     {
       LObject h;
-      h.p = pCopy(F->m[i]);
+      h.p = pCopy(Q->m[i]);
+      if (TEST_OPT_INTSTRATEGY)
+      {
+        //pContent(h.p);
+        h.pCleardenom(); // also does a pContent
+      }
+      else
+      {
+        h.pNorm();
+      }
       if (pOrdSgn==-1)
       {
-        cancelunit(&h);  /*- tries to cancel a unit -*/
         deleteHC(&h, strat);
       }
       if (h.p!=NULL)
-      // do not rely on the input being a SB!
       {
-        if (TEST_OPT_INTSTRATEGY)
-        {
-          //pContent(h.p);
-          h.pCleardenom(); // also does a pContent
-        }
-        else
-        {
-          h.pNorm();
-        }
         strat->initEcart(&h);
         if (strat->sl==-1)
           pos =0;
         else
+        {
           pos = posInS(strat,strat->sl,h.p,h.ecart);
+        }
         h.sev = pGetShortExpVector(h.p);
         strat->enterS(h,pos,strat,-1);
+        strat->fromQ[pos]=1;
       }
     }
   }
-  /*- test, if a unit is in F -*/
-  if ((strat->sl>=0)
-#ifdef HAVE_RINGS
-       && nIsUnit(pGetCoeff(strat->S[0]))
-#endif
-       && pIsConstant(strat->S[0]))
+}
+for (i=0; i<IDELEMS(F); i++)
+{
+  if (F->m[i]!=NULL)
   {
-    while (strat->sl>0) deleteInS(strat->sl,strat);
+    LObject h;
+    h.p = pCopy(F->m[i]);
+    if (pOrdSgn==-1)
+    {
+      cancelunit(&h);  /*- tries to cancel a unit -*/
+      deleteHC(&h, strat);
+    }
+    if (h.p!=NULL)
+    // do not rely on the input being a SB!
+    {
+      if (TEST_OPT_INTSTRATEGY)
+      {
+        //pContent(h.p);
+        h.pCleardenom(); // also does a pContent
+      }
+      else
+      {
+        h.pNorm();
+      }
+      strat->initEcart(&h);
+      if (strat->sl==-1)
+        pos =0;
+      else
+        pos = posInS(strat,strat->sl,h.p,h.ecart);
+      h.sev = pGetShortExpVector(h.p);
+      strat->enterS(h,pos,strat,-1);
+    }
   }
+}
+/*- test, if a unit is in F -*/
+if ((strat->sl>=0)
+#ifdef HAVE_RINGS
+      && nIsUnit(pGetCoeff(strat->S[0]))
+#endif
+      && pIsConstant(strat->S[0]))
+{
+  while (strat->sl>0) deleteInS(strat->sl,strat);
+}
 }
 
 void initSL (ideal F, ideal Q,kStrategy strat)
@@ -5080,6 +5080,11 @@ void initSL (ideal F, ideal Q,kStrategy strat)
     {
       LObject h;
       h.p = pCopy(F->m[i]);
+      h.sig = pInit();
+      p_SetCoeff(h.sig,nInit(1),currRing);
+      p_SetComp(h.sig,i+1,currRing);
+      pWrite(h.p);
+      pWrite(h.sig);
       if (h.p!=NULL)
       {
         if (pOrdSgn==-1)
