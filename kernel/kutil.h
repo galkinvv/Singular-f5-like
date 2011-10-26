@@ -164,6 +164,7 @@ class sLObject : public sTObject
 
 public:
   unsigned long sev;
+  unsigned long sevSig;
   poly  p1,p2; /*- the pair p comes from,
                  lm(pi) in currRing, tail(pi) in tailring -*/
   poly  lcm;   /*- the lcm of p1,p2 -*/
