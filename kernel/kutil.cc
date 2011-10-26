@@ -1676,13 +1676,16 @@ void enterOnePairNormal (int i,poly p,int ecart, int isFromQ,kStrategy strat, in
 * put the pair (s[i],p)  into the set B, ecart=ecart(p)
 */
 
-void enterOnePairSig (int i,poly p,poly pSig,int ecart, int isFromQ,kStrategy strat, int atR = -1)
+void enterOnePairSig (int i, poly p, poly pSig, int ecart, int isFromQ, kStrategy strat, int atR = -1)
 {
   assume(i<=strat->sl);
   if (strat->interred_flag) return;
 
   int      l,j,compare;
+  poly m1 = NULL,m2 = NULL; // we need the multipliers for the s-polynomial to compute
+              // the corresponding signatures for criteria checks
   LObject  Lp;
+  poly last;
   Lp.i_r = -1;
 
 #ifdef KDEBUG
@@ -1690,7 +1693,13 @@ void enterOnePairSig (int i,poly p,poly pSig,int ecart, int isFromQ,kStrategy st
 #endif
   /*- computes the lcm(s[i],p) -*/
   Lp.lcm = pInit();
-
+  k_GetLeadTerms(p,strat->S[i],currRing,m1,m2,currRing);
+  //Print("p\n");
+  //pWrite(pHead(p));
+  //pWrite(m1);
+  //Print("S[i]\n");
+  //pWrite(pHead(strat->S[i]));
+  //pWrite(m2);
 #ifndef HAVE_RATGRING
   pLcm(p,strat->S[i],Lp.lcm);
 #elif defined(HAVE_RATGRING)
@@ -1699,6 +1708,29 @@ void enterOnePairSig (int i,poly p,poly pSig,int ecart, int isFromQ,kStrategy st
 #endif
   pSetm(Lp.lcm);
 
+  // set coeffs of multipliers m1 and m2
+  pSetCoeff0(m1, nInit(1));
+  pSetCoeff0(m2, nInit(1));
+  Print("P1  ");
+  pWrite(pHead(p));
+  Print("P2  ");
+  pWrite(pHead(strat->S[i]));
+  Print("M1  ");
+  pWrite(m1);
+  Print("M2  ");
+  pWrite(m2);
+
+  // get m2 * a2
+  Print("pSig before  ");
+  pWrite(pSig);
+  pSig = currRing->p_Procs->pp_Mult_mm(pSig, m1,currRing,last);
+
+  Print("----------------\n");
+  pWrite(Lp.lcm);
+  Print("----------------\n");
+  Print("pSig correct?  ");
+  pWrite(p);
+  pWrite(pSig);
 
   if (strat->sugarCrit && ALLOW_PROD_CRIT(strat))
   {
@@ -1739,6 +1771,10 @@ void enterOnePairSig (int i,poly p,poly pSig,int ecart, int isFromQ,kStrategy st
     *if the leading term of s devides lcm(r,p) then (r,p) will be canceled
     *if the leading term of r devides lcm(s,p) then (s,p) will not enter B
     */
+
+    // since this is for signature-based algorithms we cannot use this
+    // implementation at all, thus we first of all comment it out.
+    /*
     {
       j = strat->Bl;
       loop
@@ -1766,6 +1802,7 @@ void enterOnePairSig (int i,poly p,poly pSig,int ecart, int isFromQ,kStrategy st
         j--;
       }
     }
+    */
   }
   else /*sugarcrit*/
   {
@@ -1806,6 +1843,10 @@ void enterOnePairSig (int i,poly p,poly pSig,int ecart, int isFromQ,kStrategy st
       *if the leading term of s devides lcm(r,p) then (r,p) will be canceled
       *if the leading term of r devides lcm(s,p) then (s,p) will not enter B
       */
+
+      // since this is for signature-based algorithms we cannot use this
+      // implementation at all, thus we first of all comment it out.
+      /*
       for(j = strat->Bl;j>=0;j--)
       {
         compare=pDivComp(strat->B[j].lcm,Lp.lcm);
@@ -1826,6 +1867,7 @@ void enterOnePairSig (int i,poly p,poly pSig,int ecart, int isFromQ,kStrategy st
           strat->c3++;
         }
       }
+      */
     }
   }
   /*
@@ -2660,7 +2702,7 @@ void initenterpairsSig (poly h,poly hSig,int k,int ecart,int isFromQ,kStrategy s
           if (!strat->fromQ[j])
           {
             new_pair=TRUE;
-            strat->enterOnePair(j,h,ecart,isFromQ,strat, atR);
+            enterOnePairSig(j,h,hSig,ecart,isFromQ,strat, atR);
           //Print("j:%d, Ll:%d\n",j,strat->Ll);
           }
         }
@@ -2683,7 +2725,7 @@ void initenterpairsSig (poly h,poly hSig,int k,int ecart,int isFromQ,kStrategy s
         || (pGetComp(strat->S[j])==0))
         {
           new_pair=TRUE;
-          strat->enterOnePair(j,h,ecart,isFromQ,strat, atR);
+          enterOnePairSig(j,h,hSig,ecart,isFromQ,strat, atR);
         //Print("j:%d, Ll:%d\n",j,strat->Ll);
         }
       }
