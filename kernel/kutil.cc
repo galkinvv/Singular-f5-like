@@ -1686,6 +1686,9 @@ void enterOnePairSig (int i, poly p, poly pSig, int ecart, int isFromQ, kStrateg
               // the corresponding signatures for criteria checks
   LObject  Lp;
   poly last;
+  Print("STRAT->SIG[i]:  ");
+  pWrite(strat->sig[i]);
+  poly sSig = p_Copy(strat->sig[i],currRing);
   Lp.i_r = -1;
 
 #ifdef KDEBUG
@@ -1721,17 +1724,27 @@ void enterOnePairSig (int i, poly p, poly pSig, int ecart, int isFromQ, kStrateg
   pWrite(m2);
 
   // get m2 * a2
-  Print("pSig before  ");
-  pWrite(pSig);
   pSig = currRing->p_Procs->pp_Mult_mm(pSig, m1,currRing,last);
+  sSig = currRing->p_Procs->pp_Mult_mm(sSig, m2,currRing,last);
 
   Print("----------------\n");
-  pWrite(Lp.lcm);
-  Print("----------------\n");
-  Print("pSig correct?  ");
-  pWrite(p);
   pWrite(pSig);
+  pWrite(sSig);
+  Print("----------------\n");
 
+  int sigCmp = p_LmCmp(pSig,sSig,currRing);
+  switch(sigCmp)
+  {
+    case 0: // pSig = sSig
+      strat->cp++;
+      pLmFree(Lp.lcm);
+      Lp.lcm=NULL;
+      return;
+    case 1: // pSig > sSig
+      Lp.sig = pSig;
+    default: // pSig < sSig
+      Lp.sig = sSig;
+  }
   if (strat->sugarCrit && ALLOW_PROD_CRIT(strat))
   {
     if((!((strat->ecartS[i]>0)&&(ecart>0)))
@@ -6166,14 +6179,18 @@ void enterSBba (LObject p,int atS,kStrategy strat, int atR)
 
   /*- save result -*/
   strat->S[atS] = p.p;
-  strat->sig[atS] = p.p; // TODO: get ths correct signature in here!
+  strat->sig[atS] = p.sig; // TODO: get ths correct signature in here!
   if (strat->honey) strat->ecartS[atS] = p.ecart;
   if (p.sev == 0)
     p.sev = pGetShortExpVector(p.p);
   else
     assume(p.sev == pGetShortExpVector(p.p));
   strat->sevS[atS] = p.sev;
-  strat->sevSig[atS] = p.sev; // TODO: get the correct signature in here!
+  if (p.sevSig == 0)
+    p.sevSig = pGetShortExpVector(p.sig);
+  else
+    assume(p.sevSig == pGetShortExpVector(p.sig));
+  strat->sevSig[atS] = p.sevSig; // TODO: get the correct signature in here!
   strat->ecartS[atS] = p.ecart;
   strat->S_2_R[atS] = atR;
   strat->sl++;
