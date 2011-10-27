@@ -1684,6 +1684,7 @@ void enterOnePairNormal (int i,poly p,int ecart, int isFromQ,kStrategy strat, in
 
 /*2
 * put the pair (s[i],p)  into the set B, ecart=ecart(p)
+* NOTE: here we need to add the signature-based criteria
 */
 
 void enterOnePairSig (int i, poly p, poly pSig, int ecart, int isFromQ, kStrategy strat, int atR = -1)
@@ -1696,7 +1697,8 @@ void enterOnePairSig (int i, poly p, poly pSig, int ecart, int isFromQ, kStrateg
               // the corresponding signatures for criteria checks
   LObject  Lp;
   poly last;
-  poly sSig = p_Copy(strat->sig[i],currRing);
+  poly pSigMult = p_Copy(pSig,currRing);
+  poly sSigMult = p_Copy(strat->sig[i],currRing);
   Lp.i_r = -1;
 
 #ifdef KDEBUG
@@ -1705,12 +1707,6 @@ void enterOnePairSig (int i, poly p, poly pSig, int ecart, int isFromQ, kStrateg
   /*- computes the lcm(s[i],p) -*/
   Lp.lcm = pInit();
   k_GetLeadTerms(p,strat->S[i],currRing,m1,m2,currRing);
-  //Print("p\n");
-  //pWrite(pHead(p));
-  //pWrite(m1);
-  //Print("S[i]\n");
-  //pWrite(pHead(strat->S[i]));
-  //pWrite(m2);
 #ifndef HAVE_RATGRING
   pLcm(p,strat->S[i],Lp.lcm);
 #elif defined(HAVE_RATGRING)
@@ -1733,15 +1729,18 @@ void enterOnePairSig (int i, poly p, poly pSig, int ecart, int isFromQ, kStrateg
   pWrite(m2);
 #endif
   // get m2 * a2
-  pSig = currRing->p_Procs->pp_Mult_mm(pSig, m1,currRing,last);
-  sSig = currRing->p_Procs->pp_Mult_mm(sSig, m2,currRing,last);
+  pSigMult = currRing->p_Procs->pp_Mult_mm(pSigMult, m1,currRing,last);
+  sSigMult = currRing->p_Procs->pp_Mult_mm(sSigMult, m2,currRing,last);
 #ifdef DEBUGF5
   Print("----------------\n");
-  pWrite(pSig);
-  pWrite(sSig);
+  pWrite(pSigMult);
+  pWrite(sSigMult);
   Print("----------------\n");
 #endif
-  int sigCmp = p_LmCmp(pSig,sSig,currRing);
+  Lp.from = strat->sl+1;    
+  
+  // check the 2nd generator, i.e. strat->S[i] by the Rewritten Criterion
+  int sigCmp = p_LmCmp(pSigMult,sSigMult,currRing);
   switch(sigCmp)
   {
     case 0: // pSig = sSig, delete element due to Rewritten Criterion
@@ -1750,9 +1749,9 @@ void enterOnePairSig (int i, poly p, poly pSig, int ecart, int isFromQ, kStrateg
       Lp.lcm=NULL;
       return;
     case 1: // pSig > sSig
-      Lp.sig = pSig;
+      Lp.sig  = pSigMult;
     default: // pSig < sSig
-      Lp.sig = sSig;
+      Lp.sig = sSigMult;
   }
   if (strat->sugarCrit && ALLOW_PROD_CRIT(strat))
   {
@@ -4874,6 +4873,19 @@ loop
 }
 }
 
+/*
+ * REWRITTEN CRITERION for signature-based standard basis algorithms
+ */
+BOOLEAN rewrittenCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start)
+{
+  for(int k = start+1; k<strat->sl+1; k++)
+  {
+    if (p_LmShortDivisibleBy(strat->sig[k], strat->sevSig[k], sig, not_sevSig, currRing))
+      return TRUE;
+  }
+  return FALSE;
+}
+
 /***************************************************************
 *
 * Tail reductions
@@ -5445,6 +5457,7 @@ void initSL (ideal F, ideal Q,kStrategy strat)
   if (Q!=NULL) i=((IDELEMS(Q)+(setmaxTinc-1))/setmaxTinc)*setmaxTinc;
   else i=setmaxT;
   strat->ecartS=initec(i);
+  strat->fromS=initec(i);
   strat->sevS=initsevS(i);
   strat->sevSig=initsevS(i);
   strat->S_2_R=initS_2_R(i);
@@ -5555,7 +5568,7 @@ void initSSpecial (ideal F, ideal Q, ideal P,kStrategy strat)
   if (Q!=NULL) i=((IDELEMS(Q)+(setmaxTinc-1))/setmaxTinc)*setmaxTinc;
   else i=setmaxT;
   i=((i+IDELEMS(F)+IDELEMS(P)+15)/16)*16;
-  strat->ecartS=initec(i);
+  strat->fromS=initec(i);
   strat->sevS=initsevS(i);
   strat->sevSig=initsevS(i);
   strat->S_2_R=initS_2_R(i);
@@ -6110,6 +6123,10 @@ void enterSBba (LObject p,int atS,kStrategy strat, int atR)
                                           IDELEMS(strat->Shdl)*sizeof(int),
                                           (IDELEMS(strat->Shdl)+setmaxTinc)
                                                   *sizeof(int));
+    strat->fromS = (intset)omReallocSize(strat->fromS,
+                                          IDELEMS(strat->Shdl)*sizeof(int),
+                                          (IDELEMS(strat->Shdl)+setmaxTinc)
+                                                  *sizeof(int));
     strat->S_2_R = (int*) omRealloc0Size(strat->S_2_R,
                                          IDELEMS(strat->Shdl)*sizeof(int),
                                          (IDELEMS(strat->Shdl)+setmaxTinc)
@@ -6146,6 +6163,8 @@ void enterSBba (LObject p,int atS,kStrategy strat, int atR)
             (strat->sl - atS + 1)*sizeof(poly));
     memmove(&(strat->ecartS[atS+1]), &(strat->ecartS[atS]),
             (strat->sl - atS + 1)*sizeof(int));
+    memmove(&(strat->fromS[atS+1]), &(strat->fromS[atS]),
+            (strat->sl - atS + 1)*sizeof(int));
     memmove(&(strat->sevS[atS+1]), &(strat->sevS[atS]),
             (strat->sl - atS + 1)*sizeof(unsigned long));
     memmove(&(strat->S_2_R[atS+1]), &(strat->S_2_R[atS]),
@@ -6161,6 +6180,7 @@ void enterSBba (LObject p,int atS,kStrategy strat, int atR)
     {
       strat->S[i] = strat->S[i-1];
       strat->ecartS[i] = strat->ecartS[i-1];
+      strat->fromS[i] = strat->fromS[i-1];
       strat->sevS[i] = strat->sevS[i-1];
       strat->S_2_R[i] = strat->S_2_R[i-1];
     }
@@ -6201,6 +6221,7 @@ void enterSBba (LObject p,int atS,kStrategy strat, int atR)
     assume(p.sevSig == pGetShortExpVector(p.sig));
   strat->sevSig[atS] = p.sevSig; // TODO: get the correct signature in here!
   strat->ecartS[atS] = p.ecart;
+  strat->fromS[atS] = p.from;
   strat->S_2_R[atS] = atR;
   strat->sl++;
 }
@@ -6435,6 +6456,7 @@ void exitBuchMora (kStrategy strat)
   omFreeSize(strat->R,(strat->tmax)*sizeof(TObject*));
   omFreeSize(strat->sevT, (strat->tmax)*sizeof(unsigned long));
   omFreeSize(strat->ecartS,IDELEMS(strat->Shdl)*sizeof(int));
+  omFreeSize(strat->fromS,IDELEMS(strat->Shdl)*sizeof(int));
   omFreeSize((ADDRESS)strat->sevS,IDELEMS(strat->Shdl)*sizeof(unsigned long));
   omFreeSize((ADDRESS)strat->sevSig,IDELEMS(strat->Shdl)*sizeof(unsigned long));
   omFreeSize(strat->S_2_R,IDELEMS(strat->Shdl)*sizeof(int));
