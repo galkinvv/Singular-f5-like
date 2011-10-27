@@ -485,6 +485,14 @@ int hpux9_system(const char* system);
  */
 #define KDEBUG 0
 
+/* undef DEBUGF5 for check of data during std computations 
+ *
+ * define DEBUGF5 to
+ * 0 for no tests
+ * 1 for basic tests
+ */
+#define DEBUGF5 1
+
 /* define LDEBUG checking numbers, undefine otherwise */
 #define LDEBUG
 /* define RDEBUG checking rings (together with TRACE=9) */
