@@ -29,6 +29,11 @@
 #define KDEBUG 2
 #endif
 
+#ifdef DEBUGF5
+#undef DEBUGF5
+#define DEBUGF5 2
+#endif
+
 #ifdef HAVE_RINGS
 #include <kernel/ideals.h>
 #endif
@@ -68,6 +73,11 @@
 #ifdef KDEBUG
 #undef KDEBUG
 #define KDEBUG 2
+#endif
+
+#ifdef DEBUGF5
+#undef DEBUGF5
+#define DEBUGF5 2
 #endif
 
 denominator_list DENOMINATOR_LIST=NULL;
@@ -1686,8 +1696,6 @@ void enterOnePairSig (int i, poly p, poly pSig, int ecart, int isFromQ, kStrateg
               // the corresponding signatures for criteria checks
   LObject  Lp;
   poly last;
-  Print("STRAT->SIG[i]:  ");
-  pWrite(strat->sig[i]);
   poly sSig = p_Copy(strat->sig[i],currRing);
   Lp.i_r = -1;
 
@@ -1714,6 +1722,7 @@ void enterOnePairSig (int i, poly p, poly pSig, int ecart, int isFromQ, kStrateg
   // set coeffs of multipliers m1 and m2
   pSetCoeff0(m1, nInit(1));
   pSetCoeff0(m2, nInit(1));
+#ifdef DEBUGF5
   Print("P1  ");
   pWrite(pHead(p));
   Print("P2  ");
@@ -1722,20 +1731,20 @@ void enterOnePairSig (int i, poly p, poly pSig, int ecart, int isFromQ, kStrateg
   pWrite(m1);
   Print("M2  ");
   pWrite(m2);
-
+#endif
   // get m2 * a2
   pSig = currRing->p_Procs->pp_Mult_mm(pSig, m1,currRing,last);
   sSig = currRing->p_Procs->pp_Mult_mm(sSig, m2,currRing,last);
-
+#ifdef DEBUGF5
   Print("----------------\n");
   pWrite(pSig);
   pWrite(sSig);
   Print("----------------\n");
-
+#endif
   int sigCmp = p_LmCmp(pSig,sSig,currRing);
   switch(sigCmp)
   {
-    case 0: // pSig = sSig
+    case 0: // pSig = sSig, delete element due to Rewritten Criterion
       strat->cp++;
       pLmFree(Lp.lcm);
       Lp.lcm=NULL;

@@ -1076,10 +1076,7 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       // TODO: needs some masking
       // TODO: masking needs to vanish once the signature
       //       sutff is completely implemented
-      if(strat->P.sig)
-        pLmFree(strat->P.sig);
       strat->P.p = NULL;
-      strat->P.sig = NULL;
       poly m1 = NULL, m2 = NULL;
 
       // check that spoly creation is ok
