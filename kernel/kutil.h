@@ -165,6 +165,9 @@ class sLObject : public sTObject
 public:
   unsigned long sev;
   unsigned long sevSig;
+  int from; // from which polynomial it comes from
+            // this is important for signature-based
+            // algorithms
   poly  p1,p2; /*- the pair p comes from,
                  lm(pi) in currRing, tail(pi) in tailring -*/
   poly  lcm;   /*- the lcm of p1,p2 -*/
@@ -272,6 +275,9 @@ public:
   polyset S;
   polyset sig;
   intset ecartS;
+  intset fromS; // from which S[i] S[j] comes from
+                // this is important for signature-based
+                // algorithms
   intset lenS;
   wlen_set lenSw; /* for tgb.ccc */
   intset fromQ;
@@ -483,6 +489,7 @@ int kFindInT(poly p, TSet T, int tlength);
 int kFindDivisibleByInT(const TSet &T, const unsigned long* sevT,
                         const int tl, const LObject* L, const int start=0);
 // same with S
+BOOLEAN rewrittenCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start);
 int kFindDivisibleByInS(const kStrategy strat, int *max_ind, LObject* L);
 
 int kFindNextDivisibleByInS(const kStrategy strat, int start,int max_ind, LObject* L);
