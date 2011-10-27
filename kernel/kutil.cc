@@ -1687,7 +1687,7 @@ void enterOnePairNormal (int i,poly p,int ecart, int isFromQ,kStrategy strat, in
 * NOTE: here we need to add the signature-based criteria
 */
 
-void enterOnePairSig (int i, poly p, poly pSig, int ecart, int isFromQ, kStrategy strat, int atR = -1)
+void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ, kStrategy strat, int atR = -1)
 {
   assume(i<=strat->sl);
   if (strat->interred_flag) return;
@@ -1721,8 +1721,10 @@ void enterOnePairSig (int i, poly p, poly pSig, int ecart, int isFromQ, kStrateg
 #ifdef DEBUGF5
   Print("P1  ");
   pWrite(pHead(p));
+  Print("FROM: %d\n", from);
   Print("P2  ");
   pWrite(pHead(strat->S[i]));
+  Print("FROM: %d\n", strat->fromS[i]);
   Print("M1  ");
   pWrite(m1);
   Print("M2  ");
@@ -2704,7 +2706,7 @@ void initenterpairs (poly h,int k,int ecart,int isFromQ,kStrategy strat, int atR
 *(s[0],h),...,(s[k],h) will be put to the pairset L
 *using signatures <= only for signature-based standard basis algorithms
 */
-void initenterpairsSig (poly h,poly hSig,int k,int ecart,int isFromQ,kStrategy strat, int atR = -1)
+void initenterpairsSig (poly h,poly hSig,int hFrom,int k,int ecart,int isFromQ,kStrategy strat, int atR = -1)
 {
 
   if ((strat->syzComp==0)
@@ -2723,7 +2725,7 @@ void initenterpairsSig (poly h,poly hSig,int k,int ecart,int isFromQ,kStrategy s
           if (!strat->fromQ[j])
           {
             new_pair=TRUE;
-            enterOnePairSig(j,h,hSig,ecart,isFromQ,strat, atR);
+            enterOnePairSig(j,h,hSig,hFrom,ecart,isFromQ,strat, atR);
           //Print("j:%d, Ll:%d\n",j,strat->Ll);
           }
         }
@@ -2733,7 +2735,7 @@ void initenterpairsSig (poly h,poly hSig,int k,int ecart,int isFromQ,kStrategy s
         new_pair=TRUE;
         for (j=0; j<=k; j++)
         {
-          enterOnePairSig(j,h,hSig,ecart,isFromQ,strat, atR);
+          enterOnePairSig(j,h,hSig,hFrom,ecart,isFromQ,strat, atR);
           //Print("j:%d, Ll:%d\n",j,strat->Ll);
         }
       }
@@ -2746,7 +2748,7 @@ void initenterpairsSig (poly h,poly hSig,int k,int ecart,int isFromQ,kStrategy s
         || (pGetComp(strat->S[j])==0))
         {
           new_pair=TRUE;
-          enterOnePairSig(j,h,hSig,ecart,isFromQ,strat, atR);
+          enterOnePairSig(j,h,hSig,hFrom,ecart,isFromQ,strat, atR);
         //Print("j:%d, Ll:%d\n",j,strat->Ll);
         }
       }
@@ -3530,7 +3532,7 @@ void enterpairs (poly h,int k,int ecart,int pos,kStrategy strat, int atR)
 *this is a special variant of signature-based algorithms including the
 *signatures for criteria checks
 */
-void enterpairsSig (poly h,poly hSig,int k,int ecart,int pos,kStrategy strat, int atR)
+void enterpairsSig (poly h,poly hSig,int hFrom,int k,int ecart,int pos,kStrategy strat, int atR)
 {
 int j=pos;
 
@@ -3538,7 +3540,7 @@ int j=pos;
 assume (!rField_is_Ring(currRing));
 #endif
 
-initenterpairsSig(h,hSig,k,ecart,0,strat, atR);
+initenterpairsSig(h,hSig,hFrom,k,ecart,0,strat, atR);
 if ( (!strat->fromT)
 && ((strat->syzComp==0)
   ||(pGetComp(h)<=strat->syzComp)))
