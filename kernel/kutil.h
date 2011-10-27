@@ -448,7 +448,7 @@ ideal createG0();
 int redLazy (LObject* h,kStrategy strat);
 int redHomog (LObject* h,kStrategy strat);
 //adds hSig to be able to check with F5's criteria when entering pairs!
-void enterpairsSig (poly h, poly hSig, int k, int ec, int pos,kStrategy strat, int atR = -1);
+void enterpairsSig (poly h, poly hSig, int from, int k, int ec, int pos,kStrategy strat, int atR = -1);
 void enterpairs (poly h, int k, int ec, int pos,kStrategy strat, int atR = -1);
 void entersets (LObject h);
 void pairs ();
