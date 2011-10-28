@@ -1699,6 +1699,7 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
   poly last;
   poly pSigMult = p_Copy(pSig,currRing);
   poly sSigMult = p_Copy(strat->sig[i],currRing);
+  unsigned long pSigMultNegSev,sSigMultNegSev;
   Lp.i_r = -1;
 
 #ifdef KDEBUG
@@ -1730,9 +1731,11 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
   Print("M2  ");
   pWrite(m2);
 #endif
-  // get m2 * a2
-  pSigMult = currRing->p_Procs->pp_Mult_mm(pSigMult, m1,currRing,last);
-  sSigMult = currRing->p_Procs->pp_Mult_mm(sSigMult, m2,currRing,last);
+  // get multiplied signatures for testing
+  pSigMult = currRing->p_Procs->pp_Mult_mm(pSigMult,m1,currRing,last);
+  pSigMultNegSev = ~p_GetShortExpVector(pSigMult,currRing);
+  sSigMult = currRing->p_Procs->pp_Mult_mm(sSigMult,m2,currRing,last);
+  sSigMultNegSev = ~p_GetShortExpVector(sSigMult,currRing);
 #ifdef DEBUGF5
   Print("----------------\n");
   pWrite(pSigMult);
@@ -1741,6 +1744,13 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
 #endif
   Lp.from = strat->sl+1;    
   
+  if(rewrittenCriterion(sSigMult,sSigMultNegSev,strat,i+1))
+  {
+    strat->cp++;
+    pLmFree(Lp.lcm);
+    Lp.lcm=NULL;
+    return;
+  }
   // check the 2nd generator, i.e. strat->S[i] by the Rewritten Criterion
   int sigCmp = p_LmCmp(pSigMult,sSigMult,currRing);
   switch(sigCmp)
@@ -4880,9 +4890,18 @@ loop
  */
 BOOLEAN rewrittenCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start)
 {
-  for(int k = start+1; k<strat->sl+1; k++)
+//#ifdef DEBUGF5
+  Print("rewritten criterion checks:  ");
+  pWrite(sig);
+//#endif
+  for(int k = start; k<strat->sl+1; k++)
   {
+//#ifdef DEBUGF5
+    Print("checking with:  ");
+    pWrite(strat->sig[k]);
+//#endif
     if (p_LmShortDivisibleBy(strat->sig[k], strat->sevSig[k], sig, not_sevSig, currRing))
+      Print("detected by rewritten criterion\n");
       return TRUE;
   }
   return FALSE;
