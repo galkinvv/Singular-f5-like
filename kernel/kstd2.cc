@@ -1063,7 +1063,12 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
     /* picks the last element from the lazyset L */
     strat->P = strat->L[strat->Ll];
     strat->Ll--;
-
+#ifdef DEBUGF5
+    Print("SIG OF NEXT PAIR TO HANDLE IN SIG-BASED ALGORITHM\n");
+    Print("-------------------------------------------------\n");
+    pWrite(strat->P.sig);
+    Print("-------------------------------------------------\n");
+#endif
     if (pNext(strat->P.p) == strat->tail)
     {
       // deletes the short spoly
