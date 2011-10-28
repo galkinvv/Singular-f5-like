@@ -1039,6 +1039,15 @@ void enterL (LSet *set,int *length, int *LSetmax, LObject p,int at)
   else at = 0;
   (*set)[at] = p;
   (*length)++;
+#ifdef DEBUGF5
+  Print("--- LIST L ---\n");
+  int k;
+  for(k=0;k<=(*length);k++)
+  {
+    pWrite((*set)[k].sig);
+  }
+  Print("--- LIST L END ---\n");
+#endif
 }
 
 /*2
@@ -1753,17 +1762,23 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
   }
   // check the 2nd generator, i.e. strat->S[i] by the Rewritten Criterion
   int sigCmp = p_LmCmp(pSigMult,sSigMult,currRing);
-  switch(sigCmp)
+  if(sigCmp==0)
   {
-    case 0: // pSig = sSig, delete element due to Rewritten Criterion
+      // pSig = sSig, delete element due to Rewritten Criterion
       strat->cp++;
       pLmFree(Lp.lcm);
       Lp.lcm=NULL;
       return;
-    case 1: // pSig > sSig
-      Lp.sig  = pSigMult;
-    default: // pSig < sSig
-      Lp.sig = sSigMult;
+  }
+  if(sigCmp==pOrdSgn)
+  {
+    // pSig > sSig
+    Lp.sig  = pSigMult;
+  }
+  else
+  {
+    // pSig < sSig
+    Lp.sig = sSigMult;
   }
   if (strat->sugarCrit && ALLOW_PROD_CRIT(strat))
   {
@@ -4454,8 +4469,7 @@ int posInLSig (const LSet set, const int length,
             LObject* p,const kStrategy strat)
 {
 if (length<0) return 0;
-
-if (pLmCmp(set[length].p,p->p)== pOrdSgn)
+if (pLmCmp(set[length].sig,p->sig)== pOrdSgn)
   return length+1;
 
 int i;
@@ -4465,12 +4479,12 @@ loop
 {
   if (an >= en-1)
   {
-    if (pLmCmp(set[an].p,p->p) == pOrdSgn) return en;
+    if (pLmCmp(set[an].sig,p->sig) == pOrdSgn) return en;
     return an;
   }
   i=(an+en) / 2;
-  if (pLmCmp(set[i].p,p->p) == pOrdSgn) an=i;
-  else                                 en=i;
+  if (pLmCmp(set[i].sig,p->sig) == pOrdSgn) an=i;
+  else                                      en=i;
   /*aend. fuer lazy == in !=- machen */
 }
 }
@@ -4890,18 +4904,20 @@ loop
  */
 BOOLEAN rewrittenCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start)
 {
-//#ifdef DEBUGF5
+#ifdef DEBUGF5
   Print("rewritten criterion checks:  ");
   pWrite(sig);
-//#endif
+#endif
   for(int k = start; k<strat->sl+1; k++)
   {
-//#ifdef DEBUGF5
+#ifdef DEBUGF5
     Print("checking with:  ");
     pWrite(strat->sig[k]);
-//#endif
+#endif
     if (p_LmShortDivisibleBy(strat->sig[k], strat->sevSig[k], sig, not_sevSig, currRing))
+#ifdef DEBUGF5
       Print("detected by rewritten criterion\n");
+#endif
       return TRUE;
   }
   return FALSE;
@@ -6245,6 +6261,15 @@ void enterSBba (LObject p,int atS,kStrategy strat, int atR)
   strat->fromS[atS] = p.from;
   strat->S_2_R[atS] = atR;
   strat->sl++;
+#ifdef DEBUGF5
+  int k;
+  Print("--- LIST S: %d ---\n",strat->sl);
+  for(k=0;k<=strat->sl+1;k++)
+  {
+    pWrite(strat->sig[k]);
+  }
+  Print("--- LIST S END ---\n");
+#endif
 }
 
 /*2
