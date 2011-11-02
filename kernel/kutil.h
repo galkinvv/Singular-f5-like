@@ -273,6 +273,7 @@ public:
   ideal D; /*V(S) is in D(D)*/
   ideal M; /*set of minimal generators*/
   polyset S;
+  polyset syz;
   polyset sig;
   intset ecartS;
   intset fromS; // from which S[i] S[j] comes from
@@ -282,6 +283,7 @@ public:
   wlen_set lenSw; /* for tgb.ccc */
   intset fromQ;
   unsigned long* sevS;
+  unsigned long* sevSyz;
   unsigned long* sevSig;
   unsigned long* sevT;
   TSet T;
@@ -313,6 +315,7 @@ public:
   int cp,c3;
   int cv; // in shift bases: counting V criterion
   int sl,mu;
+  int syzl,syzmax;
   int tl,tmax;
   int Ll,Lmax;
   int Bl,Bmax;
