@@ -5635,6 +5635,7 @@ void initSL (ideal F, ideal Q,kStrategy strat)
   {
     while (strat->Ll>0) deleteInL(strat->L,&strat->Ll,strat->Ll-1,strat);
   }
+#ifdef DEBUGF5
   Print("Principal syzygies:\n");
   Print("--------------------------------\n");
   for(i=0;i<=ps-1;i++)
@@ -5642,6 +5643,7 @@ void initSL (ideal F, ideal Q,kStrategy strat)
     pWrite(strat->syz[i]);
   }
   Print("--------------------------------\n");
+#endif
 }
 
 
@@ -6410,10 +6412,14 @@ void enterSyz(LObject p, kStrategy strat)
                                     ((strat->syzmax)+setmaxTinc)
                                                   *sizeof(unsigned long));
     strat->syzmax += setmaxTinc;
-    strat->syz[i] = p.sig;
-    strat->sevSyz[i] = p.sevSig;
-    strat->syzl++;
   }
+  strat->syz[i] = p.sig;
+  strat->sevSyz[i] = p.sevSig;
+  strat->syzl++;
+#ifdef DEBUGF5
+  Print("last element in strat->syz: %d--%d  ",i+1,strat->syzmax);
+  pWrite(strat->syz[i]);
+#endif
 }
 
 void initHilbCrit(ideal F, ideal Q, intvec **hilb,kStrategy strat)

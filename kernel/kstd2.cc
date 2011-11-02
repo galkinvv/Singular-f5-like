@@ -1234,9 +1234,20 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 #endif
       if (strat->sl>srmax) srmax = strat->sl;
     }
-    else if (strat->P.p1 == NULL && strat->minim > 0)
+    else
     {
-      p_Delete(&strat->P.p2, currRing, strat->tailRing);
+      // adds signature of the zero reduction to
+      // strat->syz. This is the leading term of
+      // syzygy and can be used in syzCriterion()
+#ifdef DEBUGF5
+      Print("ADDING STUFF TO SYZ :  ");
+      pWrite(strat->P.sig);
+#endif
+      enterSyz(strat->P,strat);
+      if (strat->P.p1 == NULL && strat->minim > 0)
+      {
+        p_Delete(&strat->P.p2, currRing, strat->tailRing);
+      }
     }
 
 #ifdef KDEBUG
