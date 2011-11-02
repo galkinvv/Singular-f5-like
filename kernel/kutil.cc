@@ -1757,8 +1757,6 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
   if  ( syzCriterion(sSigMult,sSigMultNegSev,strat) ||
         syzCriterion(pSigMult,pSigMultNegSev,strat) ||
         rewCriterion(sSigMult,sSigMultNegSev,strat,i+1)
-
-      
       )
   {
     strat->cp++;
@@ -1770,21 +1768,23 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
   int sigCmp = p_LmCmp(pSigMult,sSigMult,currRing);
   if(sigCmp==0)
   {
-      // pSig = sSig, delete element due to Rewritten Criterion
-      strat->cp++;
-      pLmFree(Lp.lcm);
-      Lp.lcm=NULL;
-      return;
+    // pSig = sSig, delete element due to Rewritten Criterion
+    strat->cp++;
+    pLmFree(Lp.lcm);
+    Lp.lcm=NULL;
+    return;
   }
   if(sigCmp==pOrdSgn)
   {
     // pSig > sSig
-    Lp.sig  = pSigMult;
+    Lp.sig    = pSigMult;
+    Lp.sevSig = ~pSigMultNegSev;
   }
   else
   {
     // pSig < sSig
-    Lp.sig = sSigMult;
+    Lp.sig    = sSigMult;
+    Lp.sevSig = ~sSigMultNegSev;
   }
   if (strat->sugarCrit && ALLOW_PROD_CRIT(strat))
   {
@@ -6392,6 +6392,28 @@ void enterT(LObject p, kStrategy strat, int atT)
   assume(p.sev == 0 || pGetShortExpVector(p.p) == p.sev);
   strat->sevT[atT] = (p.sev == 0 ? pGetShortExpVector(p.p) : p.sev);
   kTest_T(&(strat->T[atT]));
+}
+
+/*2
+* puts signature p.sig to the set syz
+*/
+void enterSyz(LObject p, kStrategy strat)
+{
+  int i = strat->syzl;
+
+  strat->newt = TRUE;
+  if (strat->syzl == strat->syzmax)
+  {
+    pEnlargeSet(&strat->syz,strat->syzmax,setmaxTinc);
+    strat->sevSyz = (unsigned long*) omRealloc0Size(strat->sevSyz,
+                                    (strat->syzmax)*sizeof(unsigned long),
+                                    ((strat->syzmax)+setmaxTinc)
+                                                  *sizeof(unsigned long));
+    strat->syzmax += setmaxTinc;
+    strat->syz[i] = p.sig;
+    strat->sevSyz[i] = p.sevSig;
+    strat->syzl++;
+  }
 }
 
 void initHilbCrit(ideal F, ideal Q, intvec **hilb,kStrategy strat)
