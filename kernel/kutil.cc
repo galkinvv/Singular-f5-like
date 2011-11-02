@@ -1752,8 +1752,14 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
   Print("----------------\n");
 #endif
   Lp.from = strat->sl+1;    
-  
-  if(rewrittenCriterion(sSigMult,sSigMultNegSev,strat,i+1))
+  // testing by syzCriterion = F5 Criterion
+  // testing by rewCriterion = Rewritten Criterion
+  if  ( syzCriterion(sSigMult,sSigMultNegSev,strat) ||
+        syzCriterion(pSigMult,pSigMultNegSev,strat) ||
+        rewCriterion(sSigMult,sSigMultNegSev,strat,i+1)
+
+      
+      )
   {
     strat->cp++;
     pLmFree(Lp.lcm);
@@ -4900,24 +4906,42 @@ loop
 }
 
 /*
+ * SYZYGY CRITERION for signature-based standard basis algorithms
+ */
+BOOLEAN syzCriterion(poly sig, unsigned long not_sevSig, kStrategy strat)
+{
+#ifdef DEBUGF5
+  Print("syzygy criterion checks:  ");
+  pWrite(sig);
+#endif
+  for(int k = 0; k<strat->syzl; k++)
+  {
+#ifdef DEBUGF5
+    Print("checking with:  ");
+    pWrite(pHead(strat->syz[k]));
+#endif
+    if (p_LmShortDivisibleBy(strat->syz[k], strat->sevSyz[k], sig, not_sevSig, currRing))
+      return TRUE;
+  }
+  return FALSE;
+}
+
+/*
  * REWRITTEN CRITERION for signature-based standard basis algorithms
  */
-BOOLEAN rewrittenCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start)
+BOOLEAN rewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start)
 {
-//#ifdef DEBUGF5
+#ifdef DEBUGF5
   Print("rewritten criterion checks:  ");
   pWrite(sig);
-//#endif
+#endif
   for(int k = start; k<strat->sl+1; k++)
   {
-//#ifdef DEBUGF5
+#ifdef DEBUGF5
     Print("checking with:  ");
     pWrite(strat->sig[k]);
-//#endif
-    if (p_LmShortDivisibleBy(strat->sig[k], strat->sevSig[k], sig, not_sevSig, currRing))
-#ifdef DEBUGF5
-      Print("detected by rewritten criterion\n");
 #endif
+    if (p_LmShortDivisibleBy(strat->sig[k], strat->sevSig[k], sig, not_sevSig, currRing))
       return TRUE;
   }
   return FALSE;
