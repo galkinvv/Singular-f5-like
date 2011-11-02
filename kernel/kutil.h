@@ -492,7 +492,8 @@ int kFindInT(poly p, TSet T, int tlength);
 int kFindDivisibleByInT(const TSet &T, const unsigned long* sevT,
                         const int tl, const LObject* L, const int start=0);
 // same with S
-BOOLEAN rewrittenCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start);
+BOOLEAN syzCriterion(poly sig, unsigned long not_sevSig, kStrategy strat);
+BOOLEAN rewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start);
 int kFindDivisibleByInS(const kStrategy strat, int *max_ind, LObject* L);
 
 int kFindNextDivisibleByInS(const kStrategy strat, int start,int max_ind, LObject* L);
