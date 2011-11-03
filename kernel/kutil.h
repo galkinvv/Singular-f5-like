@@ -64,6 +64,8 @@ extern denominator_list DENOMINATOR_LIST;
 class sTObject
 {
 public:
+  unsigned long sevSig;
+  poly sig;   // the signature of the element
   poly p;       // Lm(p) \in currRing Tail(p) \in tailRing
   poly t_p;     // t_p \in tailRing: as monomials Lm(t_p) == Lm(p)
   poly max;     // p_GetMaxExpP(pNext(p))
@@ -164,7 +166,6 @@ class sLObject : public sTObject
 
 public:
   unsigned long sev;
-  unsigned long sevSig;
   int from; // from which polynomial it comes from
             // this is important for signature-based
             // algorithms
@@ -172,7 +173,6 @@ public:
                  lm(pi) in currRing, tail(pi) in tailring -*/
   poly  lcm;   /*- the lcm of p1,p2 -*/
   poly last;   // pLast(p) during reductions
-  poly sig;   // the signature of the element
   kBucket_pt bucket;
   int   i_r1, i_r2;
 
@@ -486,6 +486,8 @@ void enterOnePairSig (int i,poly p,poly pSig,int ecart, int isFromQ,kStrategy st
 void chainCritNormal (poly p,int ecart,kStrategy strat);
 BOOLEAN homogTest(polyset F, int Fmax);
 BOOLEAN newHEdge(polyset S, kStrategy strat);
+BOOLEAN syzCriterion(poly sig, unsigned long not_sevSig, kStrategy strat);
+BOOLEAN rewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start);
 // returns index of p in TSet, or -1 if not found
 int kFindInT(poly p, TSet T, int tlength);
 
@@ -493,9 +495,15 @@ int kFindInT(poly p, TSet T, int tlength);
 //        number of first divisor, otherwise
 int kFindDivisibleByInT(const TSet &T, const unsigned long* sevT,
                         const int tl, const LObject* L, const int start=0);
+// return -1 if no divisor is found
+//        number of first divisor, otherwise
+//
+// this is a special version for signature-based
+// standard basis algorithms: only sig-safe reductions
+// are allowed!
+int kFindDivisibleByInTSig(const TSet &T, const unsigned long* sevT,
+                        const int tl, const LObject* L, const int start=0);
 // same with S
-BOOLEAN syzCriterion(poly sig, unsigned long not_sevSig, kStrategy strat);
-BOOLEAN rewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start);
 int kFindDivisibleByInS(const kStrategy strat, int *max_ind, LObject* L);
 
 int kFindNextDivisibleByInS(const kStrategy strat, int start,int max_ind, LObject* L);
