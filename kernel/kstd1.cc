@@ -1099,6 +1099,9 @@ void initBba(ideal F,kStrategy strat)
       mflush();
     }
   }
+  // for sig-safe reductions in signature-based
+  // standard basis computations
+  strat->red = redSig;
 }
 
 void initMora(ideal F,kStrategy strat)
