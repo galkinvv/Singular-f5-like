@@ -6319,7 +6319,8 @@ void initBuchMoraCrit(kStrategy strat)
   strat->pairtest = NULL;
   /* alway use tailreduction, except:
   * - in local rings, - in lex order case, -in ring over extensions */
-  strat->noTailReduction = !TEST_OPT_REDTAIL;
+  //strat->noTailReduction = !TEST_OPT_REDTAIL;
+  strat->noTailReduction = NULL;
 
 #ifdef HAVE_PLURAL
   // and r is plural_ring
