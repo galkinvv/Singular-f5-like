@@ -107,60 +107,6 @@ int kFindDivisibleByInT(const TSet &T, const unsigned long* sevT,
   }
 }
 
-// return -1 if no divisor is found
-//        number of first divisor, otherwise
-//
-// this is a special version for signature-based
-// standard basis algorithms: only sig-safe reductions
-// are allowed!
-int kFindDivisibleByInTSig(const TSet &T, const unsigned long* sevT,
-                        const int tl, const LObject* L, const int start)
-{
-  unsigned long not_sev = ~L->sev;
-  int j = start;
-  poly p=L->p;
-  ring r=currRing;
-  if (p==NULL)  { r=L->tailRing; p=L->t_p; }
-  L->GetLm(p, r);
-
-  pAssume(~not_sev == p_GetShortExpVector(p, r));
-
-  if (r == currRing)
-  {
-    loop
-    {
-      if (j > tl) return -1;
-#if defined(PDEBUG) || defined(PDIV_DEBUG)
-      if (p_LmShortDivisibleBy(T[j].p, sevT[j],
-                               p, not_sev, r))
-        return j;
-#else
-      if (!(sevT[j] & not_sev) &&
-          p_LmDivisibleBy(T[j].p, p, r))
-        return j;
-#endif
-      j++;
-    }
-  }
-  else
-  {
-    loop
-    {
-      if (j > tl) return -1;
-#if defined(PDEBUG) || defined(PDIV_DEBUG)
-      if (p_LmShortDivisibleBy(T[j].t_p, sevT[j],
-                               p, not_sev, r))
-        return j;
-#else
-      if (!(sevT[j] & not_sev) &&
-          p_LmDivisibleBy(T[j].t_p, p, r))
-        return j;
-#endif
-      j++;
-    }
-  }
-}
-
 // same as above, only with set S
 int kFindDivisibleByInS(const kStrategy strat, int* max_ind, LObject* L)
 {
@@ -561,7 +507,7 @@ int redSig (LObject* h,kStrategy strat)
   not_sev = ~ h->sev;
   loop
   {
-    j = kFindDivisibleByInTSig(strat->T, strat->sevT, strat->tl, h);
+    j = kFindDivisibleByInT(strat->T, strat->sevT, strat->tl, h);
     if (j < 0) return 1;
 
     li = strat->T[j].pLength;
