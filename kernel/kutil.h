@@ -589,6 +589,25 @@ int ksReducePoly(LObject* PR,
                  number *coef = NULL,
                  kStrategy strat = NULL);
 
+// Reduces PR with PW
+// Assumes PR != NULL, PW != NULL, Lm(PW) divides Lm(PR)
+// Changes: PR
+// Const:   PW
+// If coef != NULL, then *coef is a/gcd(a,b), where a = LC(PR), b = LC(PW)
+// If strat != NULL, tailRing is changed if reduction would violate exp bound
+// of tailRing
+// Returns: 0 everything ok, no tailRing change
+//          1 tailRing has successfully changed (strat != NULL)
+//          2 no reduction performed, tailRing needs to be changed first
+//            (strat == NULL)
+//         -1 tailRing change could not be performed due to exceeding exp
+//            bound of currRing
+int ksReducePolySig(LObject* PR,
+                 TObject* PW,
+                 poly spNoether = NULL,
+                 number *coef = NULL,
+                 kStrategy strat = NULL);
+
 // Reduces PR at Current->next with PW
 // Assumes PR != NULL, Current contained in PR
 //         Current->next != NULL, LM(PW) devides LM(Current->next)
