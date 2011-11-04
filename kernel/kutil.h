@@ -495,14 +495,6 @@ int kFindInT(poly p, TSet T, int tlength);
 //        number of first divisor, otherwise
 int kFindDivisibleByInT(const TSet &T, const unsigned long* sevT,
                         const int tl, const LObject* L, const int start=0);
-// return -1 if no divisor is found
-//        number of first divisor, otherwise
-//
-// this is a special version for signature-based
-// standard basis algorithms: only sig-safe reductions
-// are allowed!
-int kFindDivisibleByInTSig(const TSet &T, const unsigned long* sevT,
-                        const int tl, const LObject* L, const int start=0);
 // same with S
 int kFindDivisibleByInS(const kStrategy strat, int *max_ind, LObject* L);
 
