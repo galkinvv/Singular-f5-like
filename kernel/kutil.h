@@ -169,6 +169,11 @@ public:
   int from; // from which polynomial it comes from
             // this is important for signature-based
             // algorithms
+  int checked; // this is the index of S up to which
+                      // the corresponding LObject was already checked in
+                      // critical pair creation => when entering the
+                      // reduction process it is enough to start a second
+                      // rewritten criterion check from checked+1 onwards
   poly  p1,p2; /*- the pair p comes from,
                  lm(pi) in currRing, tail(pi) in tailring -*/
   poly  lcm;   /*- the lcm of p1,p2 -*/
@@ -600,6 +605,7 @@ int ksReducePoly(LObject* PR,
 //          1 tailRing has successfully changed (strat != NULL)
 //          2 no reduction performed, tailRing needs to be changed first
 //            (strat == NULL)
+//          3 no reduction performed, not sig-safe!!!
 //         -1 tailRing change could not be performed due to exceeding exp
 //            bound of currRing
 int ksReducePolySig(LObject* PR,
