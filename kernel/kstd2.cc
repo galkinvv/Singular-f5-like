@@ -493,9 +493,18 @@ int redSig (LObject* h,kStrategy strat)
   if (strat->tl<0) return 1;
   //if (h->GetLmTailRing()==NULL) return 0; // HS: SHOULD NOT BE NEEDED!
   assume(h->FDeg == h->pFDeg());
-
+  Print("------- IN REDSIG -------\n");
+  Print("p: ");
+  pWrite(h->p);
+  Print("p1: ");
+  pWrite(h->p1);
+  Print("p2: ");
+  pWrite(h->p2);
+  Print("---------------------------\n");
   poly h_p;
   int i,j,at,pass, ii;
+  int start=0;
+  int sigSafe;
   unsigned long not_sev;
   long reddeg,d;
 
@@ -507,7 +516,7 @@ int redSig (LObject* h,kStrategy strat)
   not_sev = ~ h->sev;
   loop
   {
-    j = kFindDivisibleByInT(strat->T, strat->sevT, strat->tl, h);
+    j = kFindDivisibleByInT(strat->T, strat->sevT, strat->tl, h, start);
     if (j < 0) return 1;
 
     li = strat->T[j].pLength;
@@ -539,6 +548,7 @@ int redSig (LObject* h,kStrategy strat)
         ii = i;
       }
     }
+    start = ii+1;
 #endif
 
     /*
@@ -554,52 +564,75 @@ int redSig (LObject* h,kStrategy strat)
     }
 #endif
     assume(strat->fromT == FALSE);
-
-    ksReducePoly(h, &(strat->T[ii]), NULL, NULL, strat);
-
-#ifdef KDEBUG
-    if (TEST_OPT_DEBUG)
+    Print("BEFORE REDUCTION WITH %d:\n",ii);
+    Print("--------------------------------\n");
+    pWrite(h->sig);
+    pWrite(strat->T[ii].sig);
+    pWrite(h->p);
+    pWrite(h->p1);
+    pWrite(h->p2);
+    pWrite(strat->T[ii].p);
+    Print("--------------------------------\n");
+    // check with rewCriterion again!
+    if (!rewCriterion(h->sig,~h->sevSig,strat,h->checked))
     {
-      PrintS("\nto ");
-      h->wrp();
-      PrintLn();
-    }
-#endif
-
-    h_p = h->GetLmTailRing();
-    if (h_p == NULL)
-    {
-      if (h->lcm!=NULL) pLmFree(h->lcm);
-#ifdef KDEBUG
-      h->lcm=NULL;
-#endif
+      if (h->lcm!=NULL)
+        pLmFree(h->lcm);
       return 0;
     }
-    h->SetShortExpVector();
-    not_sev = ~ h->sev;
-    /*
-     * try to reduce the s-polynomial h
-     *test first whether h should go to the lazyset L
-     *-if the degree jumps
-     *-if the number of pre-defined reductions jumps
-     */
-    pass++;
-    if (!TEST_OPT_REDTHROUGH && (strat->Ll >= 0) && (pass > strat->LazyPass))
+    sigSafe = ksReducePolySig(h, &(strat->T[ii]), NULL, NULL, strat);
+    // if reduction has taken place, i.e. the reduction was sig-safe
+    // otherwise start is already at the next position and the loop
+    // searching reducers in T goes on from index start
+    Print("SigSAFE: %d\n",sigSafe);
+    if (sigSafe != 3)
     {
-      h->SetLmCurrRing();
-      at = strat->posInL(strat->L,strat->Ll,h,strat);
-      if (at <= strat->Ll)
-      {
-        int dummy=strat->sl;
-        if (kFindDivisibleByInS(strat, &dummy, h) < 0)
-          return 1;
-        enterL(&strat->L,&strat->Ll,&strat->Lmax,*h,at);
+      // start the next search for reducers in T from the beginning
+      start = 0;
 #ifdef KDEBUG
-        if (TEST_OPT_DEBUG)
-          Print(" lazy: -> L%d\n",at);
+      if (TEST_OPT_DEBUG)
+      {
+        PrintS("\nto ");
+        h->wrp();
+        PrintLn();
+      }
 #endif
-        h->Clear();
-        return -1;
+
+      h_p = h->GetLmTailRing();
+      if (h_p == NULL)
+      {
+        if (h->lcm!=NULL) pLmFree(h->lcm);
+#ifdef KDEBUG
+        h->lcm=NULL;
+#endif
+        return 0;
+      }
+      h->SetShortExpVector();
+      not_sev = ~ h->sev;
+      /*
+      * try to reduce the s-polynomial h
+      *test first whether h should go to the lazyset L
+      *-if the degree jumps
+      *-if the number of pre-defined reductions jumps
+      */
+      pass++;
+      if (!TEST_OPT_REDTHROUGH && (strat->Ll >= 0) && (pass > strat->LazyPass))
+      {
+        h->SetLmCurrRing();
+        at = strat->posInL(strat->L,strat->Ll,h,strat);
+        if (at <= strat->Ll)
+        {
+          int dummy=strat->sl;
+          if (kFindDivisibleByInS(strat, &dummy, h) < 0)
+            return 1;
+          enterL(&strat->L,&strat->Ll,&strat->Lmax,*h,at);
+#ifdef KDEBUG
+          if (TEST_OPT_DEBUG)
+            Print(" lazy: -> L%d\n",at);
+#endif
+          h->Clear();
+          return -1;
+        }
       }
     }
   }
@@ -1242,6 +1275,8 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
         message((strat->honey ? strat->P.ecart : 0) + strat->P.pFDeg(),
                 &olddeg,&reduc,strat, red_result);
 
+      Print("Poly before red: ");
+      pWrite(strat->P.p);
       /* reduction of the element choosen from L */
       red_result = strat->red(&strat->P,strat);
       if (errorreported)  break;
