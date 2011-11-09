@@ -189,6 +189,35 @@ int ksReducePolySig(LObject* PR,
   kTest_L(PR);
   kTest_T(PW);
 
+  // signature-based stuff:
+  // checking for sig-safeness first
+  // NOTE: This has to be done in the current ring
+  poly f1 = PR->GetLmCurrRing();
+  poly f2 = PW->GetLmCurrRing();
+  poly sigMult = pCopy(PW->sig);   // copy signature of reducer
+  p_ExpVectorSub(f1, f2, currRing); // Calculate the Monomial we must multiply to p2
+  pWrite(f1);
+  pWrite(f2);
+  pWrite(sigMult);
+  sigMult = pp_Mult_qq(f1,sigMult,currRing);
+  pWrite(f1);
+  pWrite(f2);
+  pWrite(sigMult);
+  pWrite(PR->sig);
+  int sigSafe = p_LmCmp(PR->sig,sigMult,currRing);
+  printf("SIGSAFE: %d\n",sigSafe);
+  /*
+  pDelete(&f1);
+  pDelete(&f2);
+  pDelete(&sigMult);
+  */
+  // go on with the computations only if the signature of p2 is greater than the
+  // signature of fm*p1
+  if(sigSafe != 1)
+  { 
+    return 3;
+  }
+  printf("HERE!\n");
   poly p1 = PR->GetLmTailRing();   // p2 | p1
   poly p2 = PW->GetLmTailRing();   // i.e. will reduce p1 with p2; lm = LT(p1) / LM(p2)
   poly t2 = pNext(p2), lm = p1;    // t2 = p2 - LT(p2); really compute P = LC(p2)*p1 - LT(p1)/LM(p2)*p2
@@ -197,11 +226,11 @@ int ksReducePolySig(LObject* PR,
   p_CheckPolyRing(p2, tailRing);
 
   pAssume1(p2 != NULL && p1 != NULL &&
-           p_DivisibleBy(p2,  p1, tailRing));
+      p_DivisibleBy(p2,  p1, tailRing));
 
   pAssume1(p_GetComp(p1, tailRing) == p_GetComp(p2, tailRing) ||
-           (p_GetComp(p2, tailRing) == 0 &&
-            p_MaxComp(pNext(p2),tailRing) == 0));
+      (p_GetComp(p2, tailRing) == 0 &&
+       p_MaxComp(pNext(p2),tailRing) == 0));
 
 #ifdef HAVE_PLURAL
   if (rIsPluralRing(currRing))
@@ -286,7 +315,7 @@ int ksReducePolySig(LObject* PR,
     PR->SetShortExpVector();
   }
 #endif
-  
+
 #if defined(KDEBUG) && defined(TEST_OPT_DEBUG_RED)
   if (TEST_OPT_DEBUG)
   {
@@ -414,6 +443,10 @@ void ksCreateSpoly(LObject* Pair,   poly spNoether,
     Pair->SetShortExpVector();
   }
 #endif
+  printf("ENDE VON SPOLY CREATION:\n");
+  pWrite(Pair->p);
+  pWrite(Pair->p1);
+  pWrite(Pair->p2);
 
 }
 
@@ -469,7 +502,6 @@ int ksReducePolyTail(LObject* PR, TObject* PW, poly Current, poly spNoether)
     PR->SetShortExpVector();
   }
 #endif
-
   return ret;
 }
 
