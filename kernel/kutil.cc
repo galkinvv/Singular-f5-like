@@ -1045,6 +1045,8 @@ void enterL (LSet *set,int *length, int *LSetmax, LObject p,int at)
   for(k=0;k<=(*length);k++)
   {
     pWrite((*set)[k].sig);
+    pWrite((*set)[k].p1);
+    pWrite((*set)[k].p2);
   }
   Print("--- LIST L END ---\n");
 #endif
@@ -1751,9 +1753,8 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
   pWrite(sSigMult);
   Print("----------------\n");
 #endif
-  Lp.from = strat->sl+1;    
-  // testing by syzCriterion = F5 Criterion
-  // testing by rewCriterion = Rewritten Criterion
+  // testing by syzCriterion = F5 Criterion testing by rewCriterion =
+  // Rewritten Criterion
   if  ( syzCriterion(sSigMult,sSigMultNegSev,strat) ||
         syzCriterion(pSigMult,pSigMultNegSev,strat) ||
         rewCriterion(sSigMult,sSigMultNegSev,strat,i+1)
@@ -1764,7 +1765,6 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
     Lp.lcm=NULL;
     return;
   }
-  // check the 2nd generator, i.e. strat->S[i] by the Rewritten Criterion
   int sigCmp = p_LmCmp(pSigMult,sSigMult,currRing);
   if(sigCmp==0)
   {
@@ -1774,6 +1774,15 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
     Lp.lcm=NULL;
     return;
   }
+  // at this point it is clear that the pair will be added to L, since it has
+  // passed all tests up to now
+
+  // store from which element this pair comes from for further tests
+  Lp.from = strat->sl+1;    
+  // check up to which element in S we have checked this pair already by the
+  // rewritten criterion, another test of this criterion takes place when
+  // starting the reduction process
+  Lp.checked = strat->sl;    
   if(sigCmp==pOrdSgn)
   {
     // pSig > sSig
