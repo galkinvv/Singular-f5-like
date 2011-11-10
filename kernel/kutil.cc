@@ -1019,6 +1019,17 @@ void deleteInL (LSet set, int *length, int j,kStrategy strat)
 */
 void enterL (LSet *set,int *length, int *LSetmax, LObject p,int at)
 {
+#ifdef DEBUGF5
+  Print("--- LIST L BEFORE---\n");
+  int k;
+  for(k=0;k<=(*length);k++)
+  {
+    pWrite((*set)[k].sig);
+    pWrite((*set)[k].p1);
+    pWrite((*set)[k].p2);
+  }
+  Print("--- LIST L BEFORE END ---\n");
+#endif
 #ifdef PDEBUG
   /*  zaehler++; */
 #endif /*PDEBUG*/
@@ -1041,7 +1052,6 @@ void enterL (LSet *set,int *length, int *LSetmax, LObject p,int at)
   (*length)++;
 #ifdef DEBUGF5
   Print("--- LIST L ---\n");
-  int k;
   for(k=0;k<=(*length);k++)
   {
     pWrite((*set)[k].sig);
