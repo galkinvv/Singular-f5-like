@@ -486,9 +486,22 @@ int redHomog (LObject* h,kStrategy strat)
 *  reduction procedure for signature-based standard
 *  basis algorithms:
 *  all reductions have to be sig-safe!
+*
+*  2 is returned if and only if the pair is rejected by the rewritten criterion
+*  at exactly this point of the computations. This is the last possible point
+*  such a check can be done => checks with the biggest set of available
+*  signatures
 */
 int redSig (LObject* h,kStrategy strat)
 {
+  // check with rewCriterion again!
+  if (rewCriterion(h->sig,~h->sevSig,strat,h->from+1))
+  {
+    if (h->lcm!=NULL)
+      pLmFree(h->lcm);
+    Print("HERE REW\n");
+    return 2;
+  }
   if (strat->tl<0) return 1;
   //if (h->GetLmTailRing()==NULL) return 0; // HS: SHOULD NOT BE NEEDED!
   assume(h->FDeg == h->pFDeg());
@@ -572,13 +585,6 @@ int redSig (LObject* h,kStrategy strat)
     pWrite(h->p2);
     pWrite(strat->T[ii].p);
     Print("--------------------------------\n");
-    // check with rewCriterion again!
-    if (!rewCriterion(h->sig,~h->sevSig,strat,h->checked))
-    {
-      if (h->lcm!=NULL)
-        pLmFree(h->lcm);
-      return 0;
-    }
     sigSafe = ksReducePolySig(h, &(strat->T[ii]), NULL, NULL, strat);
     // if reduction has taken place, i.e. the reduction was sig-safe
     // otherwise start is already at the next position and the loop
@@ -600,6 +606,7 @@ int redSig (LObject* h,kStrategy strat)
       h_p = h->GetLmTailRing();
       if (h_p == NULL)
       {
+        Print("HERE\n");
         if (h->lcm!=NULL) pLmFree(h->lcm);
 #ifdef KDEBUG
         h->lcm=NULL;
@@ -1285,6 +1292,7 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
     }
 
     // reduction to non-zero new poly
+    Print("RED RESULT: %d\n");
     if (red_result == 1)
     {
       // get the polynomial (canonicalize bucket, make sure P.p is set)
@@ -1329,7 +1337,8 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 
 #ifdef KDEBUG
       if (TEST_OPT_DEBUG){PrintS("new s:");strat->P.wrp();PrintLn();}
-#if MYTEST
+//#if MYTEST
+#if 1
       PrintS("New (reduced) S: "); pDebugPrint(strat->P.p); PrintLn();
 #endif /* MYTEST */
 #endif /* KDEBUG */
@@ -1398,7 +1407,10 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       Print("ADDING STUFF TO SYZ :  ");
       pWrite(strat->P.sig);
 #endif
-      enterSyz(strat->P,strat);
+      // the signature is added if and only if the
+      // pair was not detected by the rewritten criterion in strat->red = redSig
+      if (red_result!=2)
+        enterSyz(strat->P,strat);
       if (strat->P.p1 == NULL && strat->minim > 0)
       {
         p_Delete(&strat->P.p2, currRing, strat->tailRing);
