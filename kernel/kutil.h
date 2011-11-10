@@ -489,6 +489,7 @@ void kFreeStrat(kStrategy strat);
 void enterOnePairNormal (int i,poly p,int ecart, int isFromQ,kStrategy strat, int atR);
 void enterOnePairSig (int i,poly p,poly pSig,int ecart, int isFromQ,kStrategy strat, int atR);
 void chainCritNormal (poly p,int ecart,kStrategy strat);
+void chainCritSig (poly p,int ecart,kStrategy strat);
 BOOLEAN homogTest(polyset F, int Fmax);
 BOOLEAN newHEdge(polyset S, kStrategy strat);
 BOOLEAN syzCriterion(poly sig, unsigned long not_sevSig, kStrategy strat);
