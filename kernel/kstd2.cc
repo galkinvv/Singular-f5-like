@@ -782,7 +782,7 @@ int redLazy (LObject* h,kStrategy strat)
         if (h->pTotalDeg() >= strat->tailRing->bitmask)
         {
           strat->overflow=TRUE;
-          //Print("OVERFLOW in redLazy d=%ld, max=%ld\n",d,strat->tailRing->bitmask);
+          Print("OVERFLOW in redLazy d=%ld, max=%ld\n",d,strat->tailRing->bitmask);
           h->GetP();
           at = strat->posInL(strat->L,strat->Ll,h,strat);
           enterL(&strat->L,&strat->Ll,&strat->Lmax,*h,at);

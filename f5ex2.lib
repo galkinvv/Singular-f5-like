@@ -340,7 +340,7 @@ proc katsuran(int z)
 proc katsuranh(int z)
 {
    int n = z;
-   ring R = 32003,(x(0..(n)),h),dp;
+   ring R = 32003,(x(0..(n)),h),(C,dp);
    ideal i = homog(katsura(n),h);
    export(R);
    export(i);
@@ -366,7 +366,7 @@ proc cyclicn(int z)
 proc cyclicnh(int z)
 {
    int n = z;
-   ring R = 32003,(x(0..(n-1)),h),dp;
+   ring R = 32003,(x(0..(n-1)),h),(C,dp);
    ideal i = homog(cyclic(n),h);
    export(R);
    export(i);
@@ -455,7 +455,7 @@ proc econh(int n) {
 proc fmtm()
 {
 
-  ring R = 0,(x,y,z,t),dp;
+  ring R = 0,(x,y,z,t),(C,dp);
 
   poly p3= yz3 - x2t2;
   poly p2= xz2 - y2t;
