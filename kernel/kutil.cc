@@ -1025,8 +1025,8 @@ void enterL (LSet *set,int *length, int *LSetmax, LObject p,int at)
   for(k=0;k<=(*length);k++)
   {
     pWrite((*set)[k].sig);
-    pWrite((*set)[k].p1);
-    pWrite((*set)[k].p2);
+    pWrite(pHead((*set)[k].p1));
+    pWrite(pHead((*set)[k].p2));
   }
   Print("--- LIST L BEFORE END ---\n");
 #endif
@@ -2269,7 +2269,6 @@ void chainCritNormal (poly p,int ecart,kStrategy strat)
 void chainCritSig (poly p,int ecart,kStrategy strat)
 {
   int i,j,l;
-  Print("CHAIN START\n");
   kMergeBintoL(strat);
   j = strat->Ll;
   loop  /*cannot be changed into a for !!! */
@@ -2324,7 +2323,6 @@ void chainCritSig (poly p,int ecart,kStrategy strat)
     }
     j--;
   }
-  Print("CHAIN END\n");
 }
 #ifdef HAVE_RATGRING
 void chainCritPart (poly p,int ecart,kStrategy strat)
@@ -3510,7 +3508,6 @@ void enterpairs (poly h,int k,int ecart,int pos,kStrategy strat, int atR)
 */
 void enterpairsSig (poly h,poly hSig,int hFrom,int k,int ecart,int pos,kStrategy strat, int atR)
 {
-Print("REIN\n");
 int j=pos;
 
 #ifdef HAVE_RINGS
@@ -3533,7 +3530,6 @@ if ( (!strat->fromT)
   //Print("end clearS sl=%d\n",strat->sl);
 }
 // PrintS("end enterpairs\n");
-Print("RAUS\n");
 }
 
 /*2
@@ -4887,10 +4883,19 @@ BOOLEAN rewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int st
 #ifdef DEBUGF5
     Print("checking with:  ");
     pWrite(strat->sig[k]);
+    pWrite(pHead(strat->S[k]));
 #endif
     if (p_LmShortDivisibleBy(strat->sig[k], strat->sevSig[k], sig, not_sevSig, currRing))
       return TRUE;
   }
+#ifdef DEBUGF5
+  Print("ALL ELEMENTS OF S\n----------------------------------------\n");
+  for(int kk = 0; kk<strat->sl+1; kk++)
+  {
+    pWrite(pHead(strat->S[kk]));
+  }
+  Print("------------------------------\n");
+#endif
   return FALSE;
 }
 
@@ -5528,8 +5533,10 @@ void initSL (ideal F, ideal Q,kStrategy strat)
       h.sig = pInit();
       p_SetCoeff(h.sig,nInit(1),currRing);
       p_SetComp(h.sig,i+1,currRing);
+#ifdef DEBUGF5
       pWrite(h.p);
       pWrite(h.sig);
+#endif
       if (h.p!=NULL)
       {
         if (pOrdSgn==-1)
