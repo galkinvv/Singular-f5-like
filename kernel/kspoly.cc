@@ -192,32 +192,36 @@ int ksReducePolySig(LObject* PR,
   // signature-based stuff:
   // checking for sig-safeness first
   // NOTE: This has to be done in the current ring
-  poly f1 = PR->GetLmCurrRing();
+  poly f1 = p_Copy(PR->GetLmCurrRing(),currRing);
   poly f2 = PW->GetLmCurrRing();
   poly sigMult = pCopy(PW->sig);   // copy signature of reducer
   p_ExpVectorSub(f1, f2, currRing); // Calculate the Monomial we must multiply to p2
-  pWrite(f1);
-  pWrite(f2);
+#ifdef DEBUGF5
+  printf("IN KSREDUCEPOLYSIG: \n");
+  pWrite(pHead(f1));
+  pWrite(pHead(f2));
   pWrite(sigMult);
+  printf("--------------\n");
   sigMult = pp_Mult_qq(f1,sigMult,currRing);
-  pWrite(f1);
-  pWrite(f2);
+  pWrite(pHead(f1));
+  pWrite(pHead(f2));
   pWrite(sigMult);
   pWrite(PR->sig);
+#endif
   int sigSafe = p_LmCmp(PR->sig,sigMult,currRing);
-  printf("SIGSAFE: %d\n",sigSafe);
-  /*
+  // now we can delete the copied polynomial data used for checking for
+  // sig-safeness of the reduction step
   pDelete(&f1);
-  pDelete(&f2);
   pDelete(&sigMult);
-  */
+#ifdef DEBUGF5
+  printf("SIGSAFE: %d\n",sigSafe);
+#endif
   // go on with the computations only if the signature of p2 is greater than the
   // signature of fm*p1
   if(sigSafe != 1)
   { 
     return 3;
   }
-  printf("HERE!\n");
   poly p1 = PR->GetLmTailRing();   // p2 | p1
   poly p2 = PW->GetLmTailRing();   // i.e. will reduce p1 with p2; lm = LT(p1) / LM(p2)
   poly t2 = pNext(p2), lm = p1;    // t2 = p2 - LT(p2); really compute P = LC(p2)*p1 - LT(p1)/LM(p2)*p2
@@ -443,11 +447,11 @@ void ksCreateSpoly(LObject* Pair,   poly spNoether,
     Pair->SetShortExpVector();
   }
 #endif
+#ifdef DEBUGF5
   printf("ENDE VON SPOLY CREATION:\n");
-  pWrite(Pair->p);
   pWrite(Pair->p1);
   pWrite(Pair->p2);
-
+#endif
 }
 
 int ksReducePolyTail(LObject* PR, TObject* PW, poly Current, poly spNoether)
