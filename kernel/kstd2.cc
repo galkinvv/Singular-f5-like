@@ -500,20 +500,21 @@ int redSig (LObject* h,kStrategy strat)
   {
     if (h->lcm!=NULL)
       pLmFree(h->lcm);
-    Print("HERE REW\n");
     return 2;
   }
   if (strat->tl<0) return 1;
   //if (h->GetLmTailRing()==NULL) return 0; // HS: SHOULD NOT BE NEEDED!
   assume(h->FDeg == h->pFDeg());
+#ifdef DEBUGF5
   Print("------- IN REDSIG -------\n");
   Print("p: ");
-  pWrite(h->p);
+  pWrite(pHead(h->p));
   Print("p1: ");
-  pWrite(h->p1);
+  pWrite(pHead(h->p1));
   Print("p2: ");
-  pWrite(h->p2);
+  pWrite(pHead(h->p2));
   Print("---------------------------\n");
+#endif
   poly h_p;
   int i,j,at,pass, ii;
   int start=0;
@@ -577,20 +578,24 @@ int redSig (LObject* h,kStrategy strat)
     }
 #endif
     assume(strat->fromT == FALSE);
+#ifdef DEBUGF5
     Print("BEFORE REDUCTION WITH %d:\n",ii);
     Print("--------------------------------\n");
     pWrite(h->sig);
     pWrite(strat->T[ii].sig);
-    pWrite(h->p);
-    pWrite(h->p1);
-    pWrite(h->p2);
-    pWrite(strat->T[ii].p);
+    pWrite(h->GetLmCurrRing());
+    pWrite(pHead(h->p1));
+    pWrite(pHead(h->p2));
+    pWrite(pHead(strat->T[ii].p));
     Print("--------------------------------\n");
+#endif
     sigSafe = ksReducePolySig(h, &(strat->T[ii]), NULL, NULL, strat);
     // if reduction has taken place, i.e. the reduction was sig-safe
     // otherwise start is already at the next position and the loop
     // searching reducers in T goes on from index start
+#ifdef DEBUGF5
     Print("SigSAFE: %d\n",sigSafe);
+#endif
     if (sigSafe != 3)
     {
       // start the next search for reducers in T from the beginning
@@ -607,7 +612,6 @@ int redSig (LObject* h,kStrategy strat)
       h_p = h->GetLmTailRing();
       if (h_p == NULL)
       {
-        Print("HERE\n");
         if (h->lcm!=NULL) pLmFree(h->lcm);
 #ifdef KDEBUG
         h->lcm=NULL;
@@ -1282,8 +1286,10 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
         message((strat->honey ? strat->P.ecart : 0) + strat->P.pFDeg(),
                 &olddeg,&reduc,strat, red_result);
 
+#ifdef DEBUGF5
       Print("Poly before red: ");
       pWrite(strat->P.p);
+#endif
       /* reduction of the element choosen from L */
       red_result = strat->red(&strat->P,strat);
       if (errorreported)  break;
@@ -1295,7 +1301,9 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
     }
 
     // reduction to non-zero new poly
+#ifdef DEBUGF5
     Print("RED RESULT: %d\n");
+#endif
     if (red_result == 1)
     {
       // get the polynomial (canonicalize bucket, make sure P.p is set)
