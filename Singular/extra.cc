@@ -72,7 +72,7 @@
 #endif
 
 #ifdef HAVE_F5C
-#include <Singular/f5c.h>
+#include <kernel/f5c.h>
 #endif
 
 #ifdef HAVE_WALK
@@ -3080,6 +3080,7 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
   #endif
   /*==================== F5C Implementation =================*/
   #ifdef HAVE_F5C
+        /*
       if (strcmp(sys_cmd, "f5c")==0)
       {
         if (h->Typ()!=IDEAL_CMD)
@@ -3095,6 +3096,7 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
         return FALSE;
       }
       else
+      */
   #endif
   /*==================== Testing groebner basis =================*/
   #ifdef HAVE_RINGS

@@ -50,7 +50,7 @@
 #undef PDEBUG
 #define PDEBUG 0 
 #endif
-#define F5CC              1
+#define F5CC              0
 #define F5C               1
 #define USEREW            1 
 #define GGVMODE           1 
