@@ -51,6 +51,7 @@
 #undef PDEBUG
 #define PDEBUG 0 
 #endif
+#define F5CC              1
 #define NOTRED            1 
 #define F5ETAILREDUCTION  0 
 #define F5EDEBUG00        1
@@ -65,6 +66,7 @@ int create_count_f5 = 0; // for KDEBUG option in reduceByRedGBCritPair
 // this is needed for the lengths of the rules arrays in the following
 unsigned long rewRulesSize        = 0;
 unsigned long f5RulesSize         = 0;
+unsigned long f5Rules2Size        = 0;
 unsigned long stratSize           = 0;
 unsigned long superTopReductions  = 0;
 unsigned long zeroReductions      = 0;
@@ -165,6 +167,7 @@ ideal f5cMain(ideal F, ideal Q)
   create_count_f5     = 0;
   stratSize           = 0;
   f5RulesSize         = 0;
+  f5Rules2Size        = 0;
   rewRulesSize        = 0;
   superTopReductions  = 0;
   zeroReductions      = 0;
@@ -241,12 +244,30 @@ ideal f5cIter (
   // iteration step
   unsigned long oldLength;
   f5RulesSize         = 2*(strat->sl+1);
+#if F5CC
+  f5Rules2Size  = 0;
+  for (i=1; i<stratSize; i++)
+  {
+    f5Rules2Size  += stratSize-i;
+  }
+#endif
   // create array of leading monomials of previously computed elements in redGB
   F5Rules* f5Rules    = (F5Rules*) omAlloc(sizeof(struct F5Rules));
+#if F5CC
+  F5Rules* f5Rules2   = (F5Rules*) omAlloc(sizeof(struct F5Rules));
+#endif
   RewRules* rewRules  = (RewRules*) omAlloc(sizeof(struct RewRules));
   // malloc memory for all rules
   f5Rules->coeff      = (number*) omAlloc(f5RulesSize*
                         sizeof(number)); 
+#if F5CC
+  if(f5Rules2Size>0)
+  {
+    f5Rules2->label     = (int**) omAlloc(f5Rules2Size*sizeof(int*));
+    f5Rules2->slabel    = (unsigned long*) omAlloc(f5Rules2Size*
+                          sizeof(unsigned long)); 
+  }
+#endif
   f5Rules->label      = (int**) omAlloc(f5RulesSize*sizeof(int*));
   f5Rules->slabel     = (unsigned long*) omAlloc(f5RulesSize*
                         sizeof(unsigned long)); 
@@ -290,9 +311,57 @@ ideal f5cIter (
   {
     f5Rules->label[i]   = (int*) omAlloc( (currRing->N+1)*sizeof(int) );
   } 
+#if F5CC
+  // use the strategy strat to get the F5 Rules:
+  // When preparing strat we have already computed & stored the short exonent
+  // vectors there => do not recompute them again 
+  int iter = 0;
+  int temp = 0;
+  for(i=0; i<f5Rules2Size; i++)
+  {
+    f5Rules2->label[i]  =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+  }
+  if(f5Rules2Size>0)
+  {
+    for(i=1; i<stratSize; i++) 
+    {
+      for (int j=0; j<i; j++)
+      {
+        for(int k=1; k<=currRing->N; k++)
+        {
+          f5Rules2->label[iter][0]  = 0;  
+          temp  = f5Rules->label[i][k] - f5Rules->label[j][k];
+          if(temp<0)
+          {
+            f5Rules2->label[iter][k]   =   -temp;  
+          }
+          else
+          {
+            f5Rules2->label[iter][k]   =   0;  
+          }
+        }
+        f5Rules2->slabel[iter]  = getShortExpVecFromArray(f5Rules2->label[iter]);
+        iter++;
+      }
+#if F5EDEBUG1
+    Print("F5 Rule: ");
+    int tt = currRing->N;
+    while( tt )
+    {
+      Print("%d ",f5Rules2->label[iter-1][(currRing->N)-tt]);
+      tt--;
+    }
+    Print("\n %ld\n", f5Rules2->slabel[iter-1]);
+#endif
+    }
+  }
+#endif
 
   rewRules->size  = 1;
   f5Rules->size   = stratSize;
+#if F5CC
+  f5Rules2->size  = f5Rules2Size;
+#endif
   // reduce and initialize the list of Lpolys with the current ideal generator p
 #if F5EDEBUG2
   Print("Before reduction\n");
@@ -320,13 +389,21 @@ ideal f5cIter (
     // initializing the list of critical pairs for this iteration step 
     CpairDegBound* cpBounds = NULL;
     criticalPairInit( 
-                      gCurr, strat, *f5Rules, *rewRules, &cpBounds, numVariables, 
+                      gCurr, strat, *f5Rules, 
+#if F5CC
+                      *f5Rules2, 
+#endif
+                      *rewRules, &cpBounds, numVariables, 
                       shift, negBitmaskShifted, offsets
                     ); 
     if( cpBounds )
     {
-      computeSpols( 
-                    strat, cpBounds, redGB, &gCurr, &f5Rules, &rewRules, 
+      computeSpols(  
+                   strat, cpBounds, redGB, &gCurr, &f5Rules,
+#if F5CC
+                    &f5Rules2,
+#endif
+                    &rewRules, 
                     numVariables, shift, negBitmaskShifted, offsets
                   );
     }
@@ -377,6 +454,15 @@ ideal f5cIter (
   omFreeSize( f5Rules->coeff, f5RulesSize*sizeof(number) );
   
   omFreeSize( f5Rules, sizeof(F5Rules) );
+#if F5CC
+  for( i=0; i<f5Rules2Size; i++ )
+  {
+    omFreeSize( f5Rules2->label[i], (currRing->N+1)*sizeof(int) );
+  }
+  omFreeSize( f5Rules2->label, f5Rules2Size*sizeof(int*) );
+  omFreeSize( f5Rules2->slabel, f5Rules2Size*sizeof(unsigned long) );
+  omFreeSize( f5Rules2, sizeof(F5Rules) );
+#endif
   
   for( i=0; i<rewRulesSize; i++ )
   {
@@ -395,8 +481,11 @@ ideal f5cIter (
 
 
 void criticalPairInit ( 
-  Lpoly* gCurr, const kStrategy strat, 
-  const F5Rules& f5Rules, const RewRules& rewRules,
+  Lpoly* gCurr, const kStrategy strat, const F5Rules& f5Rules, 
+#if F5CC
+  const F5Rules& f5Rules2,
+#endif
+  const RewRules& rewRules,
   CpairDegBound** cpBounds, int numVariables, int* shift, 
   unsigned long* negBitmaskShifted, int* offsets
                       )
@@ -428,6 +517,9 @@ void criticalPairInit (
   // we only need to alloc memory for the 1st label as for the initial 
   // critical pairs all 2nd generators have label NULL in F5e
   cpTemp->mLabel1   = (int*) omAlloc((currRing->N+1)*sizeof(int));
+#if F5CC
+  cpTemp->mLabel2   = (int*) omAlloc((currRing->N+1)*sizeof(int));
+#endif
   cpTemp->mult1     = (int*) omAlloc((currRing->N+1)*sizeof(int));
   cpTemp->mult2     = (int*) omAlloc((currRing->N+1)*sizeof(int));
   int temp;
@@ -438,6 +530,9 @@ void criticalPairInit (
     // pair generated by the new element and elements of the previous iteration
     // steps, i.e. elements already in redGB
     cpTemp->mLabel1[0]  = cpTemp->mult1[0]  = 0; 
+#if F5CC
+    cpTemp->mLabel2[0]  = cpTemp->mult2[0]  = 0; 
+#endif
     cpTemp->mult2[0]    = 0; 
     critPairDeg         = 0;
     for(j=1; j<=currRing->N; j++)
@@ -451,6 +546,9 @@ void criticalPairInit (
         cpTemp->mult1[j]    =   -temp;  
         cpTemp->mult2[j]    =   0; 
         cpTemp->mLabel1[j]  =   - temp;
+#if F5CC
+        cpTemp->mLabel2[j]  =   0;
+#endif
         critPairDeg         +=  (- temp); 
       }
       else
@@ -458,17 +556,38 @@ void criticalPairInit (
         cpTemp->mult1[j]    =   0;  
         cpTemp->mult2[j]    =   temp;  
         cpTemp->mLabel1[j]  =   0;
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+// that is the problem in cyclicnh(4)!!!!
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+#if F5CC
+        cpTemp->mLabel2[j]  =   temp;
+#endif
       }
     }
     cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
+#if F5CC
+    cpTemp->smLabel2 = ~getShortExpVecFromArray(cpTemp->mLabel2);
+#endif
     
     // testing the F5 Criterion
 
     // this is the ggv criterion!
-    if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) ) 
+    if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules)  
+#if F5CC
+        && !criterion12(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules2, i)
+#endif
+      )
     {
       // completing the construction of the new critical pair and inserting it
       // to the list of critical pairs 
+#if F5CC
+      // if we do not delete this pointer, a not allowed check of 
+      // criterion2 in computespols happens!
+      omFree( cpTemp->mLabel2 );
+      cpTemp->mLabel2 = NULL;
+#endif
       cpTemp->p2        = strat->S[i];
       cpTemp->coeff2    = n_Div( pGetCoeff(cpTemp->p1), pGetCoeff(cpTemp->p2), currRing );
 #if F5EDEBUG1
@@ -497,6 +616,9 @@ void criticalPairInit (
       cpTemp->p2        = NULL;
 
       cpTemp->mLabel1   = (int*) omAlloc((currRing->N+1)*sizeof(int));
+#if F5CC
+      cpTemp->mLabel2   = (int*) omAlloc((currRing->N+1)*sizeof(int));
+#endif
       cpTemp->mult1     = (int*) omAlloc((currRing->N+1)*sizeof(int));
       cpTemp->mult2     = (int*) omAlloc((currRing->N+1)*sizeof(int));
     }
@@ -508,6 +630,9 @@ void criticalPairInit (
   // pair generated by the new element and elements of the previous iteration
   // steps, i.e. elements already in redGB
   cpTemp->mLabel1[0]  = cpTemp->mult1[0]  = pGetComp(cpTemp->p1); 
+#if F5CC
+  cpTemp->mLabel2[0]  = cpTemp->mult2[0]  = pGetComp(strat->S[strat->sl]); 
+#endif
   cpTemp->mult2[0]    = pGetComp(strat->S[strat->sl]); 
   critPairDeg         = 0;
   for(j=1; j<=currRing->N; j++)
@@ -521,6 +646,9 @@ void criticalPairInit (
       cpTemp->mult1[j]    =   -temp;  
       cpTemp->mult2[j]    =   0; 
       cpTemp->mLabel1[j]  =   -temp;
+#if F5CC
+      cpTemp->mLabel2[j]  =   0;
+#endif
       critPairDeg         +=  (- temp);
     }
     else
@@ -528,18 +656,34 @@ void criticalPairInit (
       cpTemp->mult1[j]    =   0;  
       cpTemp->mult2[j]    =   temp;  
       cpTemp->mLabel1[j]  =   0;
+#if F5CC
+      cpTemp->mLabel2[j]  =   temp;
+#endif
     }
   }
   cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
+#if F5CC
+  cpTemp->smLabel2 = ~getShortExpVecFromArray(cpTemp->mLabel2);
+#endif
   // testing the F5 Criterion
   
   // this is the ggv criterion
-  if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) ) 
+  if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules)  
+#if F5CC
+      && !criterion12(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules2, i)
+#endif
+     ) 
   {
     // completing the construction of the new critical pair and inserting it
     // to the list of critical pairs 
     cpTemp->p2        = strat->S[strat->sl];
     cpTemp->coeff2    = n_Div( pGetCoeff(cpTemp->p1), pGetCoeff(cpTemp->p2), currRing );
+#if F5CC
+      // if we do not delete this pointer, a not allowed check of 
+      // criterion2 in computespols happens!
+      omFree( cpTemp->mLabel2 );
+      cpTemp->mLabel2 = NULL;
+#endif
 #if F5EDEBUG1
     Print("2nd gen: ");
     pWrite( pHead(cpTemp->p2) );
@@ -571,6 +715,9 @@ void criticalPairInit (
 
 void criticalPairPrev ( 
   Lpoly* gCurrNew, Lpoly* gCurr, const kStrategy strat, const F5Rules& f5Rules, 
+#if F5CC
+  const F5Rules& f5Rules2,
+#endif
   const RewRules& rewRules, CpairDegBound** cpBounds, 
   int numVariables, int* shift, unsigned long* negBitmaskShifted, 
   int* offsets
@@ -602,6 +749,9 @@ void criticalPairPrev (
   // we only need to alloc memory for the 1st label as for the initial 
   // critical pairs all 2nd generators have label NULL in F5e
   cpTemp->mLabel1   = (int*) omAlloc((currRing->N+1)*sizeof(int));
+#if F5CC
+  cpTemp->mLabel2   = (int*) omAlloc((currRing->N+1)*sizeof(int));
+#endif
   cpTemp->mult1     = (int*) omAlloc((currRing->N+1)*sizeof(int));
   cpTemp->mult2     = (int*) omAlloc((currRing->N+1)*sizeof(int));
   int temp;
@@ -612,6 +762,9 @@ void criticalPairPrev (
     // pair generated by the new element and elements of the previous iteration
     // steps, i.e. elements already in redGB
     cpTemp->mLabel1[0]  = cpTemp->mult1[0]  = pGetExp(cpTemp->p1, 0); 
+#if F5CC
+    cpTemp->mLabel2[0]  = cpTemp->mult2[0]    = pGetExp(strat->S[i], 0); 
+#endif
     cpTemp->mult2[0]    = pGetExp(strat->S[i], 0); 
     critPairDeg         = 0;
     for(j=1; j<=currRing->N; j++)
@@ -622,6 +775,9 @@ void criticalPairPrev (
         cpTemp->mult1[j]    =   -temp;  
         cpTemp->mult2[j]    =   0; 
         cpTemp->mLabel1[j]  =   rewRules.label[cpTemp->rewRule1][j] - temp;
+#if F5CC
+        cpTemp->mLabel2[j]  =   0;
+#endif
         critPairDeg         +=  rewRules.label[cpTemp->rewRule1][j] - temp; 
       }
       else
@@ -629,10 +785,16 @@ void criticalPairPrev (
         cpTemp->mult1[j]    =   0;  
         cpTemp->mult2[j]    =   temp;  
         cpTemp->mLabel1[j]  =   rewRules.label[cpTemp->rewRule1][j];
+#if F5CC
+        cpTemp->mLabel2[j]  =   temp;
+#endif
         critPairDeg         +=  rewRules.label[cpTemp->rewRule1][j]; 
       }
     }
     cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
+#if F5CC
+    cpTemp->smLabel2 = ~getShortExpVecFromArray(cpTemp->mLabel2);
+#endif
     
 #if F5EDEBUG1
     Print("2nd generator of pair: ");
@@ -640,12 +802,22 @@ void criticalPairPrev (
 #endif
     
     // this is the ggv criterion!
-    if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) )
+    if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) 
+#if F5CC
+        && !criterion12(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules2, i) 
+#endif
+          )
     {
       // completing the construction of the new critical pair and inserting it
       // to the list of critical pairs 
       cpTemp->p2        = strat->S[i];
       cpTemp->coeff2    = n_Div( pGetCoeff(cpTemp->p1), pGetCoeff(cpTemp->p2), currRing );
+#if F5CC
+      // if we do not delete this pointer, a not allowed check of 
+      // criterion2 in computespols happens!
+      omFree( cpTemp->mLabel2 );
+      cpTemp->mLabel2 = NULL;
+#endif
       // now we really need the memory for the exp label
       //cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
       //                          sizeof(unsigned long));
@@ -668,6 +840,9 @@ void criticalPairPrev (
       cpTemp->p2        = NULL;
 
       cpTemp->mLabel1   = (int*) omAlloc((currRing->N+1)*sizeof(int));
+#if F5CC
+      cpTemp->mLabel2   = (int*) omAlloc((currRing->N+1)*sizeof(int));
+#endif
       cpTemp->mult1     = (int*) omAlloc((currRing->N+1)*sizeof(int));
       cpTemp->mult2     = (int*) omAlloc((currRing->N+1)*sizeof(int));
     }
@@ -679,6 +854,9 @@ void criticalPairPrev (
   // pair generated by the new element and elements of the previous iteration
   // steps, i.e. elements already in redGB
   cpTemp->mLabel1[0]  = cpTemp->mult1[0]  = pGetExp(cpTemp->p1, 0); 
+#if F5CC
+  cpTemp->mLabel2[0]  = cpTemp->mult2[0]  = pGetExp(strat->S[strat->sl], 0); 
+#endif
   cpTemp->mult2[0]    = pGetExp(strat->S[strat->sl], 0); 
   critPairDeg         = 0;
   for(j=1; j<=currRing->N; j++)
@@ -689,6 +867,9 @@ void criticalPairPrev (
       cpTemp->mult1[j]    =   -temp;  
       cpTemp->mult2[j]    =   0; 
       cpTemp->mLabel1[j]  =   rewRules.label[cpTemp->rewRule1][j] - temp;
+#if F5CC
+      cpTemp->mLabel2[j]  =   0;
+#endif
       critPairDeg         +=  rewRules.label[cpTemp->rewRule1][j] - temp; 
     }
     else
@@ -696,11 +877,17 @@ void criticalPairPrev (
       cpTemp->mult1[j]    =   0;  
       cpTemp->mult2[j]    =   temp;  
       cpTemp->mLabel1[j]  =   rewRules.label[cpTemp->rewRule1][j];
+#if F5CC
+      cpTemp->mLabel2[j]  =   temp;
+#endif
       critPairDeg         +=  rewRules.label[cpTemp->rewRule1][j]; 
     }
   }
   cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
   
+#if F5CC
+  cpTemp->smLabel2 = ~getShortExpVecFromArray(cpTemp->mLabel2);
+#endif
 #if F5EDEBUG1
     Print("2nd generator of pair: ");
     pWrite( pHead(strat->S[strat->sl]) );
@@ -708,12 +895,22 @@ void criticalPairPrev (
   // testing the F5 Criterion
   
   // this is the ggv criterion!
-  if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) )
+  if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) 
+#if F5CC
+      && !criterion12(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules2, i)
+#endif
+    )
   {
     // completing the construction of the new critical pair and inserting it
     // to the list of critical pairs 
     cpTemp->p2        = strat->S[strat->sl];
     cpTemp->coeff2    = n_Div( pGetCoeff(cpTemp->p1), pGetCoeff(cpTemp->p2), currRing );
+#if F5CC
+    // if we do not delete this pointer, a not allowed check of 
+    // criterion2 in computespols happens!
+    omFree( cpTemp->mLabel2 );
+    cpTemp->mLabel2 = NULL;
+#endif
     // now we really need the memory for the exp label
     //cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
     //                          sizeof(unsigned long));
@@ -1251,6 +1448,70 @@ inline BOOLEAN criterion1 ( const int* mLabel, const unsigned long smLabel,
 
 
 
+inline BOOLEAN criterion12  ( const int* mLabel, const unsigned long smLabel, 
+                              const F5Rules* f5Rules2, const int idx
+                            )
+{
+  int pos = 0;
+  for (int i=1; i<idx; i++)
+  {
+    pos  += idx-i;
+  }
+  int i = 0;
+  int j = currRing->N;
+#if F5EDEBUG1
+    Print("CRITERION12-BEGINNING\nTested Element: ");
+#endif
+#if F5EDEBUG1
+    while( j )
+    {
+      Print("%d ",mLabel[(currRing->N)-j]);
+      j--;
+    }
+    j = currRing->N;
+    Print("\n %ld\n",smLabel);
+    
+#endif
+  nextElement:
+  
+  for( ; i < idx; i++)
+  {
+#if F5EDEBUG1
+    Print("F5 Rule: ");
+    while( j )
+    {
+      Print("%d ",f5Rules2->label[pos+i][(currRing->N)-j]);
+      j--;
+    }
+    j = currRing->N;
+    Print("\n %ld\n", f5Rules2->slabel[pos+i]);
+#endif
+    if(!(smLabel & f5Rules2->slabel[pos+i]))
+    {
+      while(j)
+      {
+        if(mLabel[j] < f5Rules2->label[pos+i][j])
+        {
+          j = currRing->N;
+          i++;
+          goto nextElement;
+        }
+        j--;
+      }
+#if F5EDEBUG1
+        Print("CRITERION12-END-DETECTED \n");
+#endif
+      return TRUE;
+    }
+  }
+#if F5EDEBUG1
+  Print("CRITERION12-END \n");
+#endif
+  return FALSE;
+}
+
+
+
 inline BOOLEAN newCriterion1 ( const int* mLabel, const unsigned long smLabel, 
                             const F5Rules* f5Rules, const unsigned long stratSize
                           )
@@ -1395,7 +1656,11 @@ inline BOOLEAN criterion2 (
 
 void computeSpols ( 
                     kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCurr, 
-                    F5Rules** f5Rules, RewRules** rewRules, int numVariables, 
+                    F5Rules** f5Rules,
+#if F5CC
+                    F5Rules** f5Rules2,
+#endif
+                    RewRules** rewRules, int numVariables, 
                     int* shift, unsigned long* negBitmaskShifted, int* offsets
                   )
 {
@@ -1596,7 +1861,11 @@ void computeSpols (
           // prepared for further reductions in currReduction()
           currReduction ( 
               strat, sp, temp->mLabelExp, rewRules, rewRulesCurr, 
-              redGB, &cp, *gCurr, gCurrLast, f5Rules, multTemp, multLabelTemp, 
+              redGB, &cp, *gCurr, gCurrLast, f5Rules,
+#if F5CC
+              f5Rules2,
+#endif
+              multTemp, multLabelTemp, 
               numVariables, shift, negBitmaskShifted, offsets
               );
         }
@@ -1710,10 +1979,12 @@ void currReduction  (
                       kStrategy strat, poly sp, poly spLabelExp,
                       RewRules** rewRulesP, unsigned long rewRulesCurr,
                       ideal redGB, CpairDegBound** cp, Lpoly* gCurrFirst, 
-                      Lpoly** gCurrLast,
-                      F5Rules** f5RulesP, int* multTemp, 
-                      int* multLabelTemp, int numVariables, int* shift, 
-                      unsigned long* negBitmaskShifted, int* offsets
+                      Lpoly** gCurrLast, F5Rules** f5RulesP,
+#if F5CC
+                      F5Rules** f5Rules2P,
+#endif
+                      int* multTemp, int* multLabelTemp, int numVariables,
+                      int* shift, unsigned long* negBitmaskShifted, int* offsets
                     )
 
 {
@@ -1722,6 +1993,9 @@ void currReduction  (
 #endif
   RewRules* rewRules  = *rewRulesP;
   F5Rules* f5Rules    = *f5RulesP;
+#if F5CC
+  F5Rules* f5Rules2   = *f5Rules2P;
+#endif
   BOOLEAN isMult      = FALSE;
   BOOLEAN superTop    = FALSE;
   // check needed to ensure termination of F5 (see F5+)
@@ -2617,9 +2891,13 @@ kBucketLmZero:
           pDelete( &pSig );
 #endif
           criticalPairPrev( 
-              *gCurrLast, gCurrFirst, strat, *f5Rules, *rewRules, cp, numVariables, 
-              shift, negBitmaskShifted, offsets 
-              );
+                        *gCurrLast, gCurrFirst, strat, *f5Rules,
+#if F5CC
+                        *f5Rules2,
+#endif
+                        *rewRules, cp, numVariables, 
+                        shift, negBitmaskShifted, offsets 
+                      );
           criticalPairCurr( 
               *gCurrLast, gCurrFirst, strat, *f5Rules, *rewRules, cp, numVariables, 
               shift, negBitmaskShifted, offsets 
