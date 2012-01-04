@@ -52,7 +52,7 @@
 #endif
 #define F5CC              0
 #define F5C               1
-#define USEREW            1 
+#define USEREW            1
 #define GGVMODE           1 
 #define NOTRED            1
 #define F5ETAILREDUCTION  0 
@@ -1584,6 +1584,8 @@ void computeSpols (
       // w.r.t. redGB
       if( 
 #if USEREW
+          //!newCriterion1(temp->mLabel1, temp->smLabel1, *f5Rules, stratSize) &&         
+          !criterion1(temp->mLabel1, temp->smLabel1, f5Rules1, strat) &&
           !criterion2(temp->mLabel1, temp->smLabel1, (*rewRules), temp->rewRule1) &&
           (!temp->mLabel2 || !criterion2(temp->mLabel2, temp->smLabel2, (*rewRules), temp->rewRule2)) 
 #else
