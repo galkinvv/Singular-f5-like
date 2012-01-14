@@ -202,11 +202,14 @@ int ksReducePolySig(LObject* PR,
   pWrite(pHead(f2));
   pWrite(sigMult);
   printf("--------------\n");
+#endif
   sigMult = pp_Mult_qq(f1,sigMult,currRing);
+#ifdef DEBUGF5
   pWrite(pHead(f1));
   pWrite(pHead(f2));
   pWrite(sigMult);
   pWrite(PR->sig);
+  printf("--------------\n");
 #endif
   int sigSafe = p_LmCmp(PR->sig,sigMult,currRing);
   // now we can delete the copied polynomial data used for checking for

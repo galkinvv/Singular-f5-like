@@ -1055,8 +1055,8 @@ void enterL (LSet *set,int *length, int *LSetmax, LObject p,int at)
   for(k=0;k<=(*length);k++)
   {
     pWrite((*set)[k].sig);
-    pWrite((*set)[k].p1);
-    pWrite((*set)[k].p2);
+    pWrite(pHead((*set)[k].p1));
+    pWrite(pHead((*set)[k].p2));
   }
   Print("--- LIST L END ---\n");
 #endif
