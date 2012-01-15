@@ -258,6 +258,7 @@ class skStrategy
 public:
   kStrategy next;
   int (*red)(LObject * L,kStrategy strat);
+  int (*red2)(LObject * L,kStrategy strat);
   void (*initEcart)(LObject * L);
   int (*posInT)(const TSet T,const int tl,LObject &h);
   int (*posInL)(const LSet set, const int length,
@@ -284,6 +285,7 @@ public:
   intset fromS; // from which S[i] S[j] comes from
                 // this is important for signature-based
                 // algorithms
+  BOOLEAN incremental;
   unsigned long currIdx;
   intset lenS;
   wlen_set lenSw; /* for tgb.ccc */
