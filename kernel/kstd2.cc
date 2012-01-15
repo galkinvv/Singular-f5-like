@@ -385,7 +385,8 @@ int redHomog (LObject* h,kStrategy strat)
   not_sev = ~ h->sev;
   loop
   {
-    j = kFindDivisibleByInT(strat->T, strat->sevT, strat->tl, h);
+    //j = kFindDivisibleByInT(strat->T, strat->sevT, strat->tl, h);
+    j = kFindDivisibleByInT(strat->T, strat->sevT, strat->currIdx-1, h);
     if (j < 0) return 1;
 
     li = strat->T[j].pLength;
@@ -401,7 +402,8 @@ int redHomog (LObject* h,kStrategy strat)
     {
       /*- search the shortest possible with respect to length -*/
       i++;
-      if (i > strat->tl)
+      //if (i > strat->tl)
+      if (i > strat->currIdx-1)
         break;
       if (li<=1)
         break;
@@ -530,7 +532,7 @@ int redSig (LObject* h,kStrategy strat)
   not_sev = ~ h->sev;
   loop
   {
-    j = kFindDivisibleByInT(strat->T, strat->sevT, strat->tl, h, start);
+    j = kFindDivisibleByInT(strat->T, strat->sevT, strat->tl, h, strat->currIdx);
     if (j < 0) return 1;
 
     li = strat->T[j].pLength;
@@ -1144,6 +1146,7 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   bba_count++;
   int loop_count = 0;
 #endif /* KDEBUG */
+  int currComp = 0;
   om_Opts.MinTrack = 5;
   int   srmax,lrmax, red_result = 1;
   int   olddeg,reduc;
@@ -1233,8 +1236,14 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
     Print("SIG OF NEXT PAIR TO HANDLE IN SIG-BASED ALGORITHM\n");
     Print("-------------------------------------------------\n");
     pWrite(strat->P.sig);
+    printf("%ld\n",pGetComp(strat->P.sig));
     Print("-------------------------------------------------\n");
 #endif
+    if (strat->incremental && pGetComp(strat->P.sig) != currComp)
+    {
+      currComp = pGetComp(strat->P.sig);
+      strat->currIdx = strat->sl+1;
+    }
     if (pNext(strat->P.p) == strat->tail)
     {
       // deletes the short spoly
@@ -1292,6 +1301,7 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 #endif
       /* reduction of the element choosen from L */
       red_result = strat->red(&strat->P,strat);
+      red_result = strat->red2(&strat->P,strat);
       if (errorreported)  break;
     }
 
