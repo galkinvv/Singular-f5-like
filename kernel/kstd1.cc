@@ -1102,7 +1102,7 @@ void initBba(ideal F,kStrategy strat)
   }
   // for sig-safe reductions in signature-based
   // standard basis computations
-  strat->red2         = redSig;
+  strat->red          = redSig;
   strat->incremental  = TRUE;
 }
 
