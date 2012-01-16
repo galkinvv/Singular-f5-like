@@ -477,7 +477,7 @@ int redHomog (LObject* h,kStrategy strat)
         if (TEST_OPT_DEBUG)
           Print(" lazy: -> L%d\n",at);
 #endif
-        h->Clear();
+        //h->Clear();
         return -1;
       }
     }
@@ -505,6 +505,7 @@ int redSig (LObject* h,kStrategy strat)
   }
   if (strat->tl<0) return 1;
   //if (h->GetLmTailRing()==NULL) return 0; // HS: SHOULD NOT BE NEEDED!
+  printf("FDEGS: %ld -- %ld\n",h->FDeg, h->pFDeg());
   assume(h->FDeg == h->pFDeg());
 #ifdef DEBUGF5
   Print("------- IN REDSIG -------\n");
@@ -518,7 +519,7 @@ int redSig (LObject* h,kStrategy strat)
 #endif
   poly h_p;
   int i,j,at,pass, ii;
-  int start=0;
+  int start=strat->currIdx;
   int sigSafe;
   unsigned long not_sev;
   long reddeg,d;
@@ -531,7 +532,7 @@ int redSig (LObject* h,kStrategy strat)
   not_sev = ~ h->sev;
   loop
   {
-    j = kFindDivisibleByInT(strat->T, strat->sevT, strat->tl, h, strat->currIdx);
+    j = kFindDivisibleByInT(strat->T, strat->sevT, strat->tl, h, start);
     if (j < 0) return 1;
 
     li = strat->T[j].pLength;
@@ -579,7 +580,8 @@ int redSig (LObject* h,kStrategy strat)
     }
 #endif
     assume(strat->fromT == FALSE);
-#ifdef DEBUGF5
+#if 1
+//#ifdef DEBUGF5
     Print("BEFORE REDUCTION WITH %d:\n",ii);
     Print("--------------------------------\n");
     pWrite(h->sig);
@@ -594,13 +596,14 @@ int redSig (LObject* h,kStrategy strat)
     // if reduction has taken place, i.e. the reduction was sig-safe
     // otherwise start is already at the next position and the loop
     // searching reducers in T goes on from index start
-#ifdef DEBUGF5
+#if 1
+//#ifdef DEBUGF5
     Print("SigSAFE: %d\n",sigSafe);
 #endif
     if (sigSafe != 3)
     {
       // start the next search for reducers in T from the beginning
-      start = 0;
+      start = strat->currIdx;
 #ifdef KDEBUG
       if (TEST_OPT_DEBUG)
       {
@@ -1242,6 +1245,7 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
     {
       currComp = pGetComp(strat->P.sig);
       strat->currIdx = strat->sl+1;
+      printf("SL: %ld -- TL: %ld\n",strat->sl,strat->tl);
     }
     if (pNext(strat->P.p) == strat->tail)
     {
@@ -1296,7 +1300,11 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 
       /* reduction of the element choosen from L */
       red_result = strat->red(&strat->P,strat);
-      red_result = strat->red2(&strat->P,strat);
+      printf("RETURN REDHOMOG: %d\n",red_result);
+      if (red_result==1)
+      {
+        red_result = strat->red2(&strat->P,strat);
+      }
       if (errorreported)  break;
     }
 
