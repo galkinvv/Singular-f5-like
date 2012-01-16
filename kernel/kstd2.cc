@@ -520,7 +520,7 @@ int redSig (LObject* h,kStrategy strat)
 #endif
   poly h_p;
   int i,j,at,pass, ii;
-  int start=strat->currIdx;
+  int start=0;
   int sigSafe;
   unsigned long not_sev;
   long reddeg,d;
@@ -593,7 +593,7 @@ int redSig (LObject* h,kStrategy strat)
     pWrite(pHead(strat->T[ii].p));
     Print("--------------------------------\n");
 #endif
-    sigSafe = ksReducePolySig(h, &(strat->T[ii]), NULL, NULL, strat);
+    sigSafe = ksReducePolySig(h, &(strat->T[ii]), ii, NULL, NULL, strat);
     // if reduction has taken place, i.e. the reduction was sig-safe
     // otherwise start is already at the next position and the loop
     // searching reducers in T goes on from index start
@@ -604,7 +604,7 @@ int redSig (LObject* h,kStrategy strat)
     if (sigSafe != 3)
     {
       // start the next search for reducers in T from the beginning
-      start = strat->currIdx;
+      start = 0;
 #ifdef KDEBUG
       if (TEST_OPT_DEBUG)
       {
@@ -1305,11 +1305,6 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 #endif
       /* reduction of the element choosen from L */
       red_result = strat->red(&strat->P,strat);
-      printf("RETURN REDHOMOG: %d\n",red_result);
-      if (red_result==1)
-      {
-        red_result = strat->red2(&strat->P,strat);
-      }
       if (errorreported)  break;
     }
 
