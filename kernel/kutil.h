@@ -614,6 +614,7 @@ int ksReducePoly(LObject* PR,
 //            bound of currRing
 int ksReducePolySig(LObject* PR,
                  TObject* PW,
+                 long idx,
                  poly spNoether = NULL,
                  number *coef = NULL,
                  kStrategy strat = NULL);
