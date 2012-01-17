@@ -206,7 +206,8 @@ int ksReducePolySig(LObject* PR,
    * --------------------------------------------
    *
    *********************************************/
-  if (idx>=strat->currIdx)
+  //printf("COMPARE IDX: %ld -- %ld\n",idx,strat->currIdx);
+  if (pGetComp(PW->sig) == strat->currIdx)
   {
     poly f1 = p_Copy(PR->GetLmCurrRing(),currRing);
     poly f2 = PW->GetLmCurrRing();
