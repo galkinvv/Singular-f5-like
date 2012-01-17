@@ -1777,8 +1777,14 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
     return;
   }
   int sigCmp = p_LmCmp(pSigMult,sSigMult,currRing);
+#if DEBUGF5
+  printf("IN PAIR GENERATION - COMPARING SIGS: \n");
+  pWrite(pSigMult);
+  pWrite(sSigMult);
+#endif
   if(sigCmp==0)
   {
+    // printf("!!!!   EQUAL SIGS   !!!!\n");
     // pSig = sSig, delete element due to Rewritten Criterion
     strat->cp++;
     pLmFree(Lp.lcm);
