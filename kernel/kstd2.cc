@@ -500,6 +500,7 @@ int redSig (LObject* h,kStrategy strat)
   // check with rewCriterion again!
   if (rewCriterion(h->sig,~h->sevSig,strat,h->from+1))
   {
+    //printf("KICKED BY REW CRIT\n");
     if (h->lcm!=NULL)
       pLmFree(h->lcm);
     return 2;
@@ -1234,11 +1235,14 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
     /* picks the last element from the lazyset L */
     strat->P = strat->L[strat->Ll];
     strat->Ll--;
+//#if 1
 #ifdef DEBUGF5
     Print("SIG OF NEXT PAIR TO HANDLE IN SIG-BASED ALGORITHM\n");
     Print("-------------------------------------------------\n");
     pWrite(strat->P.sig);
     printf("%ld\n",pGetComp(strat->P.sig));
+    pWrite(pHead(strat->P.p1));
+    pWrite(pHead(strat->P.p2));
     Print("-------------------------------------------------\n");
 #endif
     if (strat->incremental && pGetComp(strat->P.sig) != strat->currIdx)
@@ -1313,11 +1317,6 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
     }
 
     // reduction to non-zero new poly
-#ifdef DEBUGF5
-    Print("RED RESULT: %d\n");
-    pWrite(strat->P.p);
-    pWrite(strat->P.sig);
-#endif
     if (red_result == 1)
     {
       // get the polynomial (canonicalize bucket, make sure P.p is set)
@@ -1344,6 +1343,7 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       // reduce the tail and normalize poly
       // in the ring case we cannot expect LC(f) = 1,
       // therefore we call pContent instead of pNorm
+      /*
       if ((TEST_OPT_INTSTRATEGY) || (rField_is_Ring(currRing)))
       {
         strat->P.pCleardenom();
@@ -1359,7 +1359,7 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
         if ((TEST_OPT_REDSB)||(TEST_OPT_REDTAIL))
           strat->P.p = redtailBba(&(strat->P),pos-1,strat, withT);
       }
-
+      */
 #ifdef KDEBUG
       if (TEST_OPT_DEBUG){PrintS("new s:");strat->P.wrp();PrintLn();}
 //#if MYTEST
@@ -1400,6 +1400,12 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
         enterpairsSig(strat->P.p,strat->P.sig,strat->sl+1,strat->sl,strat->P.ecart,pos,strat, strat->tl);
       // posInS only depends on the leading term
       strat->enterS(strat->P, pos, strat, strat->tl);
+#if 1
+//#ifdef DEBUGF5
+    Print("ELEMENT ADDED TO GCURR: ");
+    pWrite(pHead(strat->S[strat->sl]));
+    pWrite(strat->sig[strat->sl]);
+#endif
 #if 0
       int pl=pLength(strat->P.p);
       if (pl==1)
