@@ -231,6 +231,19 @@ int ksReducePolySig(LObject* PR,
     int sigSafe = p_LmCmp(PR->sig,sigMult,currRing);
     // now we can delete the copied polynomial data used for checking for
     // sig-safeness of the reduction step
+    if (sigSafe != 1)
+    {
+      // testing by syzCriterion = F5 Criterion testing by rewCriterion =
+      // Rewritten Criterion
+      unsigned long sigMultNegSev = ~p_GetShortExpVector(sigMult,currRing);
+      if  ( syzCriterion(sigMult,sigMultNegSev,strat) ||
+            rewCriterion(sigMult,sigMultNegSev,strat,idx+1)
+          )
+      {
+        printf("yepp!\n");
+        sigSafe = 0;
+      }
+    }
     pDelete(&f1);
     pDelete(&sigMult);
 #ifdef DEBUGF5
