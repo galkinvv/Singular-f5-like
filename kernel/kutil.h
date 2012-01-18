@@ -285,6 +285,9 @@ public:
   intset fromS; // from which S[i] S[j] comes from
                 // this is important for signature-based
                 // algorithms
+  intset syzIdx;// index in the syz array at which the first
+                // syzygy of component i comes up
+                // important for signature-based algorithms
   BOOLEAN incremental;
   unsigned long currIdx;
   intset lenS;
@@ -476,6 +479,16 @@ void initEcartNormal (LObject* h);
 void initEcartBBA (LObject* h);
 void initS (ideal F, ideal Q,kStrategy strat);
 void initSL (ideal F, ideal Q,kStrategy strat);
+/*************************************************
+ * when initializing a new bunch of principal 
+ * syzygies at the beginning of a new iteration
+ * step in a signature-based algorithm we 
+ * compute ONLY the leading elements of those
+ * syzygies, NOT the whole syzygy
+ * NOTE: this needs to be adjusted for a more
+ * general approach on signature-based algorithms
+ ***********************************************/
+void initSyzRules (kStrategy strat);
 void updateS(BOOLEAN toT,kStrategy strat);
 void enterSyz (LObject p,kStrategy strat);
 void enterT (LObject p,kStrategy strat, int atT = -1);
