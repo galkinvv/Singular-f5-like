@@ -918,6 +918,7 @@ void deleteInS (int i,kStrategy strat)
   memmove(&(strat->sevS[i]),&(strat->sevS[i+1]),(strat->sl - i)*sizeof(long));
   memmove(&(strat->sevSig[i]),&(strat->sevSig[i+1]),(strat->sl - i)*sizeof(long));
   memmove(&(strat->S_2_R[i]),&(strat->S_2_R[i+1]),(strat->sl - i)*sizeof(int));
+  memmove(&(strat->fromS[i]),&(strat->fromS[i+1]),(strat->sl - i)*sizeof(int));
 #else
   int j;
   for (j=i; j<strat->sl; j++)
@@ -928,6 +929,7 @@ void deleteInS (int i,kStrategy strat)
     strat->sevS[j] = strat->sevS[j+1];
     strat->sevSig[j] = strat->sevSig[j+1];
     strat->S_2_R[j] = strat->S_2_R[j+1];
+    strat->fromS[j] = strat->fromS[j+1];
   }
 #endif
   if (strat->lenS!=NULL)
@@ -4866,11 +4868,23 @@ BOOLEAN syzCriterion(poly sig, unsigned long not_sevSig, kStrategy strat)
   pWrite(sig);
 #endif
   int comp = p_GetComp(sig, currRing);
-  if (comp<0)
+  int min, max;
+  if (comp<=1)
     return FALSE;
   else
   {
-    for (int k=comp; k<strat->syzIdx[comp+1]-1; k++)
+    min = strat->syzIdx[comp-2];
+    if (comp == strat->currIdx)
+    {
+      max = strat->syzl;
+      printf("MAX: %d\n",max);
+    }
+    else
+    {
+      max = strat->syzIdx[comp-1];
+    }
+    printf("%d -- %d\n",min, max);
+    for (int k=min; k<max; k++)
     {
 #if 1
       //#ifdef DEBUGF5
@@ -5481,20 +5495,10 @@ if ((strat->sl>=0)
 void initSL (ideal F, ideal Q,kStrategy strat)
 {
   int   i,j,pos;
-  /*
-  int ps=0,ctr=0;
-  for(i=2;i<=IDELEMS(F);i++)
-  {
-    ps += i-1;
-  }
-  strat->syzl   = 0;
-  strat->syzmax = ps;
-  */
   if (Q!=NULL) i=((IDELEMS(Q)+(setmaxTinc-1))/setmaxTinc)*setmaxTinc;
   else i=setmaxT;
   strat->ecartS=initec(i);
   strat->fromS=initec(i);
-  strat->syzIdx=initec(i);
   strat->sevS=initsevS(i);
   //strat->sevSyz=initsevS(ps);
   strat->sevSig=initsevS(i);
@@ -5615,40 +5619,83 @@ void initSL (ideal F, ideal Q,kStrategy strat)
 
 void initSyzRules (kStrategy strat)
 {
+  pWrite(strat->S[0]);
   if( strat->S[0] )
   {
     if( strat->S[1] )
     {
+      omFreeSize(strat->syzIdx,(strat->syzidxmax)*sizeof(int));
       omFreeSize(strat->sevSyz,(strat->syzmax)*sizeof(int));
       omFreeSize(strat->syz,(strat->syzmax)*sizeof(poly));
     }
-    printf("DRIN\n");
-    int i,j,comp,ps=0,ctr=0;
-    for(i=1;i<=strat->sl+1;i++)
+    int i, j, k, comp, ps=0, ctr=0;
+    /************************************************************
+     * computing the length of the syzygy array needed
+     ***********************************************************/
+    for(i=1; i<=strat->sl; i++)
     {
-      ps += i;
+      if (pGetComp(strat->sig[i-1]) != pGetComp(strat->sig[i]))
+      { 
+        ps += i;
+        printf("PS %d\n",ps);
+      }
     }
-    strat->sevSyz=initsevS(ps);
-    strat->syz=(poly *)omAlloc0(ps*sizeof(poly));
-    strat->syzl = strat->syzmax = ps;
+    ps += strat->sl+1;
+    printf("DRIN: %d\n",ps);
+    comp              = pGetComp (strat->P.sig);
+    strat->syzIdx     = initec(comp);
+    strat->sevSyz     = initsevS(ps);
+    strat->syz        = (poly *)omAlloc0(ps*sizeof(poly));
+    strat->syzl       = strat->syzmax = ps;
+    strat->syzidxmax  = comp;
     printf("------------- GENERATING SYZ RULES NEW ---------------\n");
-    strat->syzIdx[0] = -1;
-    for (i=1; i<=strat->sl; i++)
+    i = 1; 
+    j = 0;
+    /************************************************************
+     * generating the leading terms of the principal syzygies
+     ***********************************************************/
+    while (i <= strat->sl)
     {
-      comp              = pGetComp (strat->sig[i]);
-      strat->syzIdx[i]  = ctr;
-      for(j=0;j<i;j++)
+      /**********************************************************
+       * principal syzygies start with component index 2
+       * the array syzIdx starts with index 0
+       * => the rules for a signature with component comp start
+       *    at strat->syz[strat->syzIdx[comp-2]] !
+       *********************************************************/
+      if (pGetComp(strat->sig[i-1]) != pGetComp(strat->sig[i]))
       {
-        strat->syz[ctr] = pCopy (p_Head(strat->S[j], currRing));
-        pWrite(strat->syz[ctr]);
-        p_SetCompP (strat->syz[ctr], comp, currRing);
-        // since p_Add_q() destroys all input
-        // data we need to recreate help 
-        // each time
-        pWrite(strat->syz[ctr]);
-        strat->sevSyz[ctr] = p_GetShortExpVector(strat->syz[ctr],currRing);
-        ctr++;
-      }    
+        printf("I: %d\n",i);
+        comp = pGetComp(strat->sig[i]);
+        strat->syzIdx[j]  = ctr;
+        printf("CONNECTION %d -- %d\n",j,ctr);
+        j++;
+        for (k = 0; k<i; k++)
+        {
+          strat->syz[ctr] = pCopy (p_Head(strat->S[k], currRing));
+          printf("tets\n");
+          pWrite(strat->syz[ctr]);
+          p_SetCompP (strat->syz[ctr], comp, currRing);
+          pWrite(strat->syz[ctr]);
+          strat->sevSyz[ctr] = p_GetShortExpVector(strat->syz[ctr],currRing);
+          ctr++;
+        }
+      }
+      i++;
+    }
+    /**************************************************************
+    * add syzygies for upcoming first element of new iteration step
+    **************************************************************/
+    comp = pGetComp(strat->P.sig);
+    strat->syzIdx[j]  = ctr;
+    for (k = 0; k<strat->sl+1; k++)
+    {
+      strat->syz[ctr] = pCopy (p_Head(strat->S[k], currRing));
+      printf("tets\n");
+      pWrite(strat->syz[ctr]);
+      p_SetCompP (strat->syz[ctr], comp, currRing);
+      pWrite(strat->syz[ctr]);
+      strat->sevSyz[ctr] = p_GetShortExpVector(strat->syz[ctr],currRing);
+      ctr++;
     }
 #ifdef DEBUGF5
     Print("Principal syzygies:\n");
@@ -6604,6 +6651,7 @@ void exitBuchMora (kStrategy strat)
   omFreeSize((ADDRESS)strat->sevS,IDELEMS(strat->Shdl)*sizeof(unsigned long));
   omFreeSize((ADDRESS)strat->sevSig,IDELEMS(strat->Shdl)*sizeof(unsigned long));
   omFreeSize((ADDRESS)strat->sevSyz,(strat->syzmax)*sizeof(unsigned long));
+  omFreeSize(strat->syzIdx,(strat->syzidxmax)*sizeof(int));
   omFreeSize(strat->S_2_R,IDELEMS(strat->Shdl)*sizeof(int));
   /*- set L: should be empty -*/
   omFreeSize(strat->L,(strat->Lmax)*sizeof(LObject));
