@@ -1389,6 +1389,7 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       // step starts in the next iteration
       if (strat->incremental && pGetComp(strat->P.sig) != strat->currIdx)
       {
+        printf("COMPS: %d -- %d\n",pGetComp(strat->P.sig),strat->currIdx);
         strat->currIdx  = pGetComp(strat->P.sig);
         initSyzRules(strat);
         //newrules        = TRUE;
