@@ -326,7 +326,7 @@ public:
   int cp,c3;
   int cv; // in shift bases: counting V criterion
   int sl,mu;
-  int syzl,syzmax;
+  int syzl,syzmax,syzidxmax;
   int tl,tmax;
   int Ll,Lmax;
   int Bl,Bmax;
