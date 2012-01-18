@@ -4860,20 +4860,28 @@ loop
  */
 BOOLEAN syzCriterion(poly sig, unsigned long not_sevSig, kStrategy strat)
 {
-#ifdef DEBUGF5
+#if 1
+//#ifdef DEBUGF5
   Print("syzygy criterion checks:  ");
   pWrite(sig);
 #endif
-  for(int k = 0; k<strat->syzl; k++)
+  int comp = p_GetComp(sig, currRing);
+  if (comp<0)
+    return FALSE;
+  else
   {
-#ifdef DEBUGF5
-    Print("checking with:  ");
-    pWrite(pHead(strat->syz[k]));
+    for (int k=comp; k<strat->syzIdx[comp+1]-1; k++)
+    {
+#if 1
+      //#ifdef DEBUGF5
+      Print("checking with: %ld --  ",k);
+      pWrite(pHead(strat->syz[k]));
 #endif
-    if (p_LmShortDivisibleBy(strat->syz[k], strat->sevSyz[k], sig, not_sevSig, currRing))
-      return TRUE;
+      if (p_LmShortDivisibleBy(strat->syz[k], strat->sevSyz[k], sig, not_sevSig, currRing))
+        return TRUE;
+    }
+    return FALSE;
   }
-  return FALSE;
 }
 
 /*
@@ -5472,25 +5480,30 @@ if ((strat->sl>=0)
 
 void initSL (ideal F, ideal Q,kStrategy strat)
 {
-  int   i,j,pos,ps=0,ctr=0;
+  int   i,j,pos;
+  /*
+  int ps=0,ctr=0;
   for(i=2;i<=IDELEMS(F);i++)
   {
     ps += i-1;
   }
-  strat->syzl = strat->syzmax = ps;
+  strat->syzl   = 0;
+  strat->syzmax = ps;
+  */
   if (Q!=NULL) i=((IDELEMS(Q)+(setmaxTinc-1))/setmaxTinc)*setmaxTinc;
   else i=setmaxT;
   strat->ecartS=initec(i);
   strat->fromS=initec(i);
+  strat->syzIdx=initec(i);
   strat->sevS=initsevS(i);
-  strat->sevSyz=initsevS(ps);
+  //strat->sevSyz=initsevS(ps);
   strat->sevSig=initsevS(i);
   strat->S_2_R=initS_2_R(i);
   strat->fromQ=NULL;
   strat->Shdl=idInit(i,F->rank);
   strat->S=strat->Shdl->m;
   strat->sig=(poly *)omAlloc0(i*sizeof(poly));
-  strat->syz=(poly *)omAlloc0(ps*sizeof(poly));
+  //strat->syz=(poly *)omAlloc0(ps*sizeof(poly));
   /*- put polys into S -*/
   if (Q!=NULL)
   {
@@ -5571,6 +5584,7 @@ void initSL (ideal F, ideal Q,kStrategy strat)
           enterL(&strat->L,&strat->Ll,&strat->Lmax,h,pos);
         }
       }
+      /*
       for(j=0;j<i;j++)
       {
         strat->syz[ctr] = pCopy(F->m[j]);
@@ -5583,7 +5597,8 @@ void initSL (ideal F, ideal Q,kStrategy strat)
         strat->syz[ctr] = p_Add_q(strat->syz[ctr],help,currRing);
         strat->sevSyz[ctr] = p_GetShortExpVector(strat->syz[ctr],currRing);
         ctr++;
-      }        
+      } 
+      */
     }
   }
   /*- test, if a unit is in F -*/
@@ -5596,17 +5611,57 @@ void initSL (ideal F, ideal Q,kStrategy strat)
   {
     while (strat->Ll>0) deleteInL(strat->L,&strat->Ll,strat->Ll-1,strat);
   }
-#ifdef DEBUGF5
-  Print("Principal syzygies:\n");
-  Print("--------------------------------\n");
-  for(i=0;i<=ps-1;i++)
-  {
-    pWrite(strat->syz[i]);
-  }
-  Print("--------------------------------\n");
-#endif
 }
 
+void initSyzRules (kStrategy strat)
+{
+  if( strat->S[0] )
+  {
+    if( strat->S[1] )
+    {
+      omFreeSize(strat->sevSyz,(strat->syzmax)*sizeof(int));
+      omFreeSize(strat->syz,(strat->syzmax)*sizeof(poly));
+    }
+    printf("DRIN\n");
+    int i,j,comp,ps=0,ctr=0;
+    for(i=1;i<=strat->sl+1;i++)
+    {
+      ps += i;
+    }
+    strat->sevSyz=initsevS(ps);
+    strat->syz=(poly *)omAlloc0(ps*sizeof(poly));
+    strat->syzl = strat->syzmax = ps;
+    printf("------------- GENERATING SYZ RULES NEW ---------------\n");
+    strat->syzIdx[0] = -1;
+    for (i=1; i<=strat->sl; i++)
+    {
+      comp              = pGetComp (strat->sig[i]);
+      strat->syzIdx[i]  = ctr;
+      for(j=0;j<i;j++)
+      {
+        strat->syz[ctr] = pCopy (p_Head(strat->S[j], currRing));
+        pWrite(strat->syz[ctr]);
+        p_SetCompP (strat->syz[ctr], comp, currRing);
+        // since p_Add_q() destroys all input
+        // data we need to recreate help 
+        // each time
+        pWrite(strat->syz[ctr]);
+        strat->sevSyz[ctr] = p_GetShortExpVector(strat->syz[ctr],currRing);
+        ctr++;
+      }    
+    }
+#ifdef DEBUGF5
+    Print("Principal syzygies:\n");
+    Print("--------------------------------\n");
+    for(i=0;i<=ps-1;i++)
+    {
+      pWrite(strat->syz[i]);
+    }
+    Print("--------------------------------\n");
+#endif
+
+  }
+}
 
 /*2
 *construct the set s from F and {P}
@@ -6555,7 +6610,6 @@ void exitBuchMora (kStrategy strat)
   /*- set B: should be empty -*/
   omFreeSize(strat->B,(strat->Bmax)*sizeof(LObject));
   /*- set sig: no need for the signatures anymore -*/
-  omFreeSize(strat->syz,(strat->syzmax)*sizeof(poly));
   omFreeSize(strat->sig,IDELEMS(strat->Shdl)*sizeof(poly));
   pLmDelete(&strat->tail);
   strat->syzComp=0;

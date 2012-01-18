@@ -593,7 +593,7 @@ int redSig (LObject* h,kStrategy strat)
     pWrite(pHead(strat->T[ii].p));
     Print("--------------------------------\n");
 #endif
-    sigSafe = ksReducePolySig(h, &(strat->T[ii]), ii, NULL, NULL, strat);
+    sigSafe = ksReducePolySig(h, &(strat->T[ii]), strat->S_2_R[ii], NULL, NULL, strat);
     // if reduction has taken place, i.e. the reduction was sig-safe
     // otherwise start is already at the next position and the loop
     // searching reducers in T goes on from index start
@@ -1154,6 +1154,7 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   int   olddeg,reduc;
   int hilbeledeg=1,hilbcount=0,minimcnt=0;
   BOOLEAN withT = FALSE;
+  BOOLEAN newrules  = FALSE;
 
   initBuchMoraCrit(strat); /*set Gebauer, honey, sugarCrit*/
   initBuchMoraPos(strat);
@@ -1244,12 +1245,6 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
     pWrite(pHead(strat->P.p2));
     Print("-------------------------------------------------\n");
 #endif
-    if (strat->incremental && pGetComp(strat->P.sig) != strat->currIdx)
-    {
-      strat->currIdx = pGetComp(strat->P.sig);
-      //strat->currIdx = strat->sl+1;
-      //printf("SL: %ld -- TL: %ld\n",strat->sl,strat->tl);
-    }
     if (pNext(strat->P.p) == strat->tail)
     {
       // deletes the short spoly
@@ -1384,6 +1379,15 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
         minimcnt++;
       }
 
+      // compute new bunch of principal syzygies: if and only if the element to
+      // be added has a new component in its signature, i.e. a new incremental
+      // step starts in the next iteration
+      if (strat->incremental && pGetComp(strat->P.sig) != strat->currIdx)
+      {
+        strat->currIdx  = pGetComp(strat->P.sig);
+        initSyzRules(strat);
+        //newrules        = TRUE;
+      }
       // enter into S, L, and T
       //if ((!TEST_OPT_IDLIFT) || (pGetComp(strat->P.p) <= strat->syzComp))
         enterT(strat->P, strat);
@@ -1401,6 +1405,12 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
     pWrite(pHead(strat->S[strat->sl]));
     pWrite(strat->sig[strat->sl]);
 #endif
+      /*
+      if (newrules)
+      {
+        newrules  = FALSE;
+      }
+      */
 #if 0
       int pl=pLength(strat->P.p);
       if (pl==1)
@@ -1429,7 +1439,8 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       // adds signature of the zero reduction to
       // strat->syz. This is the leading term of
       // syzygy and can be used in syzCriterion()
-#ifdef DEBUGF5
+#if 1
+//#ifdef DEBUGF5
       Print("ADDING STUFF TO SYZ :  ");
       pWrite(strat->P.sig);
 #endif
