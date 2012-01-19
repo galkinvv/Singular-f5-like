@@ -33,6 +33,10 @@
 #ifdef HAVE_PLURAL
 #define PLURAL_INTERNAL_DECLARATIONS 1
 #endif
+
+#define DEBUGF50 0
+#define DEBUGF51 0
+
 #include <kernel/kutil.h>
 #include <kernel/options.h>
 #include <omalloc/omalloc.h>
@@ -500,7 +504,6 @@ int redSig (LObject* h,kStrategy strat)
   // check with rewCriterion again!
   if (rewCriterion(h->sig,~h->sevSig,strat,h->from+1))
   {
-    //printf("KICKED BY REW CRIT\n");
     if (h->lcm!=NULL)
       pLmFree(h->lcm);
     return 2;
@@ -1389,7 +1392,6 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       // step starts in the next iteration
       if (strat->incremental && pGetComp(strat->P.sig) != strat->currIdx)
       {
-        printf("COMPS: %d -- %d\n",pGetComp(strat->P.sig),strat->currIdx);
         strat->currIdx  = pGetComp(strat->P.sig);
         initSyzRules(strat);
         //newrules        = TRUE;
@@ -1405,8 +1407,8 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
         enterpairsSig(strat->P.p,strat->P.sig,strat->sl+1,strat->sl,strat->P.ecart,pos,strat, strat->tl);
       // posInS only depends on the leading term
       strat->enterS(strat->P, pos, strat, strat->tl);
-#if 1
-//#ifdef DEBUGF5
+//#if 1
+#if DEBUGF50
     Print("ELEMENT ADDED TO GCURR: ");
     pWrite(pHead(strat->S[strat->sl]));
     pWrite(strat->sig[strat->sl]);
@@ -1445,15 +1447,15 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       // adds signature of the zero reduction to
       // strat->syz. This is the leading term of
       // syzygy and can be used in syzCriterion()
-#if 1
-//#ifdef DEBUGF5
-      Print("ADDING STUFF TO SYZ :  ");
-      pWrite(strat->P.sig);
-#endif
       // the signature is added if and only if the
       // pair was not detected by the rewritten criterion in strat->red = redSig
-      if (red_result!=2)
+      if (red_result!=2) {
         enterSyz(strat->P,strat);
+#ifdef DEBUGF5
+        Print("ADDING STUFF TO SYZ :  ");
+        pWrite(strat->P.sig);
+#endif
+      }
       if (strat->P.p1 == NULL && strat->minim > 0)
       {
         p_Delete(&strat->P.p2, currRing, strat->tailRing);
