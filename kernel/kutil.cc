@@ -1778,6 +1778,13 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
     Lp.lcm=NULL;
     return;
   }
+  // in any case Lp is checked up to the next strat->P which is added
+  // to S right after this critical pair creation.
+  // NOTE: this even holds if the 2nd generator gives the bigger signature
+  //       moreover, this improves rewCriterion, 
+  //       i.e. strat->checked > strat->from if and only if the 2nd generator
+  //       gives the bigger signature. 
+  Lp.checked = strat->sl+1;
   int sigCmp = p_LmCmp(pSigMult,sSigMult,currRing);
 #if DEBUGF5
   printf("IN PAIR GENERATION - COMPARING SIGS: \n");
@@ -1798,10 +1805,6 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
 
   // store from which element this pair comes from for further tests
   Lp.from = strat->sl+1;    
-  // check up to which element in S we have checked this pair already by the
-  // rewritten criterion, another test of this criterion takes place when
-  // starting the reduction process
-  Lp.checked = strat->sl;    
   if(sigCmp==pOrdSgn)
   {
     // pSig > sSig
