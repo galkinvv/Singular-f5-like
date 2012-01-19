@@ -4862,8 +4862,8 @@ loop
  */
 BOOLEAN syzCriterion(poly sig, unsigned long not_sevSig, kStrategy strat)
 {
-#if 1
-//#ifdef DEBUGF5
+//#if 1
+#ifdef DEBUGF5
   Print("syzygy criterion checks:  ");
   pWrite(sig);
 #endif
@@ -4877,17 +4877,14 @@ BOOLEAN syzCriterion(poly sig, unsigned long not_sevSig, kStrategy strat)
     if (comp == strat->currIdx)
     {
       max = strat->syzl;
-      printf("MAX: %d\n",max);
     }
     else
     {
       max = strat->syzIdx[comp-1];
     }
-    printf("%d -- %d\n",min, max);
     for (int k=min; k<max; k++)
     {
-#if 1
-      //#ifdef DEBUGF5
+#ifdef DEBUGF5
       Print("checking with: %ld --  ",k);
       pWrite(pHead(strat->syz[k]));
 #endif
@@ -4915,7 +4912,9 @@ BOOLEAN rewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int st
     pWrite(pHead(strat->S[k]));
 #endif
     if (p_LmShortDivisibleBy(strat->sig[k], strat->sevSig[k], sig, not_sevSig, currRing))
+    {
       return TRUE;
+    }
   }
 #ifdef DEBUGF5
   Print("ALL ELEMENTS OF S\n----------------------------------------\n");
@@ -5619,7 +5618,6 @@ void initSL (ideal F, ideal Q,kStrategy strat)
 
 void initSyzRules (kStrategy strat)
 {
-  pWrite(strat->S[0]);
   if( strat->S[0] )
   {
     if( strat->S[1] )
@@ -5637,18 +5635,18 @@ void initSyzRules (kStrategy strat)
       if (pGetComp(strat->sig[i-1]) != pGetComp(strat->sig[i]))
       { 
         ps += i;
-        printf("PS %d\n",ps);
       }
     }
     ps += strat->sl+1;
-    printf("DRIN: %d\n",ps);
     comp              = pGetComp (strat->P.sig);
     strat->syzIdx     = initec(comp);
     strat->sevSyz     = initsevS(ps);
     strat->syz        = (poly *)omAlloc0(ps*sizeof(poly));
     strat->syzl       = strat->syzmax = ps;
     strat->syzidxmax  = comp;
+#ifdef DEBUGF5 || DEBUGF51
     printf("------------- GENERATING SYZ RULES NEW ---------------\n");
+#endif
     i = 1; 
     j = 0;
     /************************************************************
@@ -5664,18 +5662,16 @@ void initSyzRules (kStrategy strat)
        *********************************************************/
       if (pGetComp(strat->sig[i-1]) != pGetComp(strat->sig[i]))
       {
-        printf("I: %d\n",i);
         comp = pGetComp(strat->sig[i]);
         strat->syzIdx[j]  = ctr;
-        printf("CONNECTION %d -- %d\n",j,ctr);
         j++;
         for (k = 0; k<i; k++)
         {
           strat->syz[ctr] = pCopy (p_Head(strat->S[k], currRing));
-          printf("tets\n");
-          pWrite(strat->syz[ctr]);
           p_SetCompP (strat->syz[ctr], comp, currRing);
+#ifdef DEBUGF5 || DEBUGF51
           pWrite(strat->syz[ctr]);
+#endif
           strat->sevSyz[ctr] = p_GetShortExpVector(strat->syz[ctr],currRing);
           ctr++;
         }
@@ -5690,10 +5686,10 @@ void initSyzRules (kStrategy strat)
     for (k = 0; k<strat->sl+1; k++)
     {
       strat->syz[ctr] = pCopy (p_Head(strat->S[k], currRing));
-      printf("tets\n");
-      pWrite(strat->syz[ctr]);
       p_SetCompP (strat->syz[ctr], comp, currRing);
+#if DEBUGF5 || DEBUGF51
       pWrite(strat->syz[ctr]);
+#endif
       strat->sevSyz[ctr] = p_GetShortExpVector(strat->syz[ctr],currRing);
       ctr++;
     }
