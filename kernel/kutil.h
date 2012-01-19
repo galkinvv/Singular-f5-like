@@ -166,10 +166,10 @@ class sLObject : public sTObject
 
 public:
   unsigned long sev;
-  int from; // from which polynomial it comes from
+  unsigned long from; // from which polynomial it comes from
             // this is important for signature-based
             // algorithms
-  int checked; // this is the index of S up to which
+  unsigned long checked; // this is the index of S up to which
                       // the corresponding LObject was already checked in
                       // critical pair creation => when entering the
                       // reduction process it is enough to start a second

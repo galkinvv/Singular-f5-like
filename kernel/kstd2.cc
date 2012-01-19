@@ -501,7 +501,7 @@ int redHomog (LObject* h,kStrategy strat)
 int redSig (LObject* h,kStrategy strat)
 {
   // check with rewCriterion again!
-  if (rewCriterion(h->sig,~h->sevSig,strat,h->from+1))
+  if (rewCriterion(h->sig,~h->sevSig,strat,h->checked+1))
   {
     if (h->lcm!=NULL)
       pLmFree(h->lcm);
