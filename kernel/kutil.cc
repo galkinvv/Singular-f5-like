@@ -514,6 +514,56 @@ void cleanT (kStrategy strat)
   strat->tl=-1;
 }
 
+void cleanU (kStrategy strat)
+{
+  int i,j;
+  poly  p;
+  assume(currRing == strat->tailRing || strat->tailRing != NULL);
+
+  pShallowCopyDeleteProc p_shallow_copy_delete =
+    (strat->tailRing != currRing ?
+     pGetShallowCopyDeleteProc(strat->tailRing, currRing) :
+     NULL);
+
+  for (j=0; j<=strat->ul; j++)
+  {
+    p = strat->U[j].p;
+    strat->U[j].p=NULL;
+    if (strat->U[j].max != NULL)
+    {
+      p_LmFree(strat->U[j].max, strat->tailRing);
+    }
+    i = -1;
+    loop
+    {
+      i++;
+      if (i>strat->sl)
+      {
+        if (strat->U[j].t_p != NULL)
+        {
+          p_Delete(&(strat->U[j].t_p), strat->tailRing);
+          p_LmFree(p, currRing);
+        }
+        else
+          pDelete(&p);
+        break;
+      }
+      if (p == strat->S[i])
+      {
+        if (strat->U[j].t_p != NULL)
+        {
+          assume(p_shallow_copy_delete != NULL);
+          pNext(p) = p_shallow_copy_delete(pNext(p),strat->tailRing,currRing,
+                                           currRing->PolyBin);
+          p_LmFree(strat->U[j].t_p, strat->tailRing);
+        }
+        break;
+      }
+    }
+  }
+  strat->ul=-1;
+}
+
 //LSet initL ()
 //{
 //  int i;
@@ -5502,14 +5552,13 @@ void initSL (ideal F, ideal Q,kStrategy strat)
   strat->ecartS=initec(i);
   strat->fromS=initec(i);
   strat->sevS=initsevS(i);
-  //strat->sevSyz=initsevS(ps);
   strat->sevSig=initsevS(i);
   strat->S_2_R=initS_2_R(i);
+  strat->S_2_V=initS_2_R(i);
   strat->fromQ=NULL;
   strat->Shdl=idInit(i,F->rank);
   strat->S=strat->Shdl->m;
   strat->sig=(poly *)omAlloc0(i*sizeof(poly));
-  //strat->syz=(poly *)omAlloc0(ps*sizeof(poly));
   /*- put polys into S -*/
   if (Q!=NULL)
   {
@@ -5590,21 +5639,6 @@ void initSL (ideal F, ideal Q,kStrategy strat)
           enterL(&strat->L,&strat->Ll,&strat->Lmax,h,pos);
         }
       }
-      /*
-      for(j=0;j<i;j++)
-      {
-        strat->syz[ctr] = pCopy(F->m[j]);
-        p_SetCompP(strat->syz[ctr],i+1,currRing);
-        // since p_Add_q() destroys all input
-        // data we need to recreate help 
-        // each time
-        poly help = pCopy(F->m[i]);
-        p_SetCompP(help,j+1,currRing);
-        strat->syz[ctr] = p_Add_q(strat->syz[ctr],help,currRing);
-        strat->sevSyz[ctr] = p_GetShortExpVector(strat->syz[ctr],currRing);
-        ctr++;
-      } 
-      */
     }
   }
   /*- test, if a unit is in F -*/
@@ -6459,6 +6493,78 @@ void enterT(LObject p, kStrategy strat, int atT)
 }
 
 /*2
+* puts p to the set U at position atT
+*/
+void enterU(LObject p, kStrategy strat, int atT)
+{
+  int i;
+
+  pp_Test(p.p, currRing, p.tailRing);
+  assume(strat->tailRing == p.tailRing);
+  // redMoraNF complains about this -- but, we don't really
+  // neeed this so far
+  assume(p.pLength == 0 || pLength(p.p) == p.pLength || rIsSyzIndexRing(currRing)); // modulo syzring
+  assume(p.FDeg == p.pFDeg());
+  assume(!p.is_normalized || nIsOne(pGetCoeff(p.p)));
+
+#ifdef KDEBUG
+  // do not put an LObject twice into T:
+  for(i=strat->ul;i>=0;i--)
+  {
+    if (p.p==strat->U[i].p)
+    {
+      printf("already in T at pos %d of %d, atT=%d\n",i,strat->ul,atT);
+      return;
+    }
+  }
+#endif
+  strat->newt = TRUE;
+  if (atT < 0)
+    atT = strat->posInT(strat->U, strat->ul, p);
+  if (strat->ul == strat->umax-1)
+    enlargeT(strat->U,strat->V,strat->sevU,strat->umax,setmaxTinc);
+  if (atT <= strat->ul)
+  {
+#ifdef ENTER_USE_MEMMOVE
+    memmove(&(strat->U[atT+1]), &(strat->U[atT]),
+            (strat->ul-atT+1)*sizeof(TObject));
+    memmove(&(strat->sevU[atT+1]), &(strat->sevU[atT]),
+            (strat->ul-atT+1)*sizeof(unsigned long));
+#endif
+    for (i=strat->ul+1; i>=atT+1; i--)
+    {
+#ifndef ENTER_USE_MEMMOVE
+      strat->U[i] = strat->U[i-1];
+      strat->sevU[i] = strat->sevU[i-1];
+#endif
+      strat->V[strat->U[i].i_r] = &(strat->U[i]);
+    }
+  }
+
+  if (strat->tailBin != NULL && (pNext(p.p) != NULL))
+  {
+    pNext(p.p)=p_ShallowCopyDelete(pNext(p.p),
+                                   (strat->tailRing != NULL ?
+                                    strat->tailRing : currRing),
+                                   strat->tailBin);
+    if (p.t_p != NULL) pNext(p.t_p) = pNext(p.p);
+  }
+  strat->U[atT] = (TObject) p;
+
+  if (strat->tailRing != currRing && pNext(p.p) != NULL)
+    strat->U[atT].max = p_GetMaxExpP(pNext(p.p), strat->tailRing);
+  else
+    strat->U[atT].max = NULL;
+
+  strat->ul++;
+  strat->V[strat->ul] = &(strat->U[atT]);
+  strat->U[atT].i_r = strat->ul;
+  assume(p.sev == 0 || pGetShortExpVector(p.p) == p.sev);
+  strat->sevU[atT] = (p.sev == 0 ? pGetShortExpVector(p.p) : p.sev);
+  kTest_T(&(strat->U[atT]));
+}
+
+/*2
 * puts signature p.sig to the set syz
 */
 void enterSyz(LObject p, kStrategy strat)
@@ -6597,6 +6703,12 @@ void initBuchMora (ideal F,ideal Q,kStrategy strat)
   strat->T = initT();
   strat->R = initR();
   strat->sevT = initsevT();
+  /*- set U -*/
+  strat->ul = -1;
+  strat->umax = setmaxT;
+  strat->U = initT();
+  strat->V = initR();
+  strat->sevU = initsevT();
   /*- init local data struct.---------------------------------------- -*/
   strat->P.ecart=0;
   strat->P.length=0;
@@ -6643,14 +6755,19 @@ void exitBuchMora (kStrategy strat)
   /*- release temp data -*/
   cleanT(strat);
   omFreeSize(strat->T,(strat->tmax)*sizeof(TObject));
+  cleanU(strat);
+  omFreeSize(strat->U,(strat->tmax)*sizeof(TObject));
   omFreeSize(strat->R,(strat->tmax)*sizeof(TObject*));
+  omFreeSize(strat->V,(strat->umax)*sizeof(TObject*));
   omFreeSize(strat->sevT, (strat->tmax)*sizeof(unsigned long));
+  omFreeSize(strat->sevU, (strat->umax)*sizeof(unsigned long));
   omFreeSize(strat->ecartS,IDELEMS(strat->Shdl)*sizeof(int));
   omFreeSize(strat->fromS,IDELEMS(strat->Shdl)*sizeof(int));
   omFreeSize(strat->syzIdx,(strat->syzidxmax)*sizeof(int));
   omFreeSize(strat->sevS,IDELEMS(strat->Shdl)*sizeof(int));
   omFreeSize(strat->sevSig,IDELEMS(strat->Shdl)*sizeof(int));
   omFreeSize(strat->S_2_R,IDELEMS(strat->Shdl)*sizeof(int));
+  omFreeSize(strat->S_2_V,IDELEMS(strat->Shdl)*sizeof(int));
   /*- set L: should be empty -*/
   omFreeSize(strat->L,(strat->Lmax)*sizeof(LObject));
   /*- set B: should be empty -*/

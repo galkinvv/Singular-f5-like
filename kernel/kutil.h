@@ -297,7 +297,9 @@ public:
   unsigned long* sevSyz;
   unsigned long* sevSig;
   unsigned long* sevT;
+  unsigned long* sevU;
   TSet T;
+  TSet U;
   LSet L;
   LSet    B;
   poly    kHEdge;
@@ -315,8 +317,10 @@ public:
   pShallowCopyDeleteProc p_shallow_copy_delete;
   // pointers to Tobjects R[i] is ith Tobject which is generated
   TObject**  R;
+  TObject**  V;
   // S_2_R[i] yields Tobject which corresponds to S[i]
   int*      S_2_R;
+  int*      S_2_V;
   ring tailRing;
   omBin lmBin;
   omBin tailBin;
@@ -328,6 +332,7 @@ public:
   int sl,mu;
   int syzl,syzmax,syzidxmax;
   int tl,tmax;
+  int ul,umax;
   int Ll,Lmax;
   int Bl,Bmax;
   int ak,LazyDegree,LazyPass;
@@ -389,6 +394,7 @@ void deleteHC(poly *p, int *e, int *l, kStrategy strat);
 void deleteHC(LObject* L, kStrategy strat, BOOLEAN fromNext = FALSE);
 void deleteInS (int i,kStrategy strat);
 void cleanT (kStrategy strat);
+void cleanU (kStrategy strat);
 static inline LSet initL (int nr=setmaxL)
 { return (LSet)omAlloc(nr*sizeof(LObject)); }
 void deleteInL(LSet set, int *length, int j,kStrategy strat);
@@ -492,6 +498,7 @@ void initSyzRules (kStrategy strat);
 void updateS(BOOLEAN toT,kStrategy strat);
 void enterSyz (LObject p,kStrategy strat);
 void enterT (LObject p,kStrategy strat, int atT = -1);
+void enterU (LObject p,kStrategy strat, int atT = -1);
 void cancelunit (LObject* p,BOOLEAN inNF=FALSE);
 void HEckeTest (poly pp,kStrategy strat);
 void initBuchMoraCrit(kStrategy strat);
