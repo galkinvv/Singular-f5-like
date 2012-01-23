@@ -27,6 +27,7 @@
 
 KINLINE TObject* skStrategy::S_2_T(int i)
 {
+  printf("i. %d -- tl. %d -- S_2_R.i. %d\n",i,tl,S_2_R[i]);
   assume(i>= 0 && i<=sl);
   assume(S_2_R[i] >= 0 && S_2_R[i] <= tl);
   TObject* TT = R[S_2_R[i]];
@@ -893,6 +894,48 @@ KINLINE void    sLObject::T_1_2(const skStrategy* strat,
   assume(i_r2 >= 0 && i_r2 <= strat->tl);
   T_1 = strat->R[i_r1];
   T_2 = strat->R[i_r2];
+  assume(T_1->p == p1);
+  assume(T_2->p == p2);
+  return;
+}
+
+KINLINE TObject* sLObject::U_1(const skStrategy* s)
+{
+  if (p1 == NULL) return NULL;
+  if (i_r1 == -1) i_r1 = kFindInT(p1, s->U, s->ul);
+  assume(i_r1 >= 0 && i_r1 <= s->ul);
+  TObject* T = s->V[i_r1];
+  assume(T->p == p1);
+  return T;
+}
+
+KINLINE TObject* sLObject::U_2(const skStrategy* strat)
+{
+  if (p1 == NULL) return NULL;
+  assume(p2 != NULL);
+  if (i_r2 == -1) i_r2 = kFindInT(p2, strat->U, strat->ul);
+  assume(i_r2 >= 0 && i_r2 <= strat->ul);
+  TObject* T = strat->V[i_r2];
+  assume(T->p == p2);
+  return T;
+}
+
+KINLINE void    sLObject::U_1_2(const skStrategy* strat,
+                                TObject* &T_1, TObject* &T_2)
+{
+  if (p1 == NULL)
+  {
+    T_1 = NULL;
+    T_2 = NULL;
+    return;
+  }
+  assume(p1 != NULL && p2 != NULL);
+  if (i_r1 == -1) i_r1 = kFindInT(p1, strat->U, strat->ul);
+  if (i_r2 == -1) i_r2 = kFindInT(p2, strat->U, strat->ul);
+  assume(i_r1 >= 0 && i_r1 <= strat->ul);
+  assume(i_r2 >= 0 && i_r2 <= strat->ul);
+  T_1 = strat->V[i_r1];
+  T_2 = strat->V[i_r2];
   assume(T_1->p == p1);
   assume(T_2->p == p2);
   return;

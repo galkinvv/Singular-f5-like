@@ -243,6 +243,12 @@ public:
   KINLINE void     T_1_2(const skStrategy* strat,
                          TObject* &T_1, TObject* &T_2);
 
+  // get U's corresponding to p1, p2: they might return NULL
+  KINLINE TObject* U_1(const skStrategy* strat);
+  KINLINE TObject* U_2(const skStrategy* strat);
+  KINLINE void     U_1_2(const skStrategy* strat,
+                         TObject* &T_1, TObject* &T_2);
+
   // simplify coefficients
   KINLINE void Normalize();
   KINLINE void HeadNormalize();
@@ -566,6 +572,8 @@ KINLINE void k_GetStrongLeadTerms(const poly p1, const poly p2, const ring leadR
 BOOLEAN kTest(kStrategy strat);
 // test strat, and test that S is contained in T
 BOOLEAN kTest_TS(kStrategy strat);
+// test strat, and test that S is contained in U
+BOOLEAN kTest_US(kStrategy strat);
 // test LObject
 BOOLEAN kTest_L(LObject* L, ring tailRing = NULL,
                  BOOLEAN testp = FALSE, int lpos = -1,
@@ -577,6 +585,7 @@ BOOLEAN kTest_S(kStrategy strat);
 #else
 #define kTest(A)        ((void)0)
 #define kTest_TS(A)     ((void)0)
+#define kTest_US(A)     ((void)0)
 #define kTest_T(T)      ((void)0)
 #define kTest_S(T)      ((void)0)
 #define kTest_L(T)      ((void)0)

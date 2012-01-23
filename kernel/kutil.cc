@@ -954,6 +954,63 @@ BOOLEAN kTest_TS(kStrategy strat)
   return TRUE;
 }
 
+BOOLEAN kTest_US(kStrategy strat)
+{
+  int i, j;
+  BOOLEAN ret = TRUE;
+  kFalseReturn(kTest(strat));
+
+  // test strat->R, strat->T[i].i_r
+  for (i=0; i<=strat->ul; i++)
+  {
+    if (strat->U[i].i_r < 0 || strat->U[i].i_r > strat->ul)
+      return dReportError("strat->U[%d].i_r == %d out of bounds", i,
+                          strat->U[i].i_r);
+    if (strat->V[strat->U[i].i_r] != &(strat->U[i]))
+      return dReportError("U[%d].i_r with V out of sync", i);
+  }
+  // test containment of S inU
+  if (strat->S != NULL)
+  {
+    for (i=0; i<=strat->sl; i++)
+    {
+      j = kFindInT(strat->S[i], strat->U, strat->ul);
+      if (j < 0)
+        return dReportError("S[%d] not in U", i);
+      if (strat->S_2_V[i] != strat->U[j].i_r)
+        return dReportError("S_2_V[%d]=%d != U[%d].i_r=%d\n",
+                            i, strat->S_2_V[i], j, strat->U[j].i_r);
+    }
+  }
+  // test strat->L[i].i_r1
+  for (i=0; i<=strat->Ll; i++)
+  {
+    if (strat->L[i].p1 != NULL && strat->L[i].p2)
+    {
+      if (strat->L[i].i_r1 < 0 ||
+          strat->L[i].i_r1 > strat->ul ||
+          strat->L[i].U_1(strat)->p != strat->L[i].p1)
+      {
+          printf("L_i_r %d -- %d\n", strat->L[i].i_r1,strat->ul);
+        return dReportError("L[%d].i_r1 out of sync", i);
+      }
+      if (strat->L[i].i_r2 < 0 ||
+          strat->L[i].i_r2 > strat->ul ||
+          strat->L[i].U_2(strat)->p != strat->L[i].p2);
+    }
+    else
+    {
+      if (strat->L[i].i_r1 != -1)
+        return dReportError("L[%d].i_r1 out of sync", i);
+      if (strat->L[i].i_r2 != -1)
+        return dReportError("L[%d].i_r2 out of sync", i);
+    }
+    if (strat->L[i].i_r != -1)
+      return dReportError("L[%d].i_r out of sync", i);
+  }
+  return TRUE;
+}
+
 #endif // KDEBUG
 
 /*2
@@ -967,7 +1024,8 @@ void deleteInS (int i,kStrategy strat)
   memmove(&(strat->ecartS[i]),&(strat->ecartS[i+1]),(strat->sl - i)*sizeof(int));
   memmove(&(strat->sevS[i]),&(strat->sevS[i+1]),(strat->sl - i)*sizeof(long));
   memmove(&(strat->sevSig[i]),&(strat->sevSig[i+1]),(strat->sl - i)*sizeof(long));
-  memmove(&(strat->S_2_R[i]),&(strat->S_2_R[i+1]),(strat->sl - i)*sizeof(int));
+  //memmove(&(strat->S_2_R[i]),&(strat->S_2_R[i+1]),(strat->sl - i)*sizeof(int));
+  memmove(&(strat->S_2_V[i]),&(strat->S_2_V[i+1]),(strat->sl - i)*sizeof(int));
   memmove(&(strat->fromS[i]),&(strat->fromS[i+1]),(strat->sl - i)*sizeof(int));
 #else
   int j;
@@ -978,7 +1036,8 @@ void deleteInS (int i,kStrategy strat)
     strat->ecartS[j] = strat->ecartS[j+1];
     strat->sevS[j] = strat->sevS[j+1];
     strat->sevSig[j] = strat->sevSig[j+1];
-    strat->S_2_R[j] = strat->S_2_R[j+1];
+    //strat->S_2_R[j] = strat->S_2_R[j+1];
+    strat->S_2_V[j] = strat->S_2_V[j+1];
     strat->fromS[j] = strat->fromS[j+1];
   }
 #endif
@@ -1843,7 +1902,6 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
 #endif
   if(sigCmp==0)
   {
-    // printf("!!!!   EQUAL SIGS   !!!!\n");
     // pSig = sSig, delete element due to Rewritten Criterion
     strat->cp++;
     pLmFree(Lp.lcm);
@@ -1980,7 +2038,7 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
 
     if (atR >= 0)
     {
-      Lp.i_r1 = strat->S_2_R[i];
+      Lp.i_r1 = strat->S_2_V[i];
       Lp.i_r2 = atR;
     }
     else
@@ -3674,19 +3732,19 @@ for (; i<=strat->sl; i++)
     p = strat->S[i];
     ecart = strat->ecartS[i];
     sev = strat->sevS[i];
-    s2r = strat->S_2_R[i];
+    s2r = strat->S_2_V[i];
     if (strat->fromQ!=NULL) fq=strat->fromQ[i];
     for (j=i; j>=at+1; j--)
     {
       strat->S[j] = strat->S[j-1];
       strat->ecartS[j] = strat->ecartS[j-1];
       strat->sevS[j] = strat->sevS[j-1];
-      strat->S_2_R[j] = strat->S_2_R[j-1];
+      strat->S_2_V[j] = strat->S_2_V[j-1];
     }
     strat->S[at] = p;
     strat->ecartS[at] = ecart;
     strat->sevS[at] = sev;
-    strat->S_2_R[at] = s2r;
+    strat->S_2_V[at] = s2r;
     if (strat->fromQ!=NULL)
     {
       for (j=i; j>=at+1; j--)
@@ -5035,9 +5093,15 @@ else
   TObject* t;
   loop
   {
-    if (j > pos) return NULL;
+    //if (j > pos) return NULL;
+    ///////////////////////////////////////////////////////////////////////////////
+    // in a sig-safe algorithm it is possible that some S do not have a
+    // corresponding T, i.e. S_2_R[j] can be -1!
+    ///////////////////////////////////////////////////////////////////////////////
+    if (j > pos || strat->S_2_R[j] == -1) return NULL;
     assume(strat->S_2_R[j] != -1);
 #if defined(PDEBUG) || defined(PDIV_DEBUG)
+    printf("POS: %d\n",pos);
     t = strat->S_2_T(j);
     assume(t != NULL && t->t_p != NULL && t->tailRing == r);
     if (p_LmShortDivisibleBy(t->t_p, sev[j], p, not_sev, r) &&
@@ -6312,7 +6376,11 @@ void enterSBba (LObject p,int atS,kStrategy strat, int atR)
                                           IDELEMS(strat->Shdl)*sizeof(int),
                                           (IDELEMS(strat->Shdl)+setmaxTinc)
                                                   *sizeof(int));
-    strat->S_2_R = (int*) omRealloc0Size(strat->S_2_R,
+    //strat->S_2_R = (int*) omRealloc0Size(strat->S_2_R,
+    //                                     IDELEMS(strat->Shdl)*sizeof(int),
+    //                                     (IDELEMS(strat->Shdl)+setmaxTinc)
+    //                                              *sizeof(int));
+    strat->S_2_V = (int*) omRealloc0Size(strat->S_2_V,
                                          IDELEMS(strat->Shdl)*sizeof(int),
                                          (IDELEMS(strat->Shdl)+setmaxTinc)
                                                   *sizeof(int));
@@ -6352,7 +6420,9 @@ void enterSBba (LObject p,int atS,kStrategy strat, int atR)
             (strat->sl - atS + 1)*sizeof(int));
     memmove(&(strat->sevS[atS+1]), &(strat->sevS[atS]),
             (strat->sl - atS + 1)*sizeof(unsigned long));
-    memmove(&(strat->S_2_R[atS+1]), &(strat->S_2_R[atS]),
+    //memmove(&(strat->S_2_R[atS+1]), &(strat->S_2_R[atS]),
+    //        (strat->sl - atS + 1)*sizeof(int));
+    memmove(&(strat->S_2_V[atS+1]), &(strat->S_2_V[atS]),
             (strat->sl - atS + 1)*sizeof(int));
     if (strat->lenS!=NULL)
     memmove(&(strat->lenS[atS+1]), &(strat->lenS[atS]),
@@ -6367,7 +6437,8 @@ void enterSBba (LObject p,int atS,kStrategy strat, int atR)
       strat->ecartS[i] = strat->ecartS[i-1];
       strat->fromS[i] = strat->fromS[i-1];
       strat->sevS[i] = strat->sevS[i-1];
-      strat->S_2_R[i] = strat->S_2_R[i-1];
+      //strat->S_2_R[i] = strat->S_2_R[i-1];
+      strat->S_2_V[i] = strat->S_2_V[i-1];
     }
     if (strat->lenS!=NULL)
     for (i=strat->sl+1; i>=atS+1; i--)
@@ -6407,7 +6478,8 @@ void enterSBba (LObject p,int atS,kStrategy strat, int atR)
   strat->sevSig[atS] = p.sevSig; // TODO: get the correct signature in here!
   strat->ecartS[atS] = p.ecart;
   strat->fromS[atS] = p.from;
-  strat->S_2_R[atS] = atR;
+  //strat->S_2_R[atS] = atR;
+  strat->S_2_V[atS] = atR;
   strat->sl++;
 #ifdef DEBUGF5
   int k;
@@ -7072,8 +7144,8 @@ BOOLEAN kCheckSpolyCreation(LObject *L, kStrategy strat, poly &m1, poly &m2)
   if (strat->overflow) return FALSE;
   assume(L->p1 != NULL && L->p2 != NULL);
   // shift changes: from 0 to -1
-  assume(L->i_r1 >= -1 && L->i_r1 <= strat->tl);
-  assume(L->i_r2 >= -1 && L->i_r2 <= strat->tl);
+  assume(L->i_r1 >= -1 && L->i_r1 <= strat->ul);
+  assume(L->i_r2 >= -1 && L->i_r2 <= strat->ul);
   assume(strat->tailRing != currRing);
 
   if (! k_GetLeadTerms(L->p1, L->p2, currRing, m1, m2, strat->tailRing))
@@ -7083,8 +7155,8 @@ BOOLEAN kCheckSpolyCreation(LObject *L, kStrategy strat, poly &m1, poly &m2)
   {
     return TRUE;
   }
-  poly p1_max = (strat->R[L->i_r1])->max;
-  poly p2_max = (strat->R[L->i_r2])->max;
+  poly p1_max = (strat->V[L->i_r1])->max;
+  poly p2_max = (strat->V[L->i_r2])->max;
 
   if ((p1_max != NULL && !p_LmExpVectorAddIsOk(m1, p1_max, strat->tailRing)) ||
       (p2_max != NULL && !p_LmExpVectorAddIsOk(m2, p2_max, strat->tailRing)))
