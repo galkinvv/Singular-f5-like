@@ -27,10 +27,10 @@
 
 KINLINE TObject* skStrategy::S_2_T(int i)
 {
-  printf("i. %d -- tl. %d -- S_2_R.i. %d\n",i,tl,S_2_R[i]);
+  printf("i. %d -- tl. %d -- S_2_V.i. %d\n",i,ul,S_2_V[i]);
   assume(i>= 0 && i<=sl);
-  assume(S_2_R[i] >= 0 && S_2_R[i] <= tl);
-  TObject* TT = R[S_2_R[i]];
+  assume(S_2_V[i] >= 0 && S_2_V[i] <= ul);
+  TObject* TT = V[S_2_V[i]];
   assume(TT != NULL && TT->p == S[i]);
   return TT;
 }
@@ -39,17 +39,17 @@ KINLINE TObject* skStrategy::s_2_t(int i)
 {
   if (i >= 0 && i <= sl)
   {
-    int sri= S_2_R[i];
-    if ((sri >= 0) && (sri <= tl))
+    int sri= S_2_V[i];
+    if ((sri >= 0) && (sri <= ul))
     {
-      TObject* t = R[sri];
+      TObject* t = V[sri];
       if ((t != NULL) && (t->p == S[i]))
         return t;
     }
     // last but not least, try kFindInT
-    sri = kFindInT(S[i], T, tl);
+    sri = kFindInT(S[i], U, ul);
     if (sri >= 0)
-      return &(T[sri]);
+      return &(U[sri]);
   }
   return NULL;
 }

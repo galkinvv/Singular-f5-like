@@ -36,7 +36,7 @@
 
 #define DEBUGF50  0
 #define DEBUGF51  0
-#define F5C       0
+#define F5C       1
 
 #include <kernel/kutil.h>
 #include <kernel/options.h>
@@ -374,7 +374,12 @@ int redRing (LObject* h,kStrategy strat)
 int redHomog (LObject* h,kStrategy strat)
 {
   printf("hh\n");
-  if (strat->tl<0) return 1;
+  pWrite(pHead(h->p));
+  if (strat->tl<0)
+  {
+    printf("HERE1\n");
+    return 1;
+  }
   //if (h->GetLmTailRing()==NULL) return 0; // HS: SHOULD NOT BE NEEDED!
   assume(h->FDeg == h->pFDeg());
 
@@ -392,8 +397,13 @@ int redHomog (LObject* h,kStrategy strat)
   loop
   {
     j = kFindDivisibleByInT(strat->T, strat->sevT, strat->tl, h);
-    //j = kFindDivisibleByInT(strat->T, strat->sevT, strat->currIdx-1, h);
-    if (j < 0) return 1;
+    if (j < 0) 
+    {
+
+      printf("HERE2\n");
+      pWrite(h->p);
+      return 1;
+    }
 
     li = strat->T[j].pLength;
     ii = j;
@@ -408,8 +418,7 @@ int redHomog (LObject* h,kStrategy strat)
     {
       /*- search the shortest possible with respect to length -*/
       i++;
-      //if (i > strat->tl)
-      if (i > strat->currIdx-1)
+      if (i > strat->tl)
         break;
       if (li<=1)
         break;
@@ -484,7 +493,7 @@ int redHomog (LObject* h,kStrategy strat)
         if (TEST_OPT_DEBUG)
           Print(" lazy: -> L%d\n",at);
 #endif
-        //h->Clear();
+        h->Clear();
         return -1;
       }
     }
@@ -1305,6 +1314,7 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 #ifdef DEBUGF5
       Print("Poly before red: ");
       pWrite(strat->P.p);
+      pWrite(strat->P.lcm);
 #endif
       /* reduction of the element choosen from L */
       // NOTE: this is only the sig-safe reduction, the complete reductions
@@ -1409,6 +1419,113 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       // The complete reduced elements are added to strat->T as usual.
       ////////////////////////////////////////////////////////////////////////
       enterU(strat->P, strat);
+#if F5C
+      printf("h\n");
+      LObject h = strat->P;
+      h.Copy();
+      h.lcm = pCopy (pHead(strat->P.p));
+      printf("LCM %p -- %p\n",h.lcm, strat->P.lcm);
+      pWrite(pHead(h.lcm));
+      printf("%p -- %p\n",h.p,strat->P.p);
+      printf("IS NORMALIZED %d -- %d\n",h.is_normalized,strat->P.is_normalized);
+      red_result2 = strat->red2(&h,strat);
+      printf("k\n");
+      if (errorreported)  break;
+
+      // reduction to non-zero new poly
+      printf("reduction result: ");
+      pWrite(h.p);
+      if (red_result2 == 1 && h.p!=NULL)
+      {
+        // get the polynomial (canonicalize bucket, make sure P.p is set)
+        strat->P.GetP(strat->lmBin);
+        // in the homogeneous case FDeg >= pFDeg (sugar/honey)
+        // but now, for entering S, T, we reset it
+        // in the inhomogeneous case: FDeg == pFDeg
+        if (strat->homog) strat->initEcart(&(h));
+
+        /* statistic */
+        if (TEST_OPT_PROT) PrintS("s");
+
+        //int pos=posInS(strat,strat->sl,strat->P.p,strat->P.ecart);
+        // in F5E we know that the last reduced element is already the
+        // the one with highest signature
+        //int pos = strat->sl+1;
+
+#ifdef KDEBUG
+#if MYTEST
+        PrintS("New S: "); pDebugPrint(h.p); PrintLn();
+#endif /* MYTEST */
+#endif /* KDEBUG */
+
+        // reduce the tail and normalize poly
+        // in the ring case we cannot expect LC(f) = 1,
+        // therefore we call pContent instead of pNorm
+        withT = TRUE;
+        if ((TEST_OPT_INTSTRATEGY) || (rField_is_Ring(currRing)))
+        {
+          strat->P.pCleardenom();
+          if ((TEST_OPT_REDSB)||(TEST_OPT_REDTAIL))
+          {
+            // adjusted pos-1 to pos-2 since in signature-based algorithms
+            // strat->P has already entered S!
+            h.p = redtailBba(&(h),strat->sl-1,strat, withT);
+            h.pCleardenom();
+          }
+        }
+        else
+        {
+          h.pNorm();
+          printf("IS NORMALIZED2 %d -- %d\n",h.is_normalized,strat->P.is_normalized);
+          pWrite(pHead(h.p));
+          if ((TEST_OPT_REDSB)||(TEST_OPT_REDTAIL))
+            // adjusted pos-1 to pos-2 since in signature-based algorithms
+            // strat->P has already entered S!
+            h.p = redtailBba(&(h),strat->sl-1,strat, withT);
+        }
+      printf("IS NORMALIZED3 %d -- %d\n",h.is_normalized,strat->P.is_normalized);
+#ifdef KDEBUG
+        if (TEST_OPT_DEBUG){PrintS("new s:");h.wrp();PrintLn();}
+        //#if MYTEST
+#if 1
+        PrintS("New (reduced) S: "); pDebugPrint(h.p); PrintLn();
+#endif /* MYTEST */
+#endif /* KDEBUG */
+
+        // min_std stuff
+        if ((h.p1==NULL) && (strat->minim>0))
+        {
+          if (strat->minim==1)
+          {
+            strat->M->m[minimcnt]=p_Copy(h.p,currRing,strat->tailRing);
+            p_Delete(&h.p2, currRing, strat->tailRing);
+          }
+          else
+          {
+            strat->M->m[minimcnt]=h.p2;
+            h.p2=NULL;
+          }
+          if (strat->tailRing!=currRing && pNext(strat->M->m[minimcnt])!=NULL)
+            pNext(strat->M->m[minimcnt])
+              = strat->p_shallow_copy_delete(pNext(strat->M->m[minimcnt]),
+                  strat->tailRing, currRing,
+                  currRing->PolyBin);
+          minimcnt++;
+        }
+        // compute new bunch of principal syzygies: if and only if the element to
+        // be added has a new component in its signature, i.e. a new incremental
+        // step starts in the next iteration
+        if (strat->incremental && pGetComp(h.sig) != strat->currIdx)
+        {
+        strat->currIdx  = pGetComp(h.sig);
+        initSyzRules(strat);
+        //newrules        = TRUE;
+        }
+        // enter into S, L, and T
+        //if ((!TEST_OPT_IDLIFT) || (pGetComp(strat->P.p) <= strat->syzComp))
+        enterT(h, strat);
+      }
+#endif
 #ifdef HAVE_RINGS
       if (rField_is_Ring(currRing))
         superenterpairs(strat->P.p,strat->sl,strat->P.ecart,pos,strat, strat->ul);
@@ -1471,110 +1588,15 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
        * basis we need for lower-index reducers in the next iteration
        * step
        **************************************************************/
-#if F5C
-    if (red_result == 1)
-    {
-      printf("h\n");
-      red_result2 = strat->red2(&strat->P,strat);
-      printf("k\n");
-      if (errorreported)  break;
-
-      // reduction to non-zero new poly
-      if (red_result2 == 1)
-      {
-        // get the polynomial (canonicalize bucket, make sure P.p is set)
-        strat->P.GetP(strat->lmBin);
-        // in the homogeneous case FDeg >= pFDeg (sugar/honey)
-        // but now, for entering S, T, we reset it
-        // in the inhomogeneous case: FDeg == pFDeg
-        if (strat->homog) strat->initEcart(&(strat->P));
-
-        /* statistic */
-        if (TEST_OPT_PROT) PrintS("s");
-
-        //int pos=posInS(strat,strat->sl,strat->P.p,strat->P.ecart);
-        // in F5E we know that the last reduced element is already the
-        // the one with highest signature
-        //int pos = strat->sl+1;
-
-#ifdef KDEBUG
-#if MYTEST
-        PrintS("New S: "); pDebugPrint(strat->P.p); PrintLn();
-#endif /* MYTEST */
-#endif /* KDEBUG */
-
-        // reduce the tail and normalize poly
-        // in the ring case we cannot expect LC(f) = 1,
-        // therefore we call pContent instead of pNorm
-        if ((TEST_OPT_INTSTRATEGY) || (rField_is_Ring(currRing)))
-        {
-          strat->P.pCleardenom();
-          if ((TEST_OPT_REDSB)||(TEST_OPT_REDTAIL))
-          {
-            // adjusted pos-1 to pos-2 since in signature-based algorithms
-            // strat->P has already entered S!
-            strat->P.p = redtailBba(&(strat->P),pos-1,strat, withT);
-            strat->P.pCleardenom();
-          }
-        }
-        else
-        {
-          strat->P.pNorm();
-          if ((TEST_OPT_REDSB)||(TEST_OPT_REDTAIL))
-            // adjusted pos-1 to pos-2 since in signature-based algorithms
-            // strat->P has already entered S!
-            strat->P.p = redtailBba(&(strat->P),pos-1,strat, withT);
-        }
-#ifdef KDEBUG
-        if (TEST_OPT_DEBUG){PrintS("new s:");strat->P.wrp();PrintLn();}
-        //#if MYTEST
-#if 1
-        PrintS("New (reduced) S: "); pDebugPrint(strat->P.p); PrintLn();
-#endif /* MYTEST */
-#endif /* KDEBUG */
-
-        // min_std stuff
-        if ((strat->P.p1==NULL) && (strat->minim>0))
-        {
-          if (strat->minim==1)
-          {
-            strat->M->m[minimcnt]=p_Copy(strat->P.p,currRing,strat->tailRing);
-            p_Delete(&strat->P.p2, currRing, strat->tailRing);
-          }
-          else
-          {
-            strat->M->m[minimcnt]=strat->P.p2;
-            strat->P.p2=NULL;
-          }
-          if (strat->tailRing!=currRing && pNext(strat->M->m[minimcnt])!=NULL)
-            pNext(strat->M->m[minimcnt])
-              = strat->p_shallow_copy_delete(pNext(strat->M->m[minimcnt]),
-                  strat->tailRing, currRing,
-                  currRing->PolyBin);
-          minimcnt++;
-        }
-        /*
-        // compute new bunch of principal syzygies: if and only if the element to
-        // be added has a new component in its signature, i.e. a new incremental
-        // step starts in the next iteration
-        if (strat->incremental && pGetComp(strat->P.sig) != strat->currIdx)
-        {
-        strat->currIdx  = pGetComp(strat->P.sig);
-        initSyzRules(strat);
-        //newrules        = TRUE;
-        }
-        // enter into S, L, and T
-        //if ((!TEST_OPT_IDLIFT) || (pGetComp(strat->P.p) <= strat->syzComp))
-        enterT(strat->P, strat);
-        */
-      }
-    }
-#endif
       if (red_result == 1)
       {
         if (hilb!=NULL) khCheck(Q,w,hilb,hilbeledeg,hilbcount,strat);
         //      Print("[%d]",hilbeledeg);
-        if (strat->P.lcm!=NULL)
+        // NOTE: It is possible that in the 2nd, complete reduction step
+        // strat->P.lcm was deleted already: An element that does not reduce to
+        // zero sig-safely (strat->red) can reduce to zero classically
+        // (strat->red2)
+        if (red_result2!=0 && strat->P.lcm!=NULL)
 #ifdef HAVE_RINGS
           pLmDelete(strat->P.lcm);
 #else
@@ -1631,6 +1653,7 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   else if (TEST_OPT_PROT) PrintLn();
 
   /* release temp data-------------------------------- */
+  printf("COMPARING DATA: TL %ld -- UL %ld\n",strat->tl,strat->ul);
   exitBuchMora(strat);
   if (TEST_OPT_WEIGHTM)
   {

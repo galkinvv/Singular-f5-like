@@ -845,16 +845,16 @@ BOOLEAN kTest (kStrategy strat)
   // test P
   kFalseReturn(kTest_L(&(strat->P), strat->tailRing,
                        (strat->P.p != NULL && pNext(strat->P.p)!=strat->tail),
-                       -1, strat->T, strat->tl));
+                       -1, strat->U, strat->ul));
 
   // test T
   if (strat->T != NULL)
   {
-    for (i=0; i<=strat->tl; i++)
+    for (i=0; i<=strat->ul; i++)
     {
-      kFalseReturn(kTest_T(&(strat->T[i]), strat->tailRing, i, 'T'));
-      if (strat->sevT[i] != pGetShortExpVector(strat->T[i].p))
-        return dReportError("strat->sevT[%d] out of sync", i);
+      kFalseReturn(kTest_T(&(strat->U[i]), strat->tailRing, i, 'U'));
+      if (strat->sevU[i] != pGetShortExpVector(strat->U[i].p))
+        return dReportError("strat->sevU[%d] out of sync", i);
     }
   }
 
@@ -865,7 +865,7 @@ BOOLEAN kTest (kStrategy strat)
     {
       kFalseReturn(kTest_L(&(strat->L[i]), strat->tailRing,
                            strat->L[i].Next() != strat->tail, i,
-                           strat->T, strat->tl));
+                           strat->U, strat->ul));
       // may be unused
       //if (strat->use_buckets && strat->L[i].Next() != strat->tail &&
       //    strat->L[i].Next() != NULL && strat->L[i].p1 != NULL)
@@ -5205,6 +5205,8 @@ strat->redTailChange=FALSE;
 if (strat->noTailReduction) return L->GetLmCurrRing();
 poly h, p;
 p = h = L->GetLmTailRing();
+printf("BEGIN REDTAIL:  ");
+pWrite(pHead(L->p));
 if ((h==NULL) || (pNext(h)==NULL))
   return L->GetLmCurrRing();
 
@@ -5226,6 +5228,8 @@ while(!Ln.IsNull())
 {
   loop
   {
+printf("MIDDLE REDTAIL:  ");
+pWrite(pHead(L->p));
     Ln.SetShortExpVector();
     if (withT)
     {
@@ -5233,11 +5237,13 @@ while(!Ln.IsNull())
       j = kFindDivisibleByInT(strat->T, strat->sevT, strat->tl, &Ln);
       if (j < 0) break;
       With = &(strat->T[j]);
+      printf("1\n");
     }
     else
     {
       With = kFindDivisibleByInS(strat, pos, &Ln, &With_s);
       if (With == NULL) break;
+      printf("2\n");
     }
     cnt--;
     if (cnt==0)
@@ -5247,8 +5253,8 @@ while(!Ln.IsNull())
       if (normalize)
       {
         Ln.Normalize();
-        //pNormalize(tmp);
-        //if (TEST_OPT_PROT) { PrintS("n"); mflush(); }
+        pNormalize(tmp);
+        if (TEST_OPT_PROT) { PrintS("n"); mflush(); }
       }
     }
     if (normalize && (!TEST_OPT_INTSTRATEGY) && (!nIsOne(pGetCoeff(With->p))))
@@ -5281,6 +5287,8 @@ while(!Ln.IsNull())
 
 all_done:
 Ln.Delete();
+printf("END REDTAIL:  ");
+pWrite(pHead(L->p));
 if (L->p != NULL) pNext(L->p) = pNext(p);
 
 if (strat->redTailChange)
@@ -6505,6 +6513,8 @@ void enterT(LObject p, kStrategy strat, int atT)
   // neeed this so far
   assume(p.pLength == 0 || pLength(p.p) == p.pLength || rIsSyzIndexRing(currRing)); // modulo syzring
   assume(p.FDeg == p.pFDeg());
+  printf("%d -- %d\n",p.is_normalized,nIsOne(pGetCoeff(p.p)));
+  pWrite(pHead(p.p));
   assume(!p.is_normalized || nIsOne(pGetCoeff(p.p)));
 
 #ifdef KDEBUG
@@ -6621,7 +6631,9 @@ void enterU(LObject p, kStrategy strat, int atT)
                                    strat->tailBin);
     if (p.t_p != NULL) pNext(p.t_p) = pNext(p.p);
   }
+  printf("U: %p\n",strat->U[atT]);
   strat->U[atT] = (TObject) p;
+  printf("U: %p\n",strat->U[atT]);
 
   if (strat->tailRing != currRing && pNext(p.p) != NULL)
     strat->U[atT].max = p_GetMaxExpP(pNext(p.p), strat->tailRing);
