@@ -1418,7 +1418,6 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       // which can be used throughout the current iteration step.
       // The complete reduced elements are added to strat->T as usual.
       ////////////////////////////////////////////////////////////////////////
-      enterU(strat->P, strat);
 #if F5C
       printf("h\n");
       LObject h = strat->P;
@@ -1526,6 +1525,7 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
         enterT(h, strat);
       }
 #endif
+      enterU(strat->P, strat);
 #ifdef HAVE_RINGS
       if (rField_is_Ring(currRing))
         superenterpairs(strat->P.p,strat->sl,strat->P.ecart,pos,strat, strat->ul);
