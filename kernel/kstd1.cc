@@ -1046,20 +1046,20 @@ void initBba(ideal F,kStrategy strat)
   idhdl h;
  /* setting global variables ------------------- */
   strat->enterS = enterSBba;
-    strat->red = redHoney;
+    strat->red2 = redHoney;
   if (strat->honey)
-    strat->red = redHoney;
+    strat->red2 = redHoney;
   else if (pLexOrder && !strat->homog)
-    strat->red = redLazy;
+    strat->red2 = redLazy;
   else
   {
     strat->LazyPass *=4;
-    strat->red = redHomog;
+    strat->red2 = redHomog;
   }
 #ifdef HAVE_RINGS  //TODO Oliver
   if (rField_is_Ring(currRing))
   {
-    strat->red = redRing;
+    strat->red2 = redRing;
   }
 #endif
   if (pLexOrder && strat->honey)
