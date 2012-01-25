@@ -586,6 +586,9 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat);
 poly kNF2 (ideal F, ideal Q, poly q, kStrategy strat, int lazyReduce);
 ideal kNF2 (ideal F,ideal Q,ideal q, kStrategy strat, int lazyReduce);
 void initBba(ideal F,kStrategy strat);
+void f5c (kStrategy strat, int& olddeg, int& minimcnt, int& hilbeledeg, 
+          int& hilbcount, int& srmax, int& lrmax, int& reduc, ideal Q,
+          intvec *w,intvec *hilb );
 
 /***************************************************************
  *
