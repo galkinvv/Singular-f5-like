@@ -1027,7 +1027,7 @@ void enterL (LSet *set,int *length, int *LSetmax, LObject p,int at)
   for(k=0;k<=(*length);k++)
   {
     pWrite((*set)[k].sig);
-    printf("%ld\n",pGetComp((*set)[k].sig));
+    //printf("%ld\n",pGetComp((*set)[k].sig));
     pWrite(pHead((*set)[k].p1));
     pWrite(pHead((*set)[k].p2));
   }
@@ -5641,7 +5641,8 @@ void initSyzRules (kStrategy strat)
       }
     }
     ps += strat->sl+1;
-    comp              = pGetComp (strat->P.sig);
+    //comp              = pGetComp (strat->P.sig);
+    comp              = strat->currIdx;
     strat->syzIdx     = initec(comp);
     strat->sevSyz     = initsevS(ps);
     strat->syz        = (poly *)omAlloc0(ps*sizeof(poly));
@@ -5684,7 +5685,7 @@ void initSyzRules (kStrategy strat)
     /**************************************************************
     * add syzygies for upcoming first element of new iteration step
     **************************************************************/
-    comp = pGetComp(strat->P.sig);
+    comp = strat->currIdx;
     strat->syzIdx[j]  = ctr;
     for (k = 0; k<strat->sl+1; k++)
     {

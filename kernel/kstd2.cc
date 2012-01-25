@@ -34,8 +34,9 @@
 #define PLURAL_INTERNAL_DECLARATIONS 1
 #endif
 
-#define DEBUGF50 0
-#define DEBUGF51 0
+#define DEBUGF50  0
+#define DEBUGF51  0
+#define F5C       0
 
 #include <kernel/kutil.h>
 #include <kernel/options.h>
@@ -372,6 +373,7 @@ int redRing (LObject* h,kStrategy strat)
 */
 int redHomog (LObject* h,kStrategy strat)
 {
+  printf("TL: %d\n",strat->tl);
   if (strat->tl<0) return 1;
   //if (h->GetLmTailRing()==NULL) return 0; // HS: SHOULD NOT BE NEEDED!
   assume(h->FDeg == h->pFDeg());
@@ -1236,6 +1238,266 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       if (strat->Ll<0) break;
       else strat->noClearS=TRUE;
     }
+    if (strat->incremental && pGetComp(strat->L[strat->Ll].sig) != strat->currIdx)
+    {
+      strat->currIdx  = pGetComp(strat->L[strat->Ll].sig);
+#if F5C
+      /*********************************************************************
+      * interrreduction step of the signature-based algorithm:
+      * 1. all strat->S are interpreted as new critical pairs
+      * 2. those pairs need to be completely reduced by the usual (non sig-
+      *    safe) reduction process (including tail reductions)
+      * 3. strat->S and strat->T are completely new computed in these steps
+      ********************************************************************/
+      // we cannot use strat->T anymore
+      strat->tl = -1;
+      int pos  = 0;
+      printf("NEW ROUND\n");
+      while (strat->sl >= 0)
+      {
+        LObject h;
+        h.p = strat->S[strat->sl];
+        pWrite(pHead(h.p));
+        if (h.p!=NULL)
+        {
+          if (pOrdSgn==-1)
+          {
+            cancelunit(&h);  /*- tries to cancel a unit -*/
+            deleteHC(&h, strat);
+          }
+          if (h.p!=NULL)
+          {
+            if (TEST_OPT_INTSTRATEGY)
+            {
+              //pContent(h.p);
+              h.pCleardenom(); // also does a pContent
+            }
+            else
+            {
+              h.pNorm();
+            }
+            strat->initEcart(&h);
+            pos = strat->Ll+1;
+            h.sev = strat->sevS[strat->sl];
+            enterL(&strat->L,&strat->Ll,&strat->Lmax,h,pos);
+          }
+        }
+        strat->sl--;
+      }
+      /* picks the last element from the lazyset L */
+      strat->P = strat->L[strat->Ll];
+      strat->Ll--;
+      //#if 1
+#ifdef DEBUGF5
+      Print("NEXT PAIR TO HANDLE IN INTERRED ALGORITHM\n");
+      Print("-------------------------------------------------\n");
+      pWrite(pHead(strat->P.p));
+      pWrite(pHead(strat->P.p1));
+      pWrite(pHead(strat->P.p2));
+      printf("%d\n",strat->tl);
+      Print("-------------------------------------------------\n");
+#endif
+      if (pNext(strat->P.p) == strat->tail)
+      {
+        // deletes the short spoly
+#ifdef HAVE_RINGS
+        if (rField_is_Ring(currRing))
+          pLmDelete(strat->P.p);
+        else
+#endif
+          pLmFree(strat->P.p);
+
+        // TODO: needs some masking
+        // TODO: masking needs to vanish once the signature
+        //       sutff is completely implemented
+        strat->P.p = NULL;
+        poly m1 = NULL, m2 = NULL;
+
+        // check that spoly creation is ok
+        while (strat->tailRing != currRing &&
+            !kCheckSpolyCreation(&(strat->P), strat, m1, m2))
+        {
+          assume(m1 == NULL && m2 == NULL);
+          // if not, change to a ring where exponents are at least
+          // large enough
+          if (!kStratChangeTailRing(strat))
+          {
+            WerrorS("OVERFLOW...");
+            break;
+          }
+        }
+        // create the real one
+        ksCreateSpoly(&(strat->P), NULL, strat->use_buckets,
+            strat->tailRing, m1, m2, strat->R);
+      }
+      else if (strat->P.p1 == NULL)
+      {
+        if (strat->minim > 0)
+          strat->P.p2=p_Copy(strat->P.p, currRing, strat->tailRing);
+        // for input polys, prepare reduction
+        strat->P.PrepareRed(strat->use_buckets);
+      }
+
+      if (strat->P.p == NULL && strat->P.t_p == NULL)
+      {
+        red_result = 0;
+      }
+      else
+      {
+        if (TEST_OPT_PROT)
+          message((strat->honey ? strat->P.ecart : 0) + strat->P.pFDeg(),
+              &olddeg,&reduc,strat, red_result);
+
+#ifdef DEBUGF5
+        Print("Poly before red: ");
+        pWrite(strat->P.p);
+#endif
+        /* complete reduction of the element choosen from L */
+        red_result = strat->red2(&strat->P,strat);
+        if (errorreported)  break;
+      }
+
+      if (strat->overflow)
+      {
+        if (!kStratChangeTailRing(strat)) { Werror("OVERFLOW.."); break;}
+      }
+
+      // reduction to non-zero new poly
+      if (red_result == 1)
+      {
+        // get the polynomial (canonicalize bucket, make sure P.p is set)
+        strat->P.GetP(strat->lmBin);
+        // in the homogeneous case FDeg >= pFDeg (sugar/honey)
+        // but now, for entering S, T, we reset it
+        // in the inhomogeneous case: FDeg == pFDeg
+        if (strat->homog) strat->initEcart(&(strat->P));
+
+        /* statistic */
+        if (TEST_OPT_PROT) PrintS("s");
+
+        int pos=posInS(strat,strat->sl,strat->P.p,strat->P.ecart);
+
+#ifdef KDEBUG
+#if MYTEST
+        PrintS("New S: "); pDebugPrint(strat->P.p); PrintLn();
+#endif /* MYTEST */
+#endif /* KDEBUG */
+
+        // reduce the tail and normalize poly
+        // in the ring case we cannot expect LC(f) = 1,
+        // therefore we call pContent instead of pNorm
+        if ((TEST_OPT_INTSTRATEGY) || (rField_is_Ring(currRing)))
+        {
+          strat->P.pCleardenom();
+          if ((TEST_OPT_REDSB)||(TEST_OPT_REDTAIL))
+          {
+            strat->P.p = redtailBba(&(strat->P),pos-1,strat, withT);
+            strat->P.pCleardenom();
+          }
+        }
+        else
+        {
+          strat->P.pNorm();
+          if ((TEST_OPT_REDSB)||(TEST_OPT_REDTAIL))
+            strat->P.p = redtailBba(&(strat->P),pos-1,strat, withT);
+        }
+#ifdef KDEBUG
+        if (TEST_OPT_DEBUG){PrintS("new s:");strat->P.wrp();PrintLn();}
+        //#if MYTEST
+#if 1
+        PrintS("New (reduced) S: "); pDebugPrint(strat->P.p); PrintLn();
+#endif /* MYTEST */
+#endif /* KDEBUG */
+
+        // min_std stuff
+        if ((strat->P.p1==NULL) && (strat->minim>0))
+        {
+          if (strat->minim==1)
+          {
+            strat->M->m[minimcnt]=p_Copy(strat->P.p,currRing,strat->tailRing);
+            p_Delete(&strat->P.p2, currRing, strat->tailRing);
+          }
+          else
+          {
+            strat->M->m[minimcnt]=strat->P.p2;
+            strat->P.p2=NULL;
+          }
+          if (strat->tailRing!=currRing && pNext(strat->M->m[minimcnt])!=NULL)
+            pNext(strat->M->m[minimcnt])
+              = strat->p_shallow_copy_delete(pNext(strat->M->m[minimcnt]),
+                  strat->tailRing, currRing,
+                  currRing->PolyBin);
+          minimcnt++;
+        }
+
+        // compute new bunch of principal syzygies: if and only if the element to
+        // be added has a new component in its signature, i.e. a new incremental
+        // step starts in the next iteration
+        // enter into S, L, and T
+        //if ((!TEST_OPT_IDLIFT) || (pGetComp(strat->P.p) <= strat->syzComp))
+        enterT(strat->P, strat);
+        // posInS only depends on the leading term
+        strat->enterS(strat->P, pos, strat, strat->tl);
+        //#if 1
+#if DEBUGF50
+        Print("ELEMENT ADDED TO GCURR DURING INTERRED: ");
+        pWrite(pHead(strat->S[strat->sl]));
+        //pWrite(strat->sig[strat->sl]);
+#endif
+        /*
+           if (newrules)
+           {
+           newrules  = FALSE;
+           }
+           */
+#if 0
+        int pl=pLength(strat->P.p);
+        if (pl==1)
+        {
+          //if (TEST_OPT_PROT)
+          //PrintS("<1>");
+        }
+        else if (pl==2)
+        {
+          //if (TEST_OPT_PROT)
+          //PrintS("<2>");
+        }
+#endif
+        if (hilb!=NULL) khCheck(Q,w,hilb,hilbeledeg,hilbcount,strat);
+        //      Print("[%d]",hilbeledeg);
+        if (strat->P.lcm!=NULL)
+#ifdef HAVE_RINGS
+          pLmDelete(strat->P.lcm);
+#else
+        pLmFree(strat->P.lcm);
+#endif
+        if (strat->sl>srmax) srmax = strat->sl;
+      }
+      else
+      {
+        // adds signature of the zero reduction to
+        // strat->syz. This is the leading term of
+        // syzygy and can be used in syzCriterion()
+        // the signature is added if and only if the
+        // pair was not detected by the rewritten criterion in strat->red = redSig
+        if (strat->P.p1 == NULL && strat->minim > 0)
+        {
+          p_Delete(&strat->P.p2, currRing, strat->tailRing);
+        }
+      }
+
+#ifdef KDEBUG
+      memset(&(strat->P), 0, sizeof(strat->P));
+#endif /* KDEBUG */
+      kTest_TS(strat);
+#endif
+      // initialize new syzygy rules for the next iteration step  
+      initSyzRules(strat);
+    }
+    /*********************************************************************
+     * interrreduction step is done, we can go on with the next iteration
+     * step of the signature-based algorithm
+     ********************************************************************/
     /* picks the last element from the lazyset L */
     strat->P = strat->L[strat->Ll];
     strat->Ll--;
