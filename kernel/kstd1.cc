@@ -1104,6 +1104,7 @@ void initBba(ideal F,kStrategy strat)
   // standard basis computations
   strat->red          = redSig;
   strat->incremental  = TRUE;
+  strat->currIdx      = 1;
 }
 
 void initMora(ideal F,kStrategy strat)

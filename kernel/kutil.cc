@@ -1058,6 +1058,8 @@ void enterL (LSet *set,int *length, int *LSetmax, LObject p,int at)
   for(k=0;k<=(*length);k++)
   {
     pWrite((*set)[k].sig);
+    printf("TP  ");
+    pWrite(pHead((*set)[k].t_p));
     pWrite(pHead((*set)[k].p1));
     pWrite(pHead((*set)[k].p2));
   }
@@ -2657,8 +2659,9 @@ void initenterpairs (poly h,int k,int ecart,int isFromQ,kStrategy strat, int atR
         new_pair=TRUE;
         for (j=0; j<=k; j++)
         {
+          Print("j:%d, Ll:%d\n",j,strat->Ll);
           strat->enterOnePair(j,h,ecart,isFromQ,strat, atR);
-          //Print("j:%d, Ll:%d\n",j,strat->Ll);
+          Print("j:%d, Ll:%d\n",j,strat->Ll);
         }
       }
     }
@@ -3504,7 +3507,7 @@ void enterpairs (poly h,int k,int ecart,int pos,kStrategy strat, int atR)
     loop
     {
       if (j > k) break;
-      clearS(h,h_sev, &j,&k,strat);
+      //clearS(h,h_sev, &j,&k,strat);
       j++;
     }
     //Print("end clearS sl=%d\n",strat->sl);
@@ -3601,7 +3604,7 @@ else
 }
 
 /*2
-*reorders  s with respect to posInS,
+*reorders s with respect to posInS,
 *suc is the first changed index or zero
 */
 
@@ -5559,6 +5562,7 @@ void initSL (ideal F, ideal Q,kStrategy strat)
       h.sig = pInit();
       p_SetCoeff(h.sig,nInit(1),currRing);
       p_SetComp(h.sig,i+1,currRing);
+      h.sevSig = pGetShortExpVector(h.sig);
 #ifdef DEBUGF5
       pWrite(h.p);
       pWrite(h.sig);
