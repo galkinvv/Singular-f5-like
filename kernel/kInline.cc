@@ -534,6 +534,7 @@ KINLINE void sLObject::PrepareRed(BOOLEAN use_bucket)
       assume(l == ::pLength(tp));
       bucket = kBucketCreate(tailRing);
       kBucketInit(bucket, pNext(tp), l-1);
+      kbTest(bucket);
       pNext(tp) = NULL;
       if (p != NULL) pNext(p) = NULL;
       pLength = 0;
