@@ -6371,11 +6371,17 @@ void enterSBba (LObject p,int atS,kStrategy strat, int atR)
   else
     assume(p.sev == pGetShortExpVector(p.p));
   strat->sevS[atS] = p.sev;
-  if (p.sevSig == 0)
-    p.sevSig = pGetShortExpVector(p.sig);
-  else
-    assume(p.sevSig == pGetShortExpVector(p.sig));
-  strat->sevSig[atS] = p.sevSig; // TODO: get the correct signature in here!
+  // during the interreduction process of a signature-based algorithm we do not
+  // compute the signature at this point, but when the whole interreduction
+  // process finishes, i.e. f5c terminates!
+  if (p.sig != NULL)
+  {
+    if (p.sevSig == 0)
+      p.sevSig = pGetShortExpVector(p.sig);
+    else
+      assume(p.sevSig == pGetShortExpVector(p.sig));
+    strat->sevSig[atS] = p.sevSig; // TODO: get the correct signature in here!
+  }
   strat->ecartS[atS] = p.ecart;
   strat->fromS[atS] = p.from;
   strat->S_2_R[atS] = atR;
