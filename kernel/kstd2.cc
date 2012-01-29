@@ -598,6 +598,7 @@ int redSig (LObject* h,kStrategy strat)
     pWrite(pHead(strat->T[ii].p));
     Print("--------------------------------\n");
 #endif
+    printf("INDEX OF REDUCER T: %d\n",ii);
     sigSafe = ksReducePolySig(h, &(strat->T[ii]), strat->S_2_R[ii], NULL, NULL, strat);
     // if reduction has taken place, i.e. the reduction was sig-safe
     // otherwise start is already at the next position and the loop
@@ -1720,15 +1721,15 @@ void f5c (kStrategy strat, int& olddeg, int& minimcnt, int& hilbeledeg,
   reduc = olddeg = lrmax = 0;
   // we cannot use strat->T anymore
   //cleanT(strat);
-  strat->tl = -1;
+  //strat->tl = -1;
   Ll_old    = strat->Ll;
   printf("NEW ROUND\n");
-  while (strat->sl >= 0)
+  while (strat->tl >= 0)
   {
     LObject h;
-    h.p = strat->S[strat->sl];
-    h.tailRing = strat->tailRing;
-    h.GetTP();
+    h.p = strat->T[strat->tl].p;
+    h.tailRing = strat->T[strat->tl].tailRing;
+    h.t_p = strat->T[strat->tl].t_p;
     if (h.p!=NULL)
     {
       if (pOrdSgn==-1)
@@ -1749,19 +1750,20 @@ void f5c (kStrategy strat, int& olddeg, int& minimcnt, int& hilbeledeg,
         }
         strat->initEcart(&h);
         pos = strat->Ll+1;
-        h.sev = strat->sevS[strat->sl];
+        h.sev = pGetShortExpVector(h.p);
         enterL(&strat->L,&strat->Ll,&strat->Lmax,h,pos);
       }
     }
-    strat->sl--;
+    strat->tl--;
   }
+  strat->sl = -1;
 #if 0
 //#ifdef HAVE_TAIL_RING
   if(!rField_is_Ring())  // create strong gcd poly computes with tailring and S[i] ->to be fixed
     kStratInitChangeTailRing(strat);
 #endif
   //enterpairs(pOne(),0,0,-1,strat,strat->tl);
-  strat->sl = -1;
+  //strat->sl = -1;
   /* picks the last element from the lazyset L */
   while (strat->Ll>Ll_old)
   {
@@ -1912,19 +1914,18 @@ void f5c (kStrategy strat, int& olddeg, int& minimcnt, int& hilbeledeg,
 
       // enter into S, L, and T
       // here we need to recompute new signatures, but those are trivial ones
+      /*
       strat->P.sig = pOne();
       p_SetComp(strat->P.sig,strat->sl+2,currRing);
       strat->P.sevSig = pGetShortExpVector(strat->P.sig);
+      */
       Print("ELEMENT P DURING INTERRED: ");
       pWrite(pHead(strat->P.p));
-      pWrite(strat->P.sig);
+      //pWrite(strat->P.sig);
       //if ((!TEST_OPT_IDLIFT) || (pGetComp(strat->P.p) <= strat->syzComp))
       enterT(strat->P, strat);
       // posInS only depends on the leading term
       strat->enterS(strat->P, pos, strat, strat->tl);
-      Print("ELEMENT P DURING INTERRED: ");
-      pWrite(pHead(strat->P.p));
-      pWrite(strat->P.sig);
 #if 1
 //#if DEBUGF50
       Print("ELEMENT ADDED TO GCURR DURING INTERRED: ");
@@ -1957,28 +1958,54 @@ void f5c (kStrategy strat, int& olddeg, int& minimcnt, int& hilbeledeg,
 #ifdef KDEBUG
     memset(&(strat->P), 0, sizeof(strat->P));
 #endif /* KDEBUG */
+    int cc = 0;
+    while (cc<strat->tl+1)
+    {
+      strat->T[cc].sig    = pOne();
+      p_SetComp(strat->T[cc].sig,cc+1,currRing);
+      strat->T[cc].sevSig = pGetShortExpVector(strat->T[cc].sig);
+      strat->sig[cc]      = strat->T[cc].sig;
+      strat->sevSig[cc]   = strat->T[cc].sevSig;
+      pWrite(pHead(strat->S[cc]));
+      pWrite(strat->sig[cc]);
+      printf("- - - - - -\n");
+      cc++;
+    }
 #ifdef DEBUGF5
-  Print("--- LIST L INTERRED ---\n");
-  int k;
-  for(k=0;k<=strat->Ll;k++)
-  {
-    pWrite(strat->L[k].sig);
-    pWrite(pHead(strat->L[k].p));
-    pWrite(pHead(strat->L[k].p1));
-    pWrite(pHead(strat->L[k].p2));
-  }
-  Print("--- LIST L INTERRED END ---\n");
+    Print("--- LIST L INTERRED ---\n");
+    int k;
+    for(k=0;k<=strat->Ll;k++)
+    {
+      pWrite(strat->L[k].sig);
+      pWrite(pHead(strat->L[k].p));
+      pWrite(pHead(strat->L[k].p1));
+      pWrite(pHead(strat->L[k].p2));
+    }
+    Print("--- LIST L INTERRED END ---\n");
 #endif
     kTest_TS(strat);
   }
   Print("------------------- STRAT S ---------------------\n");
-  int cc = strat->sl;
-  while (cc>-1)
+  int cc = 0;
+  while (cc<strat->tl+1)
   {
+    strat->T[cc].sig = pOne();
+    p_SetComp(strat->T[cc].sig,cc+1,currRing);
+    strat->T[cc].sevSig = pGetShortExpVector(strat->T[cc].sig);
     pWrite(pHead(strat->S[cc]));
     pWrite(strat->sig[cc]);
     printf("- - - - - -\n");
-    cc--;
+    cc++;
+  }
+  Print("-------------------------------------------------\n");
+  Print("------------------- STRAT T ---------------------\n");
+  cc = 0;
+  while (cc<strat->tl+1)
+  {
+    pWrite(pHead(strat->T[cc].p));
+    pWrite(strat->T[cc].sig);
+    printf("- - - - - -\n");
+    cc++;
   }
   Print("-------------------------------------------------\n");
   int comp = strat->sl+2;
