@@ -60,6 +60,8 @@
 /* shiftgb stuff */
 #include <kernel/shiftgb.h>
 
+long zeroreductions = 0;
+
   int (*test_PosInT)(const TSet T,const int tl,LObject &h);
   int (*test_PosInL)(const LSet set, const int length,
                 LObject* L,const kStrategy strat);
@@ -505,7 +507,7 @@ int redHomog (LObject* h,kStrategy strat)
 int redSig (LObject* h,kStrategy strat)
 {
   // check with rewCriterion again!
-  if (rewCriterion(h->sig,~h->sevSig,strat,h->checked+1))
+  if ( rewCriterion(h->sig,~h->sevSig,strat,h->checked+1) )
   {
     if (h->lcm!=NULL)
       pLmFree(h->lcm);
@@ -1466,7 +1468,9 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       // the signature is added if and only if the
       // pair was not detected by the rewritten criterion in strat->red = redSig
       if (red_result!=2) {
+        zeroreductions++;
         enterSyz(strat->P,strat);
+//#if 1
 #ifdef DEBUGF5
         Print("ADDING STUFF TO SYZ :  ");
         pWrite(strat->P.sig);
@@ -1567,6 +1571,8 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
     oo++;
   }
 #endif
+  printf("ZERO REDUCTIONS: %ld\n",zeroreductions);
+  zeroreductions = 0;
   return (strat->Shdl);
 }
 

@@ -1745,6 +1745,7 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
   // set coeffs of multipliers m1 and m2
   pSetCoeff0(m1, nInit(1));
   pSetCoeff0(m2, nInit(1));
+//#if 1
 #ifdef DEBUGF5
   Print("P1  ");
   pWrite(pHead(p));
@@ -1762,6 +1763,7 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
   pSigMultNegSev = ~p_GetShortExpVector(pSigMult,currRing);
   sSigMult = currRing->p_Procs->pp_Mult_mm(sSigMult,m2,currRing,last);
   sSigMultNegSev = ~p_GetShortExpVector(sSigMult,currRing);
+//#if 1
 #ifdef DEBUGF5
   Print("----------------\n");
   pWrite(pSigMult);
@@ -5675,7 +5677,7 @@ void initSyzRules (kStrategy strat)
         j++;
         for (k = 0; k<i; k++)
         {
-          poly p = pInit();
+          poly p = pOne();
           pLcm(strat->S[k],strat->S[i],p);
           strat->syz[ctr] = p;
           p_SetCompP (strat->syz[ctr], comp, currRing);
@@ -6495,6 +6497,21 @@ void enterSyz(LObject p, kStrategy strat)
   Print("last element in strat->syz: %d--%d  ",i+1,strat->syzmax);
   pWrite(strat->syz[i]);
 #endif
+  // recheck pairs in strat->L with new rule and delete correspondingly
+  int cc = strat->Ll;
+  printf("ENTERSYZTEST WITH  ");
+  pWrite(strat->syz[strat->syzl-1]);
+  printf("-----------------------\n");
+  while (cc>-1)
+  {
+    if (p_LmShortDivisibleBy( strat->syz[strat->syzl-1], strat->sevSyz[strat->syzl-1], 
+                              strat->L[cc].sig, ~strat->L[cc].sevSig, currRing))
+    {
+      deleteInL(strat->L,&strat->Ll,cc,strat);
+    }
+    cc--;
+  }
+
 }
 
 void initHilbCrit(ideal F, ideal Q, intvec **hilb,kStrategy strat)
