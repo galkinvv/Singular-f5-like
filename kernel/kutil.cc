@@ -5675,7 +5675,9 @@ void initSyzRules (kStrategy strat)
         j++;
         for (k = 0; k<i; k++)
         {
-          strat->syz[ctr] = pCopy (p_Head(strat->S[k], currRing));
+          poly p = pInit();
+          pLcm(strat->S[k],strat->S[i],p);
+          strat->syz[ctr] = p;
           p_SetCompP (strat->syz[ctr], comp, currRing);
 #ifdef DEBUGF5 || DEBUGF51
           pWrite(strat->syz[ctr]);
