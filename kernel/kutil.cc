@@ -6499,9 +6499,6 @@ void enterSyz(LObject p, kStrategy strat)
 #endif
   // recheck pairs in strat->L with new rule and delete correspondingly
   int cc = strat->Ll;
-  printf("ENTERSYZTEST WITH  ");
-  pWrite(strat->syz[strat->syzl-1]);
-  printf("-----------------------\n");
   while (cc>-1)
   {
     if (p_LmShortDivisibleBy( strat->syz[strat->syzl-1], strat->sevSyz[strat->syzl-1], 
