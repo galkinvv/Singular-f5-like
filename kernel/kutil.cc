@@ -4882,6 +4882,9 @@ BOOLEAN syzCriterion(poly sig, unsigned long not_sevSig, kStrategy strat)
   else
   {
     min = strat->syzIdx[comp-2];
+    //printf("SYZIDX %d/%d\n",strat->syzIdx[comp-2],comp-2);
+    //printf("SYZIDX %d/%d\n",strat->syzIdx[comp-1],comp-1);
+    //printf("SYZIDX %d/%d\n",strat->syzIdx[comp],comp);
     if (comp == strat->currIdx)
     {
       max = strat->syzl;
@@ -4893,7 +4896,8 @@ BOOLEAN syzCriterion(poly sig, unsigned long not_sevSig, kStrategy strat)
     for (int k=min; k<max; k++)
     {
 #ifdef DEBUGF5
-      Print("checking with: %ld --  ",k);
+      printf("COMP %d/%d - MIN %d - MAX %d - SYZL %d\n",comp,strat->currIdx,min,max,strat->syzl);
+      Print("checking with: %d --  ",k);
       pWrite(pHead(strat->syz[k]));
 #endif
       if (p_LmShortDivisibleBy(strat->syz[k], strat->sevSyz[k], sig, not_sevSig, currRing))
@@ -4909,7 +4913,7 @@ BOOLEAN syzCriterion(poly sig, unsigned long not_sevSig, kStrategy strat)
 BOOLEAN rewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start)
 {
 #ifdef DEBUGF5
-  Print("rewritten criterion checks:  ");
+  printf("rewritten criterion checks:  ");
   pWrite(sig);
 #endif
   for(int k = start; k<strat->sl+1; k++)
@@ -5635,7 +5639,7 @@ void initSyzRules (kStrategy strat)
       omFreeSize(strat->sevSyz,(strat->syzmax)*sizeof(int));
       omFreeSize(strat->syz,(strat->syzmax)*sizeof(poly));
     }
-    int i, j, k, comp, ps=0, ctr=0;
+    int i, j, k, diff, comp, comp_old, ps=0, ctr=0;
     /************************************************************
      * computing the length of the syzygy array needed
      ***********************************************************/
@@ -5672,7 +5676,22 @@ void initSyzRules (kStrategy strat)
        *********************************************************/
       if (pGetComp(strat->sig[i-1]) != pGetComp(strat->sig[i]))
       {
-        comp = pGetComp(strat->sig[i]);
+        comp      = pGetComp(strat->sig[i]);
+        comp_old  = pGetComp(strat->sig[i-1]);
+        diff      = comp - comp_old - 1;
+        // diff should be zero, but sometimes also the initial generating
+        // elements of the input ideal reduce to zero. then there is an
+        // index-gap between the signatures. for these inbetween signatures we
+        // can safely set syzIdx[j] = 0 as no such element will be ever computed
+        // in the following.
+        // doing this, we keep the relation "j = comp - 2" alive, which makes
+        // jumps way easier when checking criteria
+        while (diff>0)
+        {
+          strat->syzIdx[j]  = 0;
+          diff--;
+          j++;
+        }
         strat->syzIdx[j]  = ctr;
         j++;
         for (k = 0; k<i; k++)
@@ -5693,7 +5712,22 @@ void initSyzRules (kStrategy strat)
     /**************************************************************
     * add syzygies for upcoming first element of new iteration step
     **************************************************************/
-    comp = strat->currIdx;
+    comp      = strat->currIdx;
+    comp_old  = pGetComp(strat->sig[i-1]);
+    diff      = comp - comp_old - 1;
+    // diff should be zero, but sometimes also the initial generating
+    // elements of the input ideal reduce to zero. then there is an
+    // index-gap between the signatures. for these inbetween signatures we
+    // can safely set syzIdx[j] = 0 as no such element will be ever computed
+    // in the following.
+    // doing this, we keep the relation "j = comp - 2" alive, which makes
+    // jumps way easier when checking criteria
+    while (diff>0)
+    {
+      strat->syzIdx[j]  = 0;
+      diff--;
+      j++;
+    }
     strat->syzIdx[j]  = ctr;
     for (k = 0; k<strat->sl+1; k++)
     {
