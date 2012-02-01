@@ -4875,36 +4875,16 @@ BOOLEAN syzCriterion(poly sig, unsigned long not_sevSig, kStrategy strat)
   Print("syzygy criterion checks:  ");
   pWrite(sig);
 #endif
-  int comp = p_GetComp(sig, currRing);
-  int min, max;
-  if (comp<=1)
-    return FALSE;
-  else
+  for (int k=0; k<strat->syzl; k++)
   {
-    min = strat->syzIdx[comp-2];
-    //printf("SYZIDX %d/%d\n",strat->syzIdx[comp-2],comp-2);
-    //printf("SYZIDX %d/%d\n",strat->syzIdx[comp-1],comp-1);
-    //printf("SYZIDX %d/%d\n",strat->syzIdx[comp],comp);
-    if (comp == strat->currIdx)
-    {
-      max = strat->syzl;
-    }
-    else
-    {
-      max = strat->syzIdx[comp-1];
-    }
-    for (int k=min; k<max; k++)
-    {
 #ifdef DEBUGF5
-      printf("COMP %d/%d - MIN %d - MAX %d - SYZL %d\n",comp,strat->currIdx,min,max,strat->syzl);
-      Print("checking with: %d --  ",k);
-      pWrite(pHead(strat->syz[k]));
+    Print("checking with: %d --  ",k);
+    pWrite(pHead(strat->syz[k]));
 #endif
-      if (p_LmShortDivisibleBy(strat->syz[k], strat->sevSyz[k], sig, not_sevSig, currRing))
-        return TRUE;
-    }
-    return FALSE;
+    if (p_LmShortDivisibleBy(strat->syz[k], strat->sevSyz[k], sig, not_sevSig, currRing))
+      return TRUE;
   }
+  return FALSE;
 }
 
 /*

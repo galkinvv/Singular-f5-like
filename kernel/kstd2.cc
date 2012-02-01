@@ -519,14 +519,16 @@ int redSig (LObject* h,kStrategy strat)
   //printf("FDEGS: %ld -- %ld\n",h->FDeg, h->pFDeg());
   assume(h->FDeg == h->pFDeg());
 #ifdef DEBUGF5
-  Print("------- IN REDSIG -------\n");
-  Print("p: ");
+  /*
+  printf("------- IN REDSIG -------\n");
+  printf("p: ");
   pWrite(pHead(h->p));
-  Print("p1: ");
+  printf("p1: ");
   pWrite(pHead(h->p1));
-  Print("p2: ");
+  printf("p2: ");
   pWrite(pHead(h->p2));
-  Print("---------------------------\n");
+  printf("---------------------------\n");
+  */
 #endif
   poly h_p;
   int i,j,at,pass, ii;
@@ -1243,24 +1245,6 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       if (strat->Ll<0) break;
       else strat->noClearS=TRUE;
     }
-    /*
-    if (strat->incremental && pGetComp(strat->L[strat->Ll].sig) != strat->currIdx)
-    {
-      strat->currIdx  = pGetComp(strat->L[strat->Ll].sig);
-#if F5C
-      // 1. interreduction of the current standard basis
-      // 2. generation of new principal syzygy rules for syzCriterion
-      f5c ( strat, olddeg, minimcnt, hilbeledeg, hilbcount, srmax, 
-            lrmax, reduc, Q, w, hilb );
-#endif
-      // initialize new syzygy rules for the next iteration step  
-      initSyzRules(strat);
-    }
-    */
-    /*********************************************************************
-     * interrreduction step is done, we can go on with the next iteration
-     * step of the signature-based algorithm
-     ********************************************************************/
     /* picks the last element from the lazyset L */
     strat->P = strat->L[strat->Ll];
     strat->Ll--;
@@ -1387,7 +1371,7 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       if (TEST_OPT_DEBUG){PrintS("new s:");strat->P.wrp();PrintLn();}
 //#if MYTEST
 #if 1
-      PrintS("New (reduced) S: "); pDebugPrint(strat->P.p); PrintLn();
+      //PrintS("New (reduced) S: "); pDebugPrint(strat->P.p); PrintLn();
 #endif /* MYTEST */
 #endif /* KDEBUG */
 
@@ -1412,15 +1396,6 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
         minimcnt++;
       }
 
-      // compute new bunch of principal syzygies: if and only if the element to
-      // be added has a new component in its signature, i.e. a new incremental
-      // step starts in the next iteration
-      if (strat->incremental && pGetComp(strat->P.sig) != strat->currIdx)
-      {
-        strat->currIdx  = pGetComp(strat->P.sig);
-        initSyzRules(strat);
-        //newrules        = TRUE;
-      }
       // enter into S, L, and T
       //if ((!TEST_OPT_IDLIFT) || (pGetComp(strat->P.p) <= strat->syzComp))
         enterT(strat->P, strat);
