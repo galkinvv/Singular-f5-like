@@ -366,20 +366,8 @@ proc cyclicn(int z)
 proc cyclicnh(int z)
 {
    int n = z;
-   ring R = 32003,(x(0..(n-1)),h),(C,dp);
+   ring R = 32003,(x(0..(n-1)),h),dp;
    ideal i = homog(cyclic(n),h);
-   export(R);
-   export(i);
-   return();
-}
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-proc jason210()
-{
-   ring R = 101,(a,b,c,d,e,f,g,h),(C,dp);
-   ideal i = a6, b6, a2c4+b2d4+abc2e2+abd2f2+abcdeg+abcdfh;
    export(R);
    export(i);
    return();
@@ -973,7 +961,7 @@ proc f855h()
 proc schrans_troost()
 {
 
-  ring R = 32003,(x(1..8),h),dp;
+  ring R = 32003,(x(1..8),h),(C,dp);
 
   poly p1= 8*x(1)^2 + 8*x(1)*x(2) + 8*x(1)*x(3) - 8*x(2)*x(3) + 2*x(1)*x(4) + 2*x(1)*x(5) + 2*x(1)*x(6) - 2*x(5)*x(6) + 2*x(1)*x(7) - 2*x(4)*x(7) - x(1)*h;
   poly p2= 8*x(1)*x(2) + 8*x(2)^2 - 8*x(1)*x(3) + 8*x(2)*x(3) + 2*x(2)*x(4) + 2*x(2)*x(5) + 2*x(2)*x(6) - 2*x(4)*x(6) + 2*x(2)*x(7) - 2*x(5)*x(7) - x(2)*h;
@@ -1047,7 +1035,7 @@ return();
 
 proc vermeer()
 {
-        ring R = 7583,(w,v,u,y,x),(C,dp);
+        ring R = 0,(w,v,u,y,x),(C,dp);
         
 ideal i = x^2-2*x*u+u^2+y^2-2*y*v+v^2-1,
  v^2-u^3,
@@ -1271,7 +1259,7 @@ proc filter9()
 
 proc ilias12()
 {
-    ring R = 7583, (A,C,D,L,a,c,d,l), (C,dp);
+    ring R = 0, (A,C,D,L,a,c,d,l), (C,dp);
 
 
     ideal i =  A-C+2*D-2*L,
@@ -1298,7 +1286,7 @@ proc ilias12()
 
 proc ilias13()
 {
-    ring R = 7583, (S1,s1,d1,S2,D2,s2,d2), (C,dp);
+    ring R = 0, (S1,s1,d1,S2,D2,s2,d2), (C,dp);
 
 
     ideal i = 16-16*S1+20*D2^2+8*S1*S2-4*S2^2,
