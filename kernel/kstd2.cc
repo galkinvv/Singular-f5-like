@@ -1413,12 +1413,14 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       // compute new bunch of principal syzygies: if and only if the element to
       // be added has a new component in its signature, i.e. a new incremental
       // step starts in the next iteration
+      /*
       if (strat->incremental && pGetComp(strat->P.sig) != strat->currIdx)
       {
         strat->currIdx  = pGetComp(strat->P.sig);
         initSyzRules(strat);
         //newrules        = TRUE;
       }
+      */
       // enter into S, L, and T
       //if ((!TEST_OPT_IDLIFT) || (pGetComp(strat->P.p) <= strat->syzComp))
         enterT(strat->P, strat);
