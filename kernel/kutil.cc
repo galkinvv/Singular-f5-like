@@ -1021,7 +1021,7 @@ void deleteInL (LSet set, int *length, int j,kStrategy strat)
 */
 void enterL (LSet *set,int *length, int *LSetmax, LObject p,int at)
 {
-#ifdef DEBUGF5
+#ifdef DEBUGF53
   Print("--- LIST L BEFORE---\n");
   int k;
   for(k=0;k<=(*length);k++)
@@ -1053,7 +1053,7 @@ void enterL (LSet *set,int *length, int *LSetmax, LObject p,int at)
   else at = 0;
   (*set)[at] = p;
   (*length)++;
-#ifdef DEBUGF5
+#ifdef DEBUGF53
   Print("--- LIST L ---\n");
   for(k=0;k<=(*length);k++)
   {
@@ -4870,14 +4870,15 @@ loop
  */
 BOOLEAN syzCriterion(poly sig, unsigned long not_sevSig, kStrategy strat)
 {
-//#if 1
-#ifdef DEBUGF5
+#if 0
+//#ifdef DEBUGF5
   Print("syzygy criterion checks:  ");
   pWrite(sig);
 #endif
   for (int k=0; k<strat->syzl; k++)
   {
-#ifdef DEBUGF5
+#if 0
+//#ifdef DEBUGF5
     Print("checking with: %d --  ",k);
     pWrite(pHead(strat->syz[k]));
 #endif
@@ -4892,13 +4893,15 @@ BOOLEAN syzCriterion(poly sig, unsigned long not_sevSig, kStrategy strat)
  */
 BOOLEAN rewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start)
 {
-#ifdef DEBUGF5
+#if 0
+//#ifdef DEBUGF5
   printf("rewritten criterion checks:  ");
   pWrite(sig);
 #endif
   for(int k = start; k<strat->sl+1; k++)
   {
-#ifdef DEBUGF5
+#if 0
+//#ifdef DEBUGF5
     Print("checking with:  ");
     pWrite(strat->sig[k]);
     pWrite(pHead(strat->S[k]));
@@ -4908,7 +4911,8 @@ BOOLEAN rewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int st
       return TRUE;
     }
   }
-#ifdef DEBUGF5
+#if 0
+//#ifdef DEBUGF5
   Print("ALL ELEMENTS OF S\n----------------------------------------\n");
   for(int kk = 0; kk<strat->sl+1; kk++)
   {

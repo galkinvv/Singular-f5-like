@@ -593,8 +593,8 @@ int redSig (LObject* h,kStrategy strat)
     }
 #endif
     assume(strat->fromT == FALSE);
-//#if 1
-#ifdef DEBUGF5
+#if 0
+//#ifdef DEBUGF5
     Print("BEFORE REDUCTION WITH %d:\n",ii);
     Print("--------------------------------\n");
     pWrite(h->sig);
@@ -1981,7 +1981,8 @@ void f5c (kStrategy strat, int& olddeg, int& minimcnt, int& hilbeledeg,
     p_SetComp(strat->L[cd].sig,cc+1,currRing);
     cc++;
   }
-#if DEBUGF5
+#if 0
+//#if DEBUGF5
   Print("------------------- STRAT S ---------------------\n");
   cc = 0;
   while (cc<strat->tl+1)

@@ -213,8 +213,8 @@ int ksReducePolySig(LObject* PR,
     poly f2 = PW->GetLmCurrRing();
     poly sigMult = pCopy(PW->sig);   // copy signature of reducer
     p_ExpVectorSub(f1, f2, currRing); // Calculate the Monomial we must multiply to p2
-//#if 1
-#ifdef DEBUGF5
+#if 0
+//#ifdef DEBUGF5
     printf("IN KSREDUCEPOLYSIG: \n");
     pWrite(pHead(f1));
     pWrite(pHead(f2));
@@ -222,8 +222,8 @@ int ksReducePolySig(LObject* PR,
     printf("--------------\n");
 #endif
     sigMult = pp_Mult_qq(f1,sigMult,currRing);
-//#if 1
-#ifdef DEBUGF5
+#if 0
+//#ifdef DEBUGF5
     pWrite(pHead(f1));
     pWrite(pHead(f2));
     pWrite(sigMult);
@@ -247,8 +247,8 @@ int ksReducePolySig(LObject* PR,
     }
     pDelete(&f1);
     pDelete(&sigMult);
-//#if 1
-#ifdef DEBUGF5
+#if 0
+//#ifdef DEBUGF5
     printf("SIGSAFE: %d\n",sigSafe);
 #endif
     // go on with the computations only if the signature of p2 is greater than the
