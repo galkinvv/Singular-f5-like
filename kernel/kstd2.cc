@@ -1243,6 +1243,7 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       if (strat->Ll<0) break;
       else strat->noClearS=TRUE;
     }
+    /*
     if (strat->incremental && pGetComp(strat->L[strat->Ll].sig) != strat->currIdx)
     {
       strat->currIdx  = pGetComp(strat->L[strat->Ll].sig);
@@ -1255,6 +1256,7 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       // initialize new syzygy rules for the next iteration step  
       initSyzRules(strat);
     }
+    */
     /*********************************************************************
      * interrreduction step is done, we can go on with the next iteration
      * step of the signature-based algorithm
