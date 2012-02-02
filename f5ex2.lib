@@ -405,7 +405,7 @@ proc wu90()
 proc czapor87h()
 {
 
-  ring R = (0,c1,c2,c3,c4,d1,d2,d3,d4),(x,y,z,w,h),(C,dp);
+  ring R = (32003,c1,c2,c3,c4,d1,d2,d3,d4),(x,y,z,w,h),(C,dp);
 
   ideal i=
   x^2*d4+9*x*y+y^2*c4-3*y*z-2*z^2-6*x*w+4*y*w+10*z*w+2*w^2+3*x*h+8*y*h+3*z*h+9*w*h-7*h^2,
