@@ -450,7 +450,7 @@ proc ahml()
 proc fronville()
 {
 
-  ring R = (0),(Ap, Fpp, Bp, App, Fp, Epp, Ep, dpp, Cp, Bpp, dp, Cpp),(C,dp);
+  ring R = (32003),(Ap, Fpp, Bp, App, Fp, Epp, Ep, dpp, Cp, Bpp, dp, Cpp),(C,dp);
 
   ideal i=
 Bp*Fp-App*Epp+Ep*Cp-dpp*Bpp-dp+Cpp,
