@@ -427,7 +427,7 @@ proc czapor87h()
 proc czapor87_1h()
 {
 
-  ring R = 0,(x,y,z,w,h),(C,dp);
+  ring R = 0,(x,y,z,w,h),(C,lp);
 
   ideal i=
   -8*x*y-4*x*z-2*y*z-5*z^2-8*x*w+y*w+10*z*w+6*w^2-9*x*h+7*y*h-2*z*h-6*w*h+9*h^2,
@@ -449,7 +449,7 @@ proc czapor87_1h()
 proc czapor87_2h()
 {
 
-  ring R = (0),(x,y,z,w,h),(C,dp);
+  ring R = (0),(x,y,z,w,h),(C,lp);
 
   ideal i=
   -5*x^2-8*x*y+6*y^2-4*x*z-2*y*z-5*z^2-8*x*w+y*w+10*z*w+6*w^2-9*x*h+7*y*h-2*z*h-6*w*h+9*h^2,
