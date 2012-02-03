@@ -1803,7 +1803,7 @@ proc filter9()
 
 proc ilias12()
 {
-    ring R = 0, (A,C,D,L,a,c,d,l), (C,dp);
+    ring R = 32003, (A,C,D,L,a,c,d,l), (C,dp);
 
 
     ideal i =  A-C+2*D-2*L,
@@ -1830,7 +1830,7 @@ proc ilias12()
 
 proc ilias13()
 {
-    ring R = 0, (S1,s1,d1,S2,D2,s2,d2), (C,dp);
+    ring R = 32003, (S1,s1,d1,S2,D2,s2,d2), (C,dp);
 
 
     ideal i = 16-16*S1+20*D2^2+8*S1*S2-4*S2^2,
