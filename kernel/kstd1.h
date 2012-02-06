@@ -26,6 +26,8 @@ ideal kNF1 (ideal F,ideal Q,ideal q, kStrategy strat, int lazyReduce);
 poly kNF (ideal F, ideal Q, poly p,int syzComp=0, int lazyReduce=0);
 ideal kNF(ideal F, ideal Q, ideal p,int syzComp=0, int lazyReduce=0);
 
+ideal kSba(ideal F, ideal Q, tHomog h, intvec ** mw,intvec *hilb=NULL,
+          int syzComp=0,int newIdeal=0, intvec *vw=NULL);
 ideal kStd(ideal F, ideal Q, tHomog h, intvec ** mw,intvec *hilb=NULL,
           int syzComp=0,int newIdeal=0, intvec *vw=NULL);
 
