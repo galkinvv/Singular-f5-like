@@ -41,6 +41,7 @@
   #define F5CTAILRED 0
 #endif
 
+#include <kernel/ring.h>
 #include <kernel/kutil.h>
 #include <kernel/options.h>
 #include <omalloc/omalloc.h>
@@ -1158,6 +1159,10 @@ void kDebugPrint(kStrategy strat);
 
 ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 {
+  // move to Schreyer ordering
+  ring currRingOld  = currRing; 
+  ring schreyerRing = getSchreyerRing();
+  rChangeCurrRing (schreyerRing);
 #ifdef KDEBUG
   bba_count++;
   int loop_count = 0;
@@ -1514,6 +1519,8 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 
   /* release temp data-------------------------------- */
   exitBuchMora(strat);
+  rDelete (schreyerRing);
+  rChangeCurrRing (currRingOld);
   if (TEST_OPT_WEIGHTM)
   {
     pRestoreDegProcs(pFDegOld, pLDegOld);
