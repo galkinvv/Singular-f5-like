@@ -1165,7 +1165,6 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   int   olddeg,reduc;
   int hilbeledeg=1,hilbcount=0,minimcnt=0;
   BOOLEAN withT = FALSE;
-  BOOLEAN newrules  = FALSE;
 
   initBuchMoraCrit(strat); /*set Gebauer, honey, sugarCrit*/
   initBuchMoraPos(strat);
@@ -1173,6 +1172,336 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   initBba(F,strat);
   /*set enterS, spSpolyShort, reduce, red, initEcart, initEcartPair*/
   /*Shdl=*/initBuchMora(F, Q,strat);
+  if (strat->minim>0) strat->M=idInit(IDELEMS(F),F->rank);
+  srmax = strat->sl;
+  reduc = olddeg = lrmax = 0;
+
+#ifndef NO_BUCKETS
+  if (!TEST_OPT_NOT_BUCKETS)
+    strat->use_buckets = 1;
+#endif
+
+  // redtailBBa against T for inhomogenous input
+  if (!TEST_OPT_OLDSTD)
+    withT = ! strat->homog;
+
+  // strat->posInT = posInT_pLength;
+  kTest_TS(strat);
+
+#ifdef KDEBUG
+#if MYTEST
+  if (TEST_OPT_DEBUG)
+  {
+    PrintS("bba start GB: currRing: ");
+    // rWrite(currRing);PrintLn();
+    rDebugPrint(currRing);
+    PrintLn();
+  }
+#endif /* MYTEST */
+#endif /* KDEBUG */
+
+#ifdef HAVE_TAIL_RING
+  if(!idIs0(F) &&(!rField_is_Ring()))  // create strong gcd poly computes with tailring and S[i] ->to be fixed
+    kStratInitChangeTailRing(strat);
+#endif
+  if (BVERBOSE(23))
+  {
+    if (test_PosInT!=NULL) strat->posInT=test_PosInT;
+    if (test_PosInL!=NULL) strat->posInL=test_PosInL;
+    kDebugPrint(strat);
+  }
+
+
+#ifdef KDEBUG
+  //kDebugPrint(strat);
+#endif
+  /* compute------------------------------------------------------- */
+  while (strat->Ll >= 0)
+  {
+    if (strat->Ll > lrmax) lrmax =strat->Ll;/*stat.*/
+    #ifdef KDEBUG
+      loop_count++;
+      if (TEST_OPT_DEBUG) messageSets(strat);
+    #endif
+    if (strat->Ll== 0) strat->interpt=TRUE;
+    if (TEST_OPT_DEGBOUND
+        && ((strat->honey && (strat->L[strat->Ll].ecart+pFDeg(strat->L[strat->Ll].p,currRing)>Kstd1_deg))
+            || ((!strat->honey) && (pFDeg(strat->L[strat->Ll].p,currRing)>Kstd1_deg))))
+    {
+      /*
+       *stops computation if
+       * 24 IN test and the degree +ecart of L[strat->Ll] is bigger then
+       *a predefined number Kstd1_deg
+       */
+      while ((strat->Ll >= 0)
+        && (strat->L[strat->Ll].p1!=NULL) && (strat->L[strat->Ll].p2!=NULL)
+        && ((strat->honey && (strat->L[strat->Ll].ecart+pFDeg(strat->L[strat->Ll].p,currRing)>Kstd1_deg))
+            || ((!strat->honey) && (pFDeg(strat->L[strat->Ll].p,currRing)>Kstd1_deg)))
+        )
+        deleteInL(strat->L,&strat->Ll,strat->Ll,strat);
+      if (strat->Ll<0) break;
+      else strat->noClearS=TRUE;
+    }
+    /* picks the last element from the lazyset L */
+    strat->P = strat->L[strat->Ll];
+    strat->Ll--;
+
+    if (pNext(strat->P.p) == strat->tail)
+    {
+      // deletes the short spoly
+#ifdef HAVE_RINGS
+      if (rField_is_Ring(currRing))
+        pLmDelete(strat->P.p);
+      else
+#endif
+        pLmFree(strat->P.p);
+      strat->P.p = NULL;
+      poly m1 = NULL, m2 = NULL;
+
+      // check that spoly creation is ok
+      while (strat->tailRing != currRing &&
+             !kCheckSpolyCreation(&(strat->P), strat, m1, m2))
+      {
+        assume(m1 == NULL && m2 == NULL);
+        // if not, change to a ring where exponents are at least
+        // large enough
+        if (!kStratChangeTailRing(strat))
+        {
+          WerrorS("OVERFLOW...");
+          break;
+        }
+      }
+      // create the real one
+      ksCreateSpoly(&(strat->P), NULL, strat->use_buckets,
+                    strat->tailRing, m1, m2, strat->R);
+    }
+    else if (strat->P.p1 == NULL)
+    {
+      if (strat->minim > 0)
+        strat->P.p2=p_Copy(strat->P.p, currRing, strat->tailRing);
+      // for input polys, prepare reduction
+      strat->P.PrepareRed(strat->use_buckets);
+    }
+
+    if (strat->P.p == NULL && strat->P.t_p == NULL)
+    {
+      red_result = 0;
+    }
+    else
+    {
+      if (TEST_OPT_PROT)
+        message((strat->honey ? strat->P.ecart : 0) + strat->P.pFDeg(),
+                &olddeg,&reduc,strat, red_result);
+
+      /* reduction of the element choosen from L */
+      red_result = strat->red(&strat->P,strat);
+      if (errorreported)  break;
+    }
+
+    if (strat->overflow)
+    {
+        if (!kStratChangeTailRing(strat)) { Werror("OVERFLOW.."); break;}
+    }
+
+    // reduction to non-zero new poly
+    if (red_result == 1)
+    {
+      // get the polynomial (canonicalize bucket, make sure P.p is set)
+      strat->P.GetP(strat->lmBin);
+      // in the homogeneous case FDeg >= pFDeg (sugar/honey)
+      // but now, for entering S, T, we reset it
+      // in the inhomogeneous case: FDeg == pFDeg
+      if (strat->homog) strat->initEcart(&(strat->P));
+
+      /* statistic */
+      if (TEST_OPT_PROT) PrintS("s");
+
+      int pos=posInS(strat,strat->sl,strat->P.p,strat->P.ecart);
+
+#ifdef KDEBUG
+#if MYTEST
+      PrintS("New S: "); pDebugPrint(strat->P.p); PrintLn();
+#endif /* MYTEST */
+#endif /* KDEBUG */
+
+      // reduce the tail and normalize poly
+      // in the ring case we cannot expect LC(f) = 1,
+      // therefore we call pContent instead of pNorm
+      if ((TEST_OPT_INTSTRATEGY) || (rField_is_Ring(currRing)))
+      {
+        strat->P.pCleardenom();
+        if ((TEST_OPT_REDSB)||(TEST_OPT_REDTAIL))
+        {
+          strat->P.p = redtailBba(&(strat->P),pos-1,strat, withT);
+          strat->P.pCleardenom();
+        }
+      }
+      else
+      {
+        strat->P.pNorm();
+        if ((TEST_OPT_REDSB)||(TEST_OPT_REDTAIL))
+          strat->P.p = redtailBba(&(strat->P),pos-1,strat, withT);
+      }
+
+#ifdef KDEBUG
+      if (TEST_OPT_DEBUG){PrintS("new s:");strat->P.wrp();PrintLn();}
+#if MYTEST
+      PrintS("New (reduced) S: "); pDebugPrint(strat->P.p); PrintLn();
+#endif /* MYTEST */
+#endif /* KDEBUG */
+
+      // min_std stuff
+      if ((strat->P.p1==NULL) && (strat->minim>0))
+      {
+        if (strat->minim==1)
+        {
+          strat->M->m[minimcnt]=p_Copy(strat->P.p,currRing,strat->tailRing);
+          p_Delete(&strat->P.p2, currRing, strat->tailRing);
+        }
+        else
+        {
+          strat->M->m[minimcnt]=strat->P.p2;
+          strat->P.p2=NULL;
+        }
+        if (strat->tailRing!=currRing && pNext(strat->M->m[minimcnt])!=NULL)
+          pNext(strat->M->m[minimcnt])
+            = strat->p_shallow_copy_delete(pNext(strat->M->m[minimcnt]),
+                                           strat->tailRing, currRing,
+                                           currRing->PolyBin);
+        minimcnt++;
+      }
+
+      // enter into S, L, and T
+      //if ((!TEST_OPT_IDLIFT) || (pGetComp(strat->P.p) <= strat->syzComp))
+        enterT(strat->P, strat);
+#ifdef HAVE_RINGS
+      if (rField_is_Ring(currRing))
+        superenterpairs(strat->P.p,strat->sl,strat->P.ecart,pos,strat, strat->tl);
+      else
+#endif
+        enterpairs(strat->P.p,strat->sl,strat->P.ecart,pos,strat, strat->tl);
+      // posInS only depends on the leading term
+      strat->enterS(strat->P, pos, strat, strat->tl);
+#if 0
+      int pl=pLength(strat->P.p);
+      if (pl==1)
+      {
+        //if (TEST_OPT_PROT)
+        //PrintS("<1>");
+      }
+      else if (pl==2)
+      {
+        //if (TEST_OPT_PROT)
+        //PrintS("<2>");
+      }
+#endif
+      if (hilb!=NULL) khCheck(Q,w,hilb,hilbeledeg,hilbcount,strat);
+//      Print("[%d]",hilbeledeg);
+      if (strat->P.lcm!=NULL)
+#ifdef HAVE_RINGS
+        pLmDelete(strat->P.lcm);
+#else
+        pLmFree(strat->P.lcm);
+#endif
+      if (strat->sl>srmax) srmax = strat->sl;
+    }
+    else if (strat->P.p1 == NULL && strat->minim > 0)
+    {
+      p_Delete(&strat->P.p2, currRing, strat->tailRing);
+    }
+
+#ifdef KDEBUG
+    memset(&(strat->P), 0, sizeof(strat->P));
+#endif /* KDEBUG */
+    kTest_TS(strat);
+  }
+#ifdef KDEBUG
+#if MYTEST
+  PrintS("bba finish GB: currRing: "); rWrite(currRing);
+#endif /* MYTEST */
+  if (TEST_OPT_DEBUG) messageSets(strat);
+#endif /* KDEBUG */
+
+  if (TEST_OPT_SB_1)
+  {
+    int k=1;
+    int j;
+    while(k<=strat->sl)
+    {
+      j=0;
+      loop
+      {
+        if (j>=k) break;
+        clearS(strat->S[j],strat->sevS[j],&k,&j,strat);
+        j++;
+      }
+      k++;
+    }
+  }
+
+  /* complete reduction of the standard basis--------- */
+  if (TEST_OPT_REDSB)
+  {
+    completeReduce(strat);
+#ifdef HAVE_TAIL_RING
+    if (strat->completeReduce_retry)
+    {
+      // completeReduce needed larger exponents, retry
+      // to reduce with S (instead of T)
+      // and in currRing (instead of strat->tailRing)
+      cleanT(strat);strat->tailRing=currRing;
+      int i;
+      for(i=strat->sl;i>=0;i--) strat->S_2_R[i]=-1;
+      completeReduce(strat);
+    }
+#endif
+  }
+  else if (TEST_OPT_PROT) PrintLn();
+
+  /* release temp data-------------------------------- */
+  exitBuchMora(strat);
+  if (TEST_OPT_WEIGHTM)
+  {
+    pRestoreDegProcs(pFDegOld, pLDegOld);
+    if (ecartWeights)
+    {
+      omFreeSize((ADDRESS)ecartWeights,(pVariables+1)*sizeof(short));
+      ecartWeights=NULL;
+    }
+  }
+  if (TEST_OPT_PROT) messageStat(srmax,lrmax,hilbcount,strat);
+  if (Q!=NULL) updateResult(strat->Shdl,Q,strat);
+
+#ifdef KDEBUG
+#if MYTEST
+  PrintS("bba_end: currRing: "); rWrite(currRing);
+#endif /* MYTEST */
+#endif /* KDEBUG */
+  idTest(strat->Shdl);
+
+  return (strat->Shdl);
+}
+
+ideal sba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
+{
+#ifdef KDEBUG
+  bba_count++;
+  int loop_count = 0;
+#endif /* KDEBUG */
+  om_Opts.MinTrack = 5;
+  int   srmax,lrmax, red_result = 1;
+  int   olddeg,reduc;
+  int hilbeledeg=1,hilbcount=0,minimcnt=0;
+  BOOLEAN withT = FALSE;
+  BOOLEAN newrules  = FALSE;
+
+  //initBuchMoraCrit(strat); /*set Gebauer, honey, sugarCrit*/
+  initSbaCrit(strat); /*set Gebauer, honey, sugarCrit*/
+  initSbaPos(strat);
+  initHilbCrit(F,Q,&hilb,strat);
+  initSba(F,strat);
+  /*set enterS, spSpolyShort, reduce, red, initEcart, initEcartPair*/
+  /*Shdl=*/initSbaBuchMora(F, Q,strat);
   if (strat->minim>0) strat->M=idInit(IDELEMS(F),F->rank);
   srmax = strat->sl;
   reduc = olddeg = lrmax = 0;
@@ -1538,7 +1867,7 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   else if (TEST_OPT_PROT) PrintLn();
 
   /* release temp data-------------------------------- */
-  exitBuchMora(strat);
+  exitSba(strat);
   if (TEST_OPT_WEIGHTM)
   {
     pRestoreDegProcs(pFDegOld, pLDegOld);

@@ -394,6 +394,7 @@ static inline LSet initL (int nr=setmaxL)
 void deleteInL(LSet set, int *length, int j,kStrategy strat);
 void enterL (LSet *set,int *length, int *LSetmax, LObject p,int at);
 void enterSBba (LObject p,int atS,kStrategy strat, int atR = -1);
+void enterSSba (LObject p,int atS,kStrategy strat, int atR = -1);
 void initEcartPairBba (LObject* Lp,poly f,poly g,int ecartF,int ecartG);
 void initEcartPairMora (LObject* Lp,poly f,poly g,int ecartF,int ecartG);
 int posInS (const kStrategy strat, const int length, const poly p, 
@@ -479,6 +480,7 @@ void initEcartNormal (LObject* h);
 void initEcartBBA (LObject* h);
 void initS (ideal F, ideal Q,kStrategy strat);
 void initSL (ideal F, ideal Q,kStrategy strat);
+void initSLSba (ideal F, ideal Q,kStrategy strat);
 /*************************************************
  * when initializing a new bunch of principal 
  * syzygies at the beginning of a new iteration
@@ -495,10 +497,14 @@ void enterT (LObject p,kStrategy strat, int atT = -1);
 void cancelunit (LObject* p,BOOLEAN inNF=FALSE);
 void HEckeTest (poly pp,kStrategy strat);
 void initBuchMoraCrit(kStrategy strat);
+void initSbaCrit(kStrategy strat);
 void initHilbCrit(ideal F, ideal Q, intvec **hilb,kStrategy strat);
 void initBuchMoraPos(kStrategy strat);
+void initSbaPos(kStrategy strat);
 void initBuchMora (ideal F, ideal Q,kStrategy strat);
+void initSbaBuchMora (ideal F, ideal Q,kStrategy strat);
 void exitBuchMora (kStrategy strat);
+void exitSba (kStrategy strat);
 void updateResult(ideal r,ideal Q,kStrategy strat);
 void completeReduce (kStrategy strat, BOOLEAN withT=FALSE);
 void kFreeStrat(kStrategy strat);
@@ -583,9 +589,11 @@ BOOLEAN kTest_S(kStrategy strat);
  ***************************************************************/
 poly kFindZeroPoly(poly input_p, ring leadRing, ring tailRing);
 ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat);
+ideal sba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat);
 poly kNF2 (ideal F, ideal Q, poly q, kStrategy strat, int lazyReduce);
 ideal kNF2 (ideal F,ideal Q,ideal q, kStrategy strat, int lazyReduce);
 void initBba(ideal F,kStrategy strat);
+void initSba(ideal F,kStrategy strat);
 void f5c (kStrategy strat, int& olddeg, int& minimcnt, int& hilbeledeg, 
           int& hilbcount, int& srmax, int& lrmax, int& reduc, ideal Q,
           intvec *w,intvec *hilb );

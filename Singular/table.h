@@ -244,6 +244,8 @@ struct sValCmd1 dArith1[]=
 #else
 ,{  jjWRONG ,      SQR_FREE_CMD,    LIST_CMD,      POLY_CMD      , NO_PLURAL |NO_RING}
 #endif
+,{D(jjSBA),        SBA_CMD,         IDEAL_CMD,      IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
+,{D(jjSBA),        SBA_CMD,         MODUL_CMD,      MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjSTD),        STD_CMD,         IDEAL_CMD,      IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjSTD),        STD_CMD,         MODUL_CMD,      MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjDUMMY),      STRING_CMD,      STRING_CMD,     STRING_CMD    , ALLOW_PLURAL |ALLOW_RING}
@@ -1003,6 +1005,7 @@ cmdnames cmds[] =
   { "ring",        0, RING_CMD ,          RING_CMD},
   { "ringlist",    0, RINGLIST_CMD ,      CMD_1},
   { "rvar",        0, IS_RINGVAR ,        CMD_1},
+  { "sba",         0, SBA_CMD ,           CMD_M},
   { "setring",     0, SETRING_CMD ,       SETRING_CMD},
   { "simplex",     0, SIMPLEX_CMD,        CMD_M},
   { "simplify",    0, SIMPLIFY_CMD ,      CMD_2},

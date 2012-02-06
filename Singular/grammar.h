@@ -153,7 +153,8 @@
      RETURN = 379,
      PARAMETER = 380,
      SYSVAR = 381,
-     UMINUS = 382
+     UMINUS = 382,
+     SBA_CMD = 383
    };
 #endif
 #define DOTDOT 258
@@ -281,6 +282,7 @@
 #define PARAMETER 380
 #define SYSVAR 381
 #define UMINUS 382
+#define SBA_CMD 383
 
 
 
