@@ -2661,9 +2661,9 @@ void initenterpairs (poly h,int k,int ecart,int isFromQ,kStrategy strat, int atR
         new_pair=TRUE;
         for (j=0; j<=k; j++)
         {
-          Print("j:%d, Ll:%d\n",j,strat->Ll);
+          //Print("j:%d, Ll:%d\n",j,strat->Ll);
           strat->enterOnePair(j,h,ecart,isFromQ,strat, atR);
-          Print("j:%d, Ll:%d\n",j,strat->Ll);
+          //Print("j:%d, Ll:%d\n",j,strat->Ll);
         }
       }
     }
@@ -5505,6 +5505,105 @@ if ((strat->sl>=0)
 
 void initSL (ideal F, ideal Q,kStrategy strat)
 {
+  int   i,pos;
+
+  if (Q!=NULL) i=((IDELEMS(Q)+(setmaxTinc-1))/setmaxTinc)*setmaxTinc;
+  else i=setmaxT;
+  strat->ecartS=initec(i);
+  strat->sevS=initsevS(i);
+  strat->S_2_R=initS_2_R(i);
+  strat->fromQ=NULL;
+  strat->Shdl=idInit(i,F->rank);
+  strat->S=strat->Shdl->m;
+  /*- put polys into S -*/
+  if (Q!=NULL)
+  {
+    strat->fromQ=initec(i);
+    memset(strat->fromQ,0,i*sizeof(int));
+    for (i=0; i<IDELEMS(Q); i++)
+    {
+      if (Q->m[i]!=NULL)
+      {
+        LObject h;
+        h.p = pCopy(Q->m[i]);
+        if (pOrdSgn==-1)
+        {
+          deleteHC(&h,strat);
+        }
+        if (TEST_OPT_INTSTRATEGY)
+        {
+          //pContent(h.p);
+          h.pCleardenom(); // also does a pContent
+        }
+        else
+        {
+          h.pNorm();
+        }
+        if (h.p!=NULL)
+        {
+          strat->initEcart(&h);
+          if (strat->sl==-1)
+            pos =0;
+          else
+          {
+            pos = posInS(strat,strat->sl,h.p,h.ecart);
+          }
+          h.sev = pGetShortExpVector(h.p);
+          strat->enterS(h,pos,strat,-1);
+          strat->fromQ[pos]=1;
+        }
+      }
+    }
+  }
+  for (i=0; i<IDELEMS(F); i++)
+  {
+    if (F->m[i]!=NULL)
+    {
+      LObject h;
+      h.p = pCopy(F->m[i]);
+      if (h.p!=NULL)
+      {
+        if (pOrdSgn==-1)
+        {
+          cancelunit(&h);  /*- tries to cancel a unit -*/
+          deleteHC(&h, strat);
+        }
+        if (h.p!=NULL)
+        {
+          if (TEST_OPT_INTSTRATEGY)
+          {
+            //pContent(h.p);
+            h.pCleardenom(); // also does a pContent
+          }
+          else
+          {
+            h.pNorm();
+          }
+          strat->initEcart(&h);
+          if (strat->Ll==-1)
+            pos =0;
+          else
+            pos = strat->posInL(strat->L,strat->Ll,&h,strat);
+          h.sev = pGetShortExpVector(h.p);
+          enterL(&strat->L,&strat->Ll,&strat->Lmax,h,pos);
+        }
+      }
+    }
+  }
+  /*- test, if a unit is in F -*/
+
+  if ((strat->Ll>=0)
+#ifdef HAVE_RINGS
+       && nIsUnit(pGetCoeff(strat->L[strat->Ll].p))
+#endif
+       && pIsConstant(strat->L[strat->Ll].p))
+  {
+    while (strat->Ll>0) deleteInL(strat->L,&strat->Ll,strat->Ll-1,strat);
+  }
+}
+
+void initSLSba (ideal F, ideal Q,kStrategy strat)
+{
   int   i,j,pos;
   if (Q!=NULL) i=((IDELEMS(Q)+(setmaxTinc-1))/setmaxTinc)*setmaxTinc;
   else i=setmaxT;
@@ -5756,6 +5855,151 @@ void initSyzRules (kStrategy strat)
 *construct the set s from F and {P}
 */
 void initSSpecial (ideal F, ideal Q, ideal P,kStrategy strat)
+{
+  int   i,pos;
+
+  if (Q!=NULL) i=((IDELEMS(Q)+(setmaxTinc-1))/setmaxTinc)*setmaxTinc;
+  else i=setmaxT;
+  i=((i+IDELEMS(F)+IDELEMS(P)+15)/16)*16;
+  strat->ecartS=initec(i);
+  strat->sevS=initsevS(i);
+  strat->S_2_R=initS_2_R(i);
+  strat->fromQ=NULL;
+  strat->Shdl=idInit(i,F->rank);
+  strat->S=strat->Shdl->m;
+
+  /*- put polys into S -*/
+  if (Q!=NULL)
+  {
+    strat->fromQ=initec(i);
+    memset(strat->fromQ,0,i*sizeof(int));
+    for (i=0; i<IDELEMS(Q); i++)
+    {
+      if (Q->m[i]!=NULL)
+      {
+        LObject h;
+        h.p = pCopy(Q->m[i]);
+        //if (TEST_OPT_INTSTRATEGY)
+        //{
+        //  //pContent(h.p);
+        //  h.pCleardenom(); // also does a pContent
+        //}
+        //else
+        //{
+        //  h.pNorm();
+        //}
+        if (pOrdSgn==-1)
+        {
+          deleteHC(&h,strat);
+        }
+        if (h.p!=NULL)
+        {
+          strat->initEcart(&h);
+          if (strat->sl==-1)
+            pos =0;
+          else
+          {
+            pos = posInS(strat,strat->sl,h.p,h.ecart);
+          }
+          h.sev = pGetShortExpVector(h.p);
+          strat->enterS(h,pos,strat, strat->tl+1);
+          enterT(h, strat);
+          strat->fromQ[pos]=1;
+        }
+      }
+    }
+  }
+  /*- put polys into S -*/
+  for (i=0; i<IDELEMS(F); i++)
+  {
+    if (F->m[i]!=NULL)
+    {
+      LObject h;
+      h.p = pCopy(F->m[i]);
+      if (pOrdSgn==-1)
+      {
+        deleteHC(&h,strat);
+      }
+      else
+      {
+        h.p=redtailBba(h.p,strat->sl,strat);
+      }
+      if (h.p!=NULL)
+      {
+        strat->initEcart(&h);
+        if (strat->sl==-1)
+          pos =0;
+        else
+          pos = posInS(strat,strat->sl,h.p,h.ecart);
+        h.sev = pGetShortExpVector(h.p);
+        strat->enterS(h,pos,strat, strat->tl+1);
+        enterT(h,strat);
+      }
+    }
+  }
+  for (i=0; i<IDELEMS(P); i++)
+  {
+    if (P->m[i]!=NULL)
+    {
+      LObject h;
+      h.p=pCopy(P->m[i]);
+      if (TEST_OPT_INTSTRATEGY)
+      {
+        h.pCleardenom();
+      }
+      else
+      {
+        h.pNorm();
+      }
+      if(strat->sl>=0)
+      {
+        if (pOrdSgn==1)
+        {
+          h.p=redBba(h.p,strat->sl,strat);
+          if (h.p!=NULL)
+          {
+            h.p=redtailBba(h.p,strat->sl,strat);
+          }
+        }
+        else
+        {
+          h.p=redMora(h.p,strat->sl,strat);
+        }
+        if(h.p!=NULL)
+        {
+          strat->initEcart(&h);
+          if (TEST_OPT_INTSTRATEGY)
+          {
+            h.pCleardenom();
+          }
+          else
+          {
+            h.is_normalized = 0;
+            h.pNorm();
+          }
+          h.sev = pGetShortExpVector(h.p);
+          h.SetpFDeg();
+          pos = posInS(strat,strat->sl,h.p,h.ecart);
+          enterpairsSpecial(h.p,strat->sl,h.ecart,pos,strat,strat->tl+1);
+          strat->enterS(h,pos,strat, strat->tl+1);
+          enterT(h,strat);
+        }
+      }
+      else
+      {
+        h.sev = pGetShortExpVector(h.p);
+        strat->initEcart(&h);
+        strat->enterS(h,0,strat, strat->tl+1);
+        enterT(h,strat);
+      }
+    }
+  }
+}
+/*2
+*construct the set s from F and {P}
+*/
+
+void initSSpecialSba (ideal F, ideal Q, ideal P,kStrategy strat)
 {
   int   i,pos;
 
@@ -6309,6 +6553,110 @@ void enterSBba (LObject p,int atS,kStrategy strat, int atR)
                                     IDELEMS(strat->Shdl)*sizeof(unsigned long),
                                     (IDELEMS(strat->Shdl)+setmaxTinc)
                                                   *sizeof(unsigned long));
+    strat->ecartS = (intset)omReallocSize(strat->ecartS,
+                                          IDELEMS(strat->Shdl)*sizeof(int),
+                                          (IDELEMS(strat->Shdl)+setmaxTinc)
+                                                  *sizeof(int));
+    strat->S_2_R = (int*) omRealloc0Size(strat->S_2_R,
+                                         IDELEMS(strat->Shdl)*sizeof(int),
+                                         (IDELEMS(strat->Shdl)+setmaxTinc)
+                                                  *sizeof(int));
+    if (strat->lenS!=NULL)
+      strat->lenS=(int*)omRealloc0Size(strat->lenS,
+                                       IDELEMS(strat->Shdl)*sizeof(int),
+                                       (IDELEMS(strat->Shdl)+setmaxTinc)
+                                                 *sizeof(int));
+    if (strat->lenSw!=NULL)
+      strat->lenSw=(wlen_type*)omRealloc0Size(strat->lenSw,
+                                       IDELEMS(strat->Shdl)*sizeof(wlen_type),
+                                       (IDELEMS(strat->Shdl)+setmaxTinc)
+                                                 *sizeof(wlen_type));
+    if (strat->fromQ!=NULL)
+    {
+      strat->fromQ = (intset)omReallocSize(strat->fromQ,
+                                    IDELEMS(strat->Shdl)*sizeof(int),
+                                    (IDELEMS(strat->Shdl)+setmaxTinc)*sizeof(int));
+    }
+    pEnlargeSet(&strat->S,IDELEMS(strat->Shdl),setmaxTinc);
+    IDELEMS(strat->Shdl)+=setmaxTinc;
+    strat->Shdl->m=strat->S;
+  }
+  if (atS <= strat->sl)
+  {
+#ifdef ENTER_USE_MEMMOVE
+// #if 0
+    memmove(&(strat->S[atS+1]), &(strat->S[atS]),
+            (strat->sl - atS + 1)*sizeof(poly));
+    memmove(&(strat->ecartS[atS+1]), &(strat->ecartS[atS]),
+            (strat->sl - atS + 1)*sizeof(int));
+    memmove(&(strat->sevS[atS+1]), &(strat->sevS[atS]),
+            (strat->sl - atS + 1)*sizeof(unsigned long));
+    memmove(&(strat->S_2_R[atS+1]), &(strat->S_2_R[atS]),
+            (strat->sl - atS + 1)*sizeof(int));
+    if (strat->lenS!=NULL)
+    memmove(&(strat->lenS[atS+1]), &(strat->lenS[atS]),
+            (strat->sl - atS + 1)*sizeof(int));
+    if (strat->lenSw!=NULL)
+    memmove(&(strat->lenSw[atS+1]), &(strat->lenSw[atS]),
+            (strat->sl - atS + 1)*sizeof(wlen_type));
+#else
+    for (i=strat->sl+1; i>=atS+1; i--)
+    {
+      strat->S[i] = strat->S[i-1];
+      strat->ecartS[i] = strat->ecartS[i-1];
+      strat->sevS[i] = strat->sevS[i-1];
+      strat->S_2_R[i] = strat->S_2_R[i-1];
+    }
+    if (strat->lenS!=NULL)
+    for (i=strat->sl+1; i>=atS+1; i--)
+      strat->lenS[i] = strat->lenS[i-1];
+    if (strat->lenSw!=NULL)
+    for (i=strat->sl+1; i>=atS+1; i--)
+      strat->lenSw[i] = strat->lenSw[i-1];
+#endif
+  }
+  if (strat->fromQ!=NULL)
+  {
+#ifdef ENTER_USE_MEMMOVE
+    memmove(&(strat->fromQ[atS+1]), &(strat->fromQ[atS]),
+                  (strat->sl - atS + 1)*sizeof(int));
+#else
+    for (i=strat->sl+1; i>=atS+1; i--)
+    {
+      strat->fromQ[i] = strat->fromQ[i-1];
+    }
+#endif
+    strat->fromQ[atS]=0;
+  }
+
+  /*- save result -*/
+  strat->S[atS] = p.p;
+  if (strat->honey) strat->ecartS[atS] = p.ecart;
+  if (p.sev == 0)
+    p.sev = pGetShortExpVector(p.p);
+  else
+    assume(p.sev == pGetShortExpVector(p.p));
+  strat->sevS[atS] = p.sev;
+  strat->ecartS[atS] = p.ecart;
+  strat->S_2_R[atS] = atR;
+  strat->sl++;
+}
+
+/*2
+* -puts p to the standardbasis s at position at
+* -saves the result in S
+*/
+void enterSSba (LObject p,int atS,kStrategy strat, int atR)
+{
+  int i;
+  strat->news = TRUE;
+  /*- puts p to the standardbasis s at position at -*/
+  if (strat->sl == IDELEMS(strat->Shdl)-1)
+  {
+    strat->sevS = (unsigned long*) omRealloc0Size(strat->sevS,
+                                    IDELEMS(strat->Shdl)*sizeof(unsigned long),
+                                    (IDELEMS(strat->Shdl)+setmaxTinc)
+                                                  *sizeof(unsigned long));
     strat->sevSig = (unsigned long*) omRealloc0Size(strat->sevSig,
                                     IDELEMS(strat->Shdl)*sizeof(unsigned long),
                                     (IDELEMS(strat->Shdl)+setmaxTinc)
@@ -6555,6 +6903,63 @@ void initHilbCrit(ideal F, ideal Q, intvec **hilb,kStrategy strat)
 
 void initBuchMoraCrit(kStrategy strat)
 {
+  strat->enterOnePair=enterOnePairNormal;
+  strat->chainCrit=chainCritNormal;
+#ifdef HAVE_RINGS
+  if (rField_is_Ring(currRing))
+  {
+    strat->enterOnePair=enterOnePairRing;
+    strat->chainCrit=chainCritRing;
+  }
+#endif
+#ifdef HAVE_RATGRING
+  if (rIsRatGRing(currRing))
+  {
+     strat->chainCrit=chainCritPart;
+     /* enterOnePairNormal get rational part in it */
+  }
+#endif
+
+  strat->sugarCrit =        TEST_OPT_SUGARCRIT;
+  strat->Gebauer =          strat->homog || strat->sugarCrit;
+  strat->honey =            !strat->homog || strat->sugarCrit || TEST_OPT_WEIGHTM;
+  if (TEST_OPT_NOT_SUGAR) strat->honey = FALSE;
+  strat->pairtest = NULL;
+  /* alway use tailreduction, except:
+  * - in local rings, - in lex order case, -in ring over extensions */
+  strat->noTailReduction = !TEST_OPT_REDTAIL;
+
+#ifdef HAVE_PLURAL
+  // and r is plural_ring
+  //  hence this holds for r a rational_plural_ring
+  if( rIsPluralRing(currRing) || (rIsSCA(currRing) && !strat->z2homog) )
+  {    //or it has non-quasi-comm type... later
+    strat->sugarCrit = FALSE;
+    strat->Gebauer = FALSE;
+    strat->honey = FALSE;
+  }
+#endif
+
+#ifdef HAVE_RINGS
+  // Coefficient ring?
+  if (rField_is_Ring(currRing))
+  {
+    strat->sugarCrit = FALSE;
+    strat->Gebauer = FALSE ;
+    strat->honey = FALSE;
+  }
+#endif
+  #ifdef KDEBUG
+  if (TEST_OPT_DEBUG)
+  {
+    if (strat->homog) PrintS("ideal/module is homogeneous\n");
+    else              PrintS("ideal/module is not homogeneous\n");
+  }
+  #endif
+}
+
+void initSbaCrit(kStrategy strat)
+{
   //strat->enterOnePair=enterOnePairNormal;
   strat->enterOnePair=enterOnePairNormal;
   //strat->chainCrit=chainCritNormal;
@@ -6626,9 +7031,94 @@ BOOLEAN kPosInLDependsOnLength(int (*pos_in_l)
 
 void initBuchMoraPos (kStrategy strat)
 {
-  strat->posInLDependsOnLength = FALSE;
-  strat->posInL = posInLSig;
-  strat->posInT = posInTSig;
+  if (pOrdSgn==1)
+  {
+    if (strat->honey)
+    {
+      strat->posInL = posInL15;
+      // ok -- here is the deal: from my experiments for Singular-2-0
+      // I conclude that that posInT_EcartpLength is the best of
+      // posInT15, posInT_EcartFDegpLength, posInT_FDegLength, posInT_pLength
+      // see the table at the end of this file
+      if (TEST_OPT_OLDSTD)
+        strat->posInT = posInT15;
+      else
+        strat->posInT = posInT_EcartpLength;
+    }
+    else if (pLexOrder && !TEST_OPT_INTSTRATEGY)
+    {
+      strat->posInL = posInL11;
+      strat->posInT = posInT11;
+    }
+    else if (TEST_OPT_INTSTRATEGY)
+    {
+      strat->posInL = posInL11;
+      strat->posInT = posInT11;
+    }
+    else
+    {
+      strat->posInL = posInL0;
+      strat->posInT = posInT0;
+    }
+    //if (strat->minim>0) strat->posInL =posInLSpecial;
+    if (strat->homog)
+    {
+       strat->posInL = posInL110;
+       strat->posInT = posInT110;
+    }
+  }
+  else
+  {
+    if (strat->homog)
+    {
+      strat->posInL = posInL11;
+      strat->posInT = posInT11;
+    }
+    else
+    {
+      if ((currRing->order[0]==ringorder_c)
+      ||(currRing->order[0]==ringorder_C))
+      {
+        strat->posInL = posInL17_c;
+        strat->posInT = posInT17_c;
+      }
+      else
+      {
+        strat->posInL = posInL17;
+        strat->posInT = posInT17;
+      }
+    }
+  }
+  if (strat->minim>0) strat->posInL =posInLSpecial;
+  // for further tests only
+  if ((BTEST1(11)) || (BTEST1(12)))
+    strat->posInL = posInL11;
+  else if ((BTEST1(13)) || (BTEST1(14)))
+    strat->posInL = posInL13;
+  else if ((BTEST1(15)) || (BTEST1(16)))
+    strat->posInL = posInL15;
+  else if ((BTEST1(17)) || (BTEST1(18)))
+    strat->posInL = posInL17;
+  if (BTEST1(11))
+    strat->posInT = posInT11;
+  else if (BTEST1(13))
+    strat->posInT = posInT13;
+  else if (BTEST1(15))
+    strat->posInT = posInT15;
+  else if ((BTEST1(17)))
+    strat->posInT = posInT17;
+  else if ((BTEST1(19)))
+    strat->posInT = posInT19;
+  else if (BTEST1(12) || BTEST1(14) || BTEST1(16) || BTEST1(18))
+    strat->posInT = posInT1;
+#ifdef HAVE_RINGS
+  if (rField_is_Ring(currRing))
+  {
+    strat->posInL = posInL11;
+    strat->posInT = posInT11;
+  }
+#endif
+  strat->posInLDependsOnLength = kPosInLDependsOnLength(strat->posInL);
 }
 
 void initBuchMora (ideal F,ideal Q,kStrategy strat)
@@ -6642,8 +7132,6 @@ void initBuchMora (ideal F,ideal Q,kStrategy strat)
   strat->tail = pInit();
   /*- set s -*/
   strat->sl = -1;
-  /*- set ps -*/
-  strat->syzl = -1;
   /*- set L -*/
   strat->Lmax = ((IDELEMS(F)+setmaxLinc-1)/setmaxLinc)*setmaxLinc;
   strat->Ll = -1;
@@ -6700,6 +7188,104 @@ void initBuchMora (ideal F,ideal Q,kStrategy strat)
 }
 
 void exitBuchMora (kStrategy strat)
+{
+  /*- release temp data -*/
+  cleanT(strat);
+  omFreeSize(strat->T,(strat->tmax)*sizeof(TObject));
+  omFreeSize(strat->R,(strat->tmax)*sizeof(TObject*));
+  omFreeSize(strat->sevT, (strat->tmax)*sizeof(unsigned long));
+  omFreeSize(strat->ecartS,IDELEMS(strat->Shdl)*sizeof(int));
+  omFreeSize((ADDRESS)strat->sevS,IDELEMS(strat->Shdl)*sizeof(unsigned long));
+  omFreeSize(strat->S_2_R,IDELEMS(strat->Shdl)*sizeof(int));
+  /*- set L: should be empty -*/
+  omFreeSize(strat->L,(strat->Lmax)*sizeof(LObject));
+  /*- set B: should be empty -*/
+  omFreeSize(strat->B,(strat->Bmax)*sizeof(LObject));
+  pLmDelete(&strat->tail);
+  strat->syzComp=0;
+  if (strat->kIdeal!=NULL)
+  {
+    omFreeBin(strat->kIdeal, sleftv_bin);
+    strat->kIdeal=NULL;
+  }
+}
+
+void initSbaPos (kStrategy strat)
+{
+  strat->posInLDependsOnLength = FALSE;
+  strat->posInL = posInLSig;
+  strat->posInT = posInTSig;
+}
+
+void initSbaBuchMora (ideal F,ideal Q,kStrategy strat)
+{
+  strat->interpt = BTEST1(OPT_INTERRUPT);
+  strat->kHEdge=NULL;
+  if (pOrdSgn==1) strat->kHEdgeFound=FALSE;
+  /*- creating temp data structures------------------- -*/
+  strat->cp = 0;
+  strat->c3 = 0;
+  strat->tail = pInit();
+  /*- set s -*/
+  strat->sl = -1;
+  /*- set ps -*/
+  strat->syzl = -1;
+  /*- set L -*/
+  strat->Lmax = ((IDELEMS(F)+setmaxLinc-1)/setmaxLinc)*setmaxLinc;
+  strat->Ll = -1;
+  strat->L = initL(((IDELEMS(F)+setmaxLinc-1)/setmaxLinc)*setmaxLinc);
+  /*- set B -*/
+  strat->Bmax = setmaxL;
+  strat->Bl = -1;
+  strat->B = initL();
+  /*- set T -*/
+  strat->tl = -1;
+  strat->tmax = setmaxT;
+  strat->T = initT();
+  strat->R = initR();
+  strat->sevT = initsevT();
+  /*- init local data struct.---------------------------------------- -*/
+  strat->P.ecart=0;
+  strat->P.length=0;
+  if (pOrdSgn==-1)
+  {
+    if (strat->kHEdge!=NULL) pSetComp(strat->kHEdge, strat->ak);
+    if (strat->kNoether!=NULL) pSetComp(strat->kNoetherTail(), strat->ak);
+  }
+  if(TEST_OPT_SB_1)
+  {
+    int i;
+    ideal P=idInit(IDELEMS(F)-strat->newIdeal,F->rank);
+    for (i=strat->newIdeal;i<IDELEMS(F);i++)
+    {
+      P->m[i-strat->newIdeal] = F->m[i];
+      F->m[i] = NULL;
+    }
+    initSSpecialSba(F,Q,P,strat);
+    for (i=strat->newIdeal;i<IDELEMS(F);i++)
+    {
+      F->m[i] = P->m[i-strat->newIdeal];
+      P->m[i-strat->newIdeal] = NULL;
+    }
+    idDelete(&P);
+  }
+  else
+  {
+    /*Shdl=*/initSLSba(F, Q,strat); /*sets also S, ecartS, fromQ */
+    // /*Shdl=*/initS(F, Q,strat); /*sets also S, ecartS, fromQ */
+  }
+  strat->kIdeal = NULL;
+  strat->fromT = FALSE;
+  strat->noTailReduction = !TEST_OPT_REDTAIL;
+  if (!TEST_OPT_SB_1)
+  {
+    updateS(TRUE,strat);
+  }
+  if (strat->fromQ!=NULL) omFreeSize(strat->fromQ,IDELEMS(strat->Shdl)*sizeof(int));
+  strat->fromQ=NULL;
+}
+
+void exitSba (kStrategy strat)
 {
   /*- release temp data -*/
   cleanT(strat);

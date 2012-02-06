@@ -363,6 +363,7 @@ cmd_dictcop cmd_dictcops[] =
       {QHWEIGHT_CMD, MP_CopPolyQHWeight},
       {REGULARITY_CMD, MP_CopPolyRegularity},
       {RESULTANT_CMD, MP_CopPolyResultant},
+      {SBA_CMD, MP_CopPolyStd},
       {STD_CMD, MP_CopPolyStd},
       {SYZYGY_CMD, MP_CopPolySyz},
       {VDIM_CMD, MP_CopPolyVdim},
