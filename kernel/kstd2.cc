@@ -1488,13 +1488,14 @@ ideal sba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
    * incremental stuff
   strat->incremental = TRUE;
   // move to Schreyer ordering
+  */
+  ring schreyerRing, currRingOld;
   if (!strat->incremental)
   {
-    ring currRingOld  = currRing; 
-    ring schreyerRing = getSchreyerRing();
+    currRingOld  = currRing; 
+    schreyerRing = getSchreyerRing();
     rChangeCurrRing (schreyerRing);
   }
-  */
 #ifdef KDEBUG
   bba_count++;
   int loop_count = 0;
@@ -1877,15 +1878,11 @@ ideal sba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   }
   else if (TEST_OPT_PROT) PrintLn();
 
-  /* release temp data-------------------------------- */
-  /*+++++++++++++++++++++++++++++++++
-   * incremental stuff
   if (!strat->incremental)
   {
-    rDelete (hreyerRing);
+    rDelete (schreyerRing);
     rChangeCurrRing (currRingOld);
   }
-  */
   exitSba(strat);
   if (TEST_OPT_WEIGHTM)
   {
