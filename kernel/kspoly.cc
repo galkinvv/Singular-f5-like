@@ -238,7 +238,7 @@ int ksReducePolySig(LObject* PR,
       // testing by syzCriterion = F5 Criterion testing by rewCriterion =
       // Rewritten Criterion
       unsigned long sigMultNegSev = ~p_GetShortExpVector(sigMult,currRing);
-      if  ( syzCriterion(sigMult,sigMultNegSev,strat) ||
+      if  ( strat->syzCrit(sigMult,sigMultNegSev,strat) ||
             rewCriterion(sigMult,sigMultNegSev,strat,idx+1)
           )
       {

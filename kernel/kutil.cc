@@ -915,8 +915,8 @@ void deleteInS (int i,kStrategy strat)
   memmove(&(strat->S[i]), &(strat->S[i+1]), (strat->sl - i)*sizeof(poly));
   memmove(&(strat->sig[i]), &(strat->sig[i+1]), (strat->sl - i)*sizeof(poly));
   memmove(&(strat->ecartS[i]),&(strat->ecartS[i+1]),(strat->sl - i)*sizeof(int));
-  memmove(&(strat->sevS[i]),&(strat->sevS[i+1]),(strat->sl - i)*sizeof(long));
-  memmove(&(strat->sevSig[i]),&(strat->sevSig[i+1]),(strat->sl - i)*sizeof(long));
+  memmove(&(strat->sevS[i]),&(strat->sevS[i+1]),(strat->sl - i)*sizeof(unsigned long));
+  memmove(&(strat->sevSig[i]),&(strat->sevSig[i+1]),(strat->sl - i)*sizeof(unsigned long));
   memmove(&(strat->S_2_R[i]),&(strat->S_2_R[i+1]),(strat->sl - i)*sizeof(int));
   memmove(&(strat->fromS[i]),&(strat->fromS[i+1]),(strat->sl - i)*sizeof(int));
 #else
@@ -1772,8 +1772,8 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
 #endif
   // testing by syzCriterion = F5 Criterion testing by rewCriterion =
   // Rewritten Criterion
-  if  ( syzCriterion(sSigMult,sSigMultNegSev,strat) ||
-        syzCriterion(pSigMult,pSigMultNegSev,strat) ||
+  if  ( strat->syzCrit(sSigMult,sSigMultNegSev,strat) ||
+        strat->syzCrit(pSigMult,pSigMultNegSev,strat) ||
         rewCriterion(sSigMult,sSigMultNegSev,strat,i+1)
       )
   {
@@ -4870,6 +4870,29 @@ loop
  */
 BOOLEAN syzCriterion(poly sig, unsigned long not_sevSig, kStrategy strat)
 {
+#if 0
+//#ifdef DEBUGF5
+  Print("syzygy criterion checks:  ");
+  pWrite(sig);
+#endif
+  for (int k=0; k<strat->syzl; k++)
+  {
+#if 0
+//#ifdef DEBUGF5
+    Print("checking with: %d --  ",k);
+    pWrite(pHead(strat->syz[k]));
+#endif
+    if (p_LmShortDivisibleBy(strat->syz[k], strat->sevSyz[k], sig, not_sevSig, currRing))
+      return TRUE;
+  }
+  return FALSE;
+}
+
+/*
+ * SYZYGY CRITERION for signature-based standard basis algorithms
+ */
+BOOLEAN syzCriterionInc(poly sig, unsigned long not_sevSig, kStrategy strat)
+{
 //#if 1
 #ifdef DEBUGF5
   Print("syzygy criterion checks:  ");
@@ -5604,20 +5627,32 @@ void initSL (ideal F, ideal Q,kStrategy strat)
 
 void initSLSba (ideal F, ideal Q,kStrategy strat)
 {
-  int   i,j,pos;
+  int   i,j,pos, ctr=0, ps=0;
   if (Q!=NULL) i=((IDELEMS(Q)+(setmaxTinc-1))/setmaxTinc)*setmaxTinc;
   else i=setmaxT;
-  strat->ecartS=initec(i);
-  strat->fromS=initec(i);
-  strat->sevS=initsevS(i);
-  //strat->sevSyz=initsevS(ps);
-  strat->sevSig=initsevS(i);
-  strat->S_2_R=initS_2_R(i);
-  strat->fromQ=NULL;
-  strat->Shdl=idInit(i,F->rank);
-  strat->S=strat->Shdl->m;
-  strat->sig=(poly *)omAlloc0(i*sizeof(poly));
-  //strat->syz=(poly *)omAlloc0(ps*sizeof(poly));
+  if (!strat->incremental)
+  {
+    for(i=1; i<IDELEMS(F); i++)
+    {
+      ps += i;
+    }
+  }
+  ps            +=  strat->sl+1;
+  strat->ecartS =   initec(i);
+  strat->fromS  =   initec(i);
+  strat->sevS   =   initsevS(i);
+  strat->sevSig =   initsevS(i);
+  strat->S_2_R  =   initS_2_R(i);
+  strat->fromQ  =   NULL;
+  strat->Shdl   =   idInit(i,F->rank);
+  strat->S      =   strat->Shdl->m;
+  strat->sig    =   (poly *)omAlloc0(i*sizeof(poly));
+  if (!strat->incremental)
+  {
+    strat->syz    =   (poly *)omAlloc0(ps*sizeof(poly));
+    strat->sevSyz =   initsevS(ps);
+    strat->syzl   =   strat->syzmax = ps;
+  }
   /*- put polys into S -*/
   if (Q!=NULL)
   {
@@ -5699,21 +5734,22 @@ void initSLSba (ideal F, ideal Q,kStrategy strat)
           enterL(&strat->L,&strat->Ll,&strat->Lmax,h,pos);
         }
       }
-      /*
-      for(j=0;j<i;j++)
+      if (!strat->incremental)
       {
-        strat->syz[ctr] = pCopy(F->m[j]);
-        p_SetCompP(strat->syz[ctr],i+1,currRing);
-        // since p_Add_q() destroys all input
-        // data we need to recreate help 
-        // each time
-        poly help = pCopy(F->m[i]);
-        p_SetCompP(help,j+1,currRing);
-        strat->syz[ctr] = p_Add_q(strat->syz[ctr],help,currRing);
-        strat->sevSyz[ctr] = p_GetShortExpVector(strat->syz[ctr],currRing);
-        ctr++;
-      } 
-      */
+        for(j=0;j<i;j++)
+        {
+          strat->syz[ctr] = pCopy(F->m[j]);
+          p_SetCompP(strat->syz[ctr],i+1,currRing);
+          // since p_Add_q() destroys all input
+          // data we need to recreate help 
+          // each time
+          poly help = pCopy(F->m[i]);
+          p_SetCompP(help,j+1,currRing);
+          strat->syz[ctr] = p_Add_q(strat->syz[ctr],help,currRing);
+          strat->sevSyz[ctr] = p_GetShortExpVector(strat->syz[ctr],currRing);
+          ctr++;
+        }
+      }
     }
   }
   /*- test, if a unit is in F -*/
@@ -5795,10 +5831,14 @@ void initSyzRules (kStrategy strat)
         j++;
         for (k = 0; k<i; k++)
         {
-          poly p = pOne();
+          poly p          = pOne();
           pLcm(strat->S[k],strat->S[i],p);
           strat->syz[ctr] = p;
           p_SetCompP (strat->syz[ctr], comp, currRing);
+          poly q          = p_Copy(p, currRing);
+          q               = p_Neg (q, currRing);
+          p_SetCompP (q, p_GetComp(strat->sig[k], currRing), currRing);
+          strat->syz[ctr] = p_Add_q (strat->syz[ctr], q, currRing);
 #ifdef DEBUGF5 || DEBUGF51
           pWrite(strat->syz[ctr]);
 #endif
@@ -5830,8 +5870,12 @@ void initSyzRules (kStrategy strat)
     strat->syzIdx[j]  = ctr;
     for (k = 0; k<strat->sl+1; k++)
     {
-      strat->syz[ctr] = pCopy (p_Head(strat->S[k], currRing));
+      strat->syz[ctr] = p_Copy (strat->S[k], currRing);
       p_SetCompP (strat->syz[ctr], comp, currRing);
+      poly q          = p_Copy (strat->P.p, currRing);
+      q               = p_Neg (q, currRing);
+      p_SetCompP (q, p_GetComp(strat->sig[k], currRing), currRing);
+      strat->syz[ctr] = p_Add_q (strat->syz[ctr], q, currRing);
 #if DEBUGF5 || DEBUGF51
       pWrite(strat->syz[ctr]);
 #endif
@@ -6961,9 +7005,17 @@ void initBuchMoraCrit(kStrategy strat)
 void initSbaCrit(kStrategy strat)
 {
   //strat->enterOnePair=enterOnePairNormal;
-  strat->enterOnePair=enterOnePairNormal;
+  strat->enterOnePair = enterOnePairNormal;
   //strat->chainCrit=chainCritNormal;
-  strat->chainCrit=chainCritSig;
+  strat->chainCrit    = chainCritSig;
+  if (strat->incremental)
+  {
+    strat->syzCrit  = syzCriterionInc;
+  }
+  else
+  {
+    strat->syzCrit  = syzCriterion;
+  }
 #ifdef HAVE_RINGS
   if (rField_is_Ring(currRing))
   {
