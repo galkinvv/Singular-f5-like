@@ -269,6 +269,7 @@ public:
                    LObject* Lo,const kStrategy strat);
   void (*enterOnePair) (int i,poly p,int ecart, int isFromQ,kStrategy strat, int atR /*= -1*/);
   void (*chainCrit) (poly p,int ecart,kStrategy strat);
+  BOOLEAN (*syzCrit) (poly sig, unsigned long not_sevSig, kStrategy strat);
   pFDegProc pOrigFDeg;
   pLDegProc pOrigLDeg;
   pFDegProc pOrigFDeg_TailRing;
@@ -515,6 +516,7 @@ void chainCritSig (poly p,int ecart,kStrategy strat);
 BOOLEAN homogTest(polyset F, int Fmax);
 BOOLEAN newHEdge(polyset S, kStrategy strat);
 BOOLEAN syzCriterion(poly sig, unsigned long not_sevSig, kStrategy strat);
+BOOLEAN syzCriterionInc(poly sig, unsigned long not_sevSig, kStrategy strat);
 BOOLEAN rewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start);
 // returns index of p in TSet, or -1 if not found
 int kFindInT(poly p, TSet T, int tlength);
