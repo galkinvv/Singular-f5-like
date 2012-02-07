@@ -1107,7 +1107,7 @@ void initSba(ideal F,kStrategy strat)
   int i;
   idhdl h;
  /* setting global variables ------------------- */
-  strat->enterS = enterSBba;
+  strat->enterS = enterSSba;
     strat->red2 = redHoney;
   if (strat->honey)
     strat->red2 = redHoney;
