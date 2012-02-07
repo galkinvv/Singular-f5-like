@@ -4658,7 +4658,7 @@ static BOOLEAN jjSLIM_GB(leftv res, leftv u)
   if (w!=NULL) atSet(res,omStrDup("isHomog"),w,INTVEC_CMD);
   return FALSE;
 }
-static BOOLEAN jjSBA(leftv res, leftv v)
+static BOOLEAN jjSBA(leftv res, leftv v, leftv u)
 {
   ideal result;
   ideal v_id=(ideal)v->Data();
@@ -4677,7 +4677,7 @@ static BOOLEAN jjSBA(leftv res, leftv v)
       w=ivCopy(w);
     }
   }
-  result=kSba(v_id,currQuotient,hom,&w);
+  result=kSba(v_id,currQuotient,hom,&w,(int)(long)u->Data());
   idSkipZeroes(result);
   res->data = (char *)result;
   if(!TEST_OPT_DEGBOUND) setFlag(res,FLAG_STD);
