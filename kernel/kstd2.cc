@@ -1483,6 +1483,17 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 
 ideal sba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 {
+  /*+++++++++++++++++++++++++++++++++
+   * incremental stuff
+  strat->incremental = TRUE;
+  // move to Schreyer ordering
+  if (!strat->incremental)
+  {
+    ring currRingOld  = currRing; 
+    ring schreyerRing = getSchreyerRing();
+    rChangeCurrRing (schreyerRing);
+  }
+  */
 #ifdef KDEBUG
   bba_count++;
   int loop_count = 0;
@@ -1756,8 +1767,8 @@ ideal sba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
         enterpairsSig(strat->P.p,strat->P.sig,strat->sl+1,strat->sl,strat->P.ecart,pos,strat, strat->tl);
       // posInS only depends on the leading term
       strat->enterS(strat->P, pos, strat, strat->tl);
-//#if 1
-#if DEBUGF50
+#if 0
+//#if DEBUGF50
     Print("ELEMENT ADDED TO GCURR: ");
     pWrite(pHead(strat->S[strat->sl]));
     pWrite(strat->sig[strat->sl]);
@@ -1862,6 +1873,14 @@ ideal sba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   else if (TEST_OPT_PROT) PrintLn();
 
   /* release temp data-------------------------------- */
+  /*+++++++++++++++++++++++++++++++++
+   * incremental stuff
+  if (!strat->incremental)
+  {
+    rDelete (schreyerRing);
+    rChangeCurrRing (currRingOld);
+  }
+  */
   exitSba(strat);
   if (TEST_OPT_WEIGHTM)
   {
