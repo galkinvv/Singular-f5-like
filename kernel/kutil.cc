@@ -7783,6 +7783,125 @@ void kStratInitChangeTailRing(kStrategy strat)
   kStratChangeTailRing(strat, NULL, NULL, e);
 }
 
+ring getSchreyerRing (const ring r, BOOLEAN complete, int sgn)
+{
+
+  ring res=rCopy0(r, FALSE, FALSE); // No qideal & ordering copy.
+
+  int n = rBlocks(r); // Including trailing zero!
+
+  // Create 2 more blocks for prefix/suffix:
+  res->order=(int *)omAlloc0((n+2)*sizeof(int)); // 0  ..  n+1
+  res->block0=(int *)omAlloc0((n+2)*sizeof(int));
+  res->block1=(int *)omAlloc0((n+2)*sizeof(int));
+  int ** wvhdl =(int **)omAlloc0((n+2)*sizeof(int**));
+
+  // Encapsulate all existing blocks between induced Schreyer ordering markers: prefix and suffix!
+  // Note that prefix and suffix have the same ringorder marker and only differ in block[] parameters!
+
+  // new 1st block
+  int j = 0;
+  res->order[j] = ringorder_IS; // Prefix
+  res->block0[j] = res->block1[j] = 0;
+  // wvhdl[j] = NULL;
+  j++;
+
+  for(int i = 0; (i <= n) && (r->order[i] != 0); i++, j++) // i = [0 .. n-1] <- non-zero old blocks
+  {
+    res->order [j] = r->order [i];
+    res->block0[j] = r->block0[i];
+    res->block1[j] = r->block1[i];
+
+    if (r->wvhdl[i] != NULL)
+    {
+      wvhdl[j] = (int*) omMemDup(r->wvhdl[i]);
+    } // else wvhdl[j] = NULL;
+  }
+
+  // new last block
+  res->order [j] = ringorder_IS; // Suffix
+  res->block0[j] = res->block1[j] = sgn; // Sign of v[o]: 1 for C, -1 for c
+  // wvhdl[j] = NULL;
+  j++;
+
+  // res->order [j] = 0; // The End!
+  res->wvhdl = wvhdl;
+
+  // j == the last zero block now!
+  assume(j == (n+1));
+  assume(res->order[0]==ringorder_IS);
+  assume(res->order[j-1]==ringorder_IS);
+  assume(res->order[j]==0);
+
+
+  if (complete)
+  {
+    rComplete(res, 1);
+
+#if MYTEST
+    PrintS("rAssure_InducedSchreyerOrdering(): temp res: ");
+    rWrite(res);
+#ifdef RDEBUG
+    rDebugPrint(res);
+#endif
+    PrintLn();
+#endif
+
+#ifdef HAVE_PLURAL
+    if (rIsPluralRing(r))
+    {
+      if ( nc_rComplete(r, res, false) ) // no qideal!
+      {
+#ifndef NDEBUG
+        WarnS("error in nc_rComplete");      // cleanup?//      rDelete(res);//      return r;      // just go on..
+#endif
+      }
+    }
+    assume(rIsPluralRing(r) == rIsPluralRing(res));
+#endif
+
+
+#ifdef HAVE_PLURAL
+    ring old_ring = r;
+
+#if MYTEST
+    PrintS("rAssure_InducedSchreyerOrdering(): temp nc res: ");
+    rWrite(res);
+#ifdef RDEBUG
+    rDebugPrint(res);
+#endif
+    PrintLn();
+#endif
+#endif
+
+    if (r->qideal!=NULL)
+    {
+      res->qideal= idrCopyR_NoSort(r->qideal, r, res);
+
+      assume(idRankFreeModule(res->qideal, res) == 0);
+
+#ifdef HAVE_PLURAL
+      if( rIsPluralRing(res) )
+        if( nc_SetupQuotient(res, r, true) )
+        {
+//          WarnS("error in nc_SetupQuotient"); // cleanup?      rDelete(res);       return r;  // just go on...?
+        }
+
+#endif
+      assume(idRankFreeModule(res->qideal, res) == 0);
+    }
+
+#ifdef HAVE_PLURAL
+    assume((res->qideal==NULL) == (old_ring->qideal==NULL));
+    assume(rIsPluralRing(res) == rIsPluralRing(old_ring));
+    assume(rIsSCA(res) == rIsSCA(old_ring));
+    assume(ncRingType(res) == ncRingType(old_ring));
+#endif
+  }
+
+  return res;
+}
+
 skStrategy::skStrategy()
 {
   memset(this, 0, sizeof(skStrategy));
