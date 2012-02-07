@@ -1882,7 +1882,7 @@ ideal sba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
    * incremental stuff
   if (!strat->incremental)
   {
-    rDelete (schreyerRing);
+    rDelete (hreyerRing);
     rChangeCurrRing (currRingOld);
   }
   */
