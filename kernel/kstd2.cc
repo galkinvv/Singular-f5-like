@@ -53,6 +53,7 @@
 //#include "cntrlc.h"
 #include <kernel/weight.h>
 #include <kernel/intvec.h>
+#include <kernel/prCopy.h>
 #ifdef HAVE_PLURAL
 #include <kernel/gring.h>
 #endif
@@ -1482,20 +1483,29 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   return (strat->Shdl);
 }
 
-ideal sba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
+ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 {
-  /*+++++++++++++++++++++++++++++++++
-   * incremental stuff
-  strat->incremental = TRUE;
-  // move to Schreyer ordering
-  */
-  ring schreyerRing, currRingOld;
-  if (!strat->incremental)
+  // ring order stuff:
+  // in sba we have (until now) two possibilities:
+  // 1. an incremental computation w.r.t. (C,monomial order)
+  // 2. a (possibly non-incremental) computation w.r.t. the 
+  //    induced Schreyer order.
+  // The corresponding orders are computed in sbaRing(), depending
+  // on the flag strat->incremental
+  ideal F = F0;
+  ring sRing, currRingOld;
+  currRingOld  = currRing; 
+  sRing = sbaRing(strat);
+  if (sRing!=currRingOld)
   {
-    currRingOld  = currRing; 
-    schreyerRing = getSchreyerRing();
-    rChangeCurrRing (schreyerRing);
+    rChangeCurrRing (sRing);
+    F = idrMoveR (F0, currRingOld);
   }
+#if 1
+  printf("SBA COMPUTATIONS DONE IN THE FOLLOWING RING:\n");
+  rWrite (currRing);
+  printf("\n");
+#endif
 #ifdef KDEBUG
   bba_count++;
   int loop_count = 0;
@@ -1878,11 +1888,6 @@ ideal sba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   }
   else if (TEST_OPT_PROT) PrintLn();
 
-  if (!strat->incremental)
-  {
-    rDelete (schreyerRing);
-    rChangeCurrRing (currRingOld);
-  }
   exitSba(strat);
   if (TEST_OPT_WEIGHTM)
   {
@@ -1911,6 +1916,12 @@ ideal sba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
     strat->Shdl->m[i] = NULL;
   }
 #endif
+  if (sRing!=currRingOld)
+  {
+    rChangeCurrRing (currRingOld);
+    strat->Shdl = idrMoveR_NoSort (strat->Shdl, sRing);
+    rDelete (sRing);
+  }
   idTest(strat->Shdl);
 
 #ifdef DEBUGF5

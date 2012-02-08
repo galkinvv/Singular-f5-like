@@ -4919,7 +4919,7 @@ BOOLEAN syzCriterionInc(poly sig, unsigned long not_sevSig, kStrategy strat)
     for (int k=min; k<max; k++)
     {
 #ifdef DEBUGF5
-      printf("COMP %d/%d - MIN %d - MAX %d - SYZL %d\n",comp,strat->currIdx,min,max,strat->syzl);
+      printf("COMP %d/%d - MIN %d - MAX %d - SYZL %ld\n",comp,strat->currIdx,min,max,strat->syzl);
       Print("checking with: %d --  ",k);
       pWrite(pHead(strat->syz[k]));
 #endif
@@ -7038,8 +7038,8 @@ void initSbaCrit(kStrategy strat)
   strat->pairtest = NULL;
   /* alway use tailreduction, except:
   * - in local rings, - in lex order case, -in ring over extensions */
-  //strat->noTailReduction = !TEST_OPT_REDTAIL;
-  strat->noTailReduction = NULL;
+  strat->noTailReduction = !TEST_OPT_REDTAIL;
+  //strat->noTailReduction = NULL;
 
 #ifdef HAVE_PLURAL
   // and r is plural_ring
@@ -7835,123 +7835,146 @@ void kStratInitChangeTailRing(kStrategy strat)
   kStratChangeTailRing(strat, NULL, NULL, e);
 }
 
-ring getSchreyerRing (const ring r, BOOLEAN complete, int sgn)
+ring sbaRing (kStrategy strat, const ring r, BOOLEAN complete, int sgn)
 {
-
-  ring res=rCopy0(r, FALSE, FALSE); // No qideal & ordering copy.
-
   int n = rBlocks(r); // Including trailing zero!
-
-  // Create 2 more blocks for prefix/suffix:
-  res->order=(int *)omAlloc0((n+2)*sizeof(int)); // 0  ..  n+1
-  res->block0=(int *)omAlloc0((n+2)*sizeof(int));
-  res->block1=(int *)omAlloc0((n+2)*sizeof(int));
-  int ** wvhdl =(int **)omAlloc0((n+2)*sizeof(int**));
-
-  // Encapsulate all existing blocks between induced Schreyer ordering markers: prefix and suffix!
-  // Note that prefix and suffix have the same ringorder marker and only differ in block[] parameters!
-
-  // new 1st block
-  int j = 0;
-  res->order[j] = ringorder_IS; // Prefix
-  res->block0[j] = res->block1[j] = 0;
-  // wvhdl[j] = NULL;
-  j++;
-
-  for(int i = 0; (i <= n) && (r->order[i] != 0); i++, j++) // i = [0 .. n-1] <- non-zero old blocks
+  // if incremental => use (C,monomial order from r)
+  if (strat->incremental)
   {
-    res->order [j] = r->order [i];
-    res->block0[j] = r->block0[i];
-    res->block1[j] = r->block1[i];
-
-    if (r->wvhdl[i] != NULL)
+    if (r->order[0] == ringorder_C || r->order[0] == ringorder_c)
     {
-      wvhdl[j] = (int*) omMemDup(r->wvhdl[i]);
-    } // else wvhdl[j] = NULL;
-  }
+      return r;
+    }
+      ring res = rCopy0(r, FALSE, TRUE);
+      for (int i=1; i<n-1; i++)
+      {
+        res->order[i] = res->order[i-1];
+        res->block0[i] = res->block0[i-1];
+        res->block1[i] = res->block1[i-1];
+        res->wvhdl[i] = res->wvhdl[i-1];
+      }
 
-  // new last block
-  res->order [j] = ringorder_IS; // Suffix
-  res->block0[j] = res->block1[j] = sgn; // Sign of v[o]: 1 for C, -1 for c
-  // wvhdl[j] = NULL;
-  j++;
-
-  // res->order [j] = 0; // The End!
-  res->wvhdl = wvhdl;
-
-  // j == the last zero block now!
-  assume(j == (n+1));
-  assume(res->order[0]==ringorder_IS);
-  assume(res->order[j-1]==ringorder_IS);
-  assume(res->order[j]==0);
-
-
-  if (complete)
-  {
+    // new 1st block
+    res->order[0]   = ringorder_C; // Prefix
+    res->block0[0]  = 1;
+    res->block1[0]  = res->N;
+    //res->wvhdl[j]   = NULL;
+    // res->order [j] = 0; // The End!
     rComplete(res, 1);
-
-#if MYTEST
-    PrintS("rAssure_InducedSchreyerOrdering(): temp res: ");
-    rWrite(res);
-#ifdef RDEBUG
-    rDebugPrint(res);
-#endif
-    PrintLn();
-#endif
-
 #ifdef HAVE_PLURAL
     if (rIsPluralRing(r))
     {
       if ( nc_rComplete(r, res, false) ) // no qideal!
       {
 #ifndef NDEBUG
-        WarnS("error in nc_rComplete");      // cleanup?//      rDelete(res);//      return r;      // just go on..
+        WarnS("error in nc_rComplete");
 #endif
+        // cleanup?
+
+        //      rDelete(res);
+        //      return r;
+
+        // just go on..
       }
     }
-    assume(rIsPluralRing(r) == rIsPluralRing(res));
 #endif
+  strat->tailRing = res;
+  return (res);
+  }
+  // not incremental => use Schreyer order
+  else
+  {
+    ring res = rCopy0(r, FALSE, FALSE);
+    // Create 2 more blocks for prefix/suffix:
+    res->order=(int *)omAlloc0((n+2)*sizeof(int)); // 0  ..  n+1
+    res->block0=(int *)omAlloc0((n+2)*sizeof(int));
+    res->block1=(int *)omAlloc0((n+2)*sizeof(int));
+    int ** wvhdl =(int **)omAlloc0((n+2)*sizeof(int**));
 
+    // Encapsulate all existing blocks between induced Schreyer ordering markers: prefix and suffix!
+    // Note that prefix and suffix have the same ringorder marker and only differ in block[] parameters!
 
-#ifdef HAVE_PLURAL
-    ring old_ring = r;
+    // new 1st block
+    int j = 0;
+    res->order[j] = ringorder_IS; // Prefix
+    res->block0[j] = res->block1[j] = 0;
+    // wvhdl[j] = NULL;
+    j++;
 
-#if MYTEST
-    PrintS("rAssure_InducedSchreyerOrdering(): temp nc res: ");
-    rWrite(res);
-#ifdef RDEBUG
-    rDebugPrint(res);
-#endif
-    PrintLn();
-#endif
-#endif
-
-    if (r->qideal!=NULL)
+    for(int i = 0; (i < n) && (r->order[i] != 0); i++, j++) // i = [0 .. n-1] <- non-zero old blocks
     {
-      res->qideal= idrCopyR_NoSort(r->qideal, r, res);
+      res->order [j] = r->order [i];
+      res->block0[j] = r->block0[i];
+      res->block1[j] = r->block1[i];
 
-      assume(idRankFreeModule(res->qideal, res) == 0);
-
-#ifdef HAVE_PLURAL
-      if( rIsPluralRing(res) )
-        if( nc_SetupQuotient(res, r, true) )
-        {
-//          WarnS("error in nc_SetupQuotient"); // cleanup?      rDelete(res);       return r;  // just go on...?
-        }
-
-#endif
-      assume(idRankFreeModule(res->qideal, res) == 0);
+      if (r->wvhdl[i] != NULL)
+      {
+        wvhdl[j] = (int*) omMemDup(r->wvhdl[i]);
+      } // else wvhdl[j] = NULL;
     }
 
-#ifdef HAVE_PLURAL
-    assume((res->qideal==NULL) == (old_ring->qideal==NULL));
-    assume(rIsPluralRing(res) == rIsPluralRing(old_ring));
-    assume(rIsSCA(res) == rIsSCA(old_ring));
-    assume(ncRingType(res) == ncRingType(old_ring));
-#endif
-  }
+    // new last block
+    res->order [j] = ringorder_IS; // Suffix
+    res->block0[j] = res->block1[j] = sgn; // Sign of v[o]: 1 for C, -1 for c
+    // wvhdl[j] = NULL;
+    j++;
 
-  return res;
+    // res->order [j] = 0; // The End!
+    res->wvhdl = wvhdl;
+
+    // j == the last zero block now!
+    assume(j == (n+1));
+    assume(res->order[0]==ringorder_IS);
+    assume(res->order[j-1]==ringorder_IS);
+    assume(res->order[j]==0);
+
+    if (complete)
+    {
+      rComplete(res, 1);
+
+#ifdef HAVE_PLURAL
+      if (rIsPluralRing(r))
+      {
+        if ( nc_rComplete(r, res, false) ) // no qideal!
+        {
+        }
+      }
+      assume(rIsPluralRing(r) == rIsPluralRing(res));
+#endif
+
+
+#ifdef HAVE_PLURAL
+      ring old_ring = r;
+
+#endif
+
+      if (r->qideal!=NULL)
+      {
+        res->qideal= idrCopyR_NoSort(r->qideal, r, res);
+
+        assume(idRankFreeModule(res->qideal, res) == 0);
+
+#ifdef HAVE_PLURAL
+        if( rIsPluralRing(res) )
+          if( nc_SetupQuotient(res, r, true) )
+          {
+            //          WarnS("error in nc_SetupQuotient"); // cleanup?      rDelete(res);       return r;  // just go on...?
+          }
+
+#endif
+        assume(idRankFreeModule(res->qideal, res) == 0);
+      }
+
+#ifdef HAVE_PLURAL
+      assume((res->qideal==NULL) == (old_ring->qideal==NULL));
+      assume(rIsPluralRing(res) == rIsPluralRing(old_ring));
+      assume(rIsSCA(res) == rIsSCA(old_ring));
+      assume(ncRingType(res) == ncRingType(old_ring));
+#endif
+    }
+    strat->tailRing = res;
+    return res;
+  }
 }
 
 skStrategy::skStrategy()
