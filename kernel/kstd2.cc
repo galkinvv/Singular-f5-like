@@ -1519,6 +1519,7 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   //initBuchMoraCrit(strat); /*set Gebauer, honey, sugarCrit*/
   initSbaCrit(strat); /*set Gebauer, honey, sugarCrit*/
   initSbaPos(strat);
+  //initBuchMoraPos(strat);
   initHilbCrit(F,Q,&hilb,strat);
   initSba(F,strat);
   /*set enterS, spSpolyShort, reduce, red, initEcart, initEcartPair*/
