@@ -5883,8 +5883,8 @@ void initSyzRules (kStrategy strat)
       strat->sevSyz[ctr] = p_GetShortExpVector(strat->syz[ctr],currRing);
       ctr++;
     }
-#if 1
-//#ifdef DEBUGF5
+//#if 1
+#ifdef DEBUGF5
     Print("Principal syzygies:\n");
     Print("--------------------------------\n");
     for(i=0;i<=ps-1;i++)
