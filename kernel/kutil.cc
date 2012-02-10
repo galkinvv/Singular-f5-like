@@ -5870,9 +5870,11 @@ void initSyzRules (kStrategy strat)
     strat->syzIdx[j]  = ctr;
     for (k = 0; k<strat->sl+1; k++)
     {
-      strat->syz[ctr] = p_Copy (strat->S[k], currRing);
+      printf("k: %k\n",k);
+      pWrite(pHead(strat->S[k]));
+      strat->syz[ctr] = p_Copy (pHead(strat->S[k]), currRing);
       p_SetCompP (strat->syz[ctr], comp, currRing);
-      poly q          = p_Copy (strat->P.p, currRing);
+      poly q          = p_Copy (pHead(strat->P.p), currRing);
       q               = p_Neg (q, currRing);
       p_SetCompP (q, p_GetComp(strat->sig[k], currRing), currRing);
       strat->syz[ctr] = p_Add_q (strat->syz[ctr], q, currRing);
