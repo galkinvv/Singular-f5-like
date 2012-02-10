@@ -31,7 +31,7 @@
 
 #ifdef DEBUGF5
 #undef DEBUGF5
-#define DEBUGF5 2
+//#define DEBUGF5 1
 #endif
 
 #ifdef HAVE_RINGS
@@ -5870,7 +5870,6 @@ void initSyzRules (kStrategy strat)
     strat->syzIdx[j]  = ctr;
     for (k = 0; k<strat->sl+1; k++)
     {
-      printf("k: %k\n",k);
       pWrite(pHead(strat->S[k]));
       strat->syz[ctr] = p_Copy (pHead(strat->S[k]), currRing);
       p_SetCompP (strat->syz[ctr], comp, currRing);
@@ -5884,7 +5883,8 @@ void initSyzRules (kStrategy strat)
       strat->sevSyz[ctr] = p_GetShortExpVector(strat->syz[ctr],currRing);
       ctr++;
     }
-#ifdef DEBUGF5
+#if 1
+//#ifdef DEBUGF5
     Print("Principal syzygies:\n");
     Print("--------------------------------\n");
     for(i=0;i<=ps-1;i++)

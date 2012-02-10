@@ -490,7 +490,7 @@ int hpux9_system(const char* system);
  * 0 for no tests
  * 1 for basic tests
  */
-#define DEBUGF5 1
+#define DEBUGF5 0
 
 /* define LDEBUG checking numbers, undefine otherwise */
 #define LDEBUG

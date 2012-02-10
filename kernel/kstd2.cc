@@ -36,6 +36,12 @@
 
 #define DEBUGF50  0
 #define DEBUGF51  0
+
+#ifdef DEBUGF5
+#undef DEBUGF5
+//#define DEBUGF5 1
+#endif
+
 #define F5C       1
 #if F5C
   #define F5CTAILRED 0
@@ -519,7 +525,8 @@ int redSig (LObject* h,kStrategy strat)
   //if (h->GetLmTailRing()==NULL) return 0; // HS: SHOULD NOT BE NEEDED!
   //printf("FDEGS: %ld -- %ld\n",h->FDeg, h->pFDeg());
   assume(h->FDeg == h->pFDeg());
-#ifdef DEBUGF5
+#if 1
+//#ifdef DEBUGF5
   Print("------- IN REDSIG -------\n");
   Print("p: ");
   pWrite(pHead(h->p));
@@ -1614,8 +1621,8 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
     /* picks the last element from the lazyset L */
     strat->P = strat->L[strat->Ll];
     strat->Ll--;
-//#if 1
-#ifdef DEBUGF5
+#if 1
+//#ifdef DEBUGF5
     Print("SIG OF NEXT PAIR TO HANDLE IN SIG-BASED ALGORITHM\n");
     Print("-------------------------------------------------\n");
     pWrite(strat->P.sig);
@@ -1675,7 +1682,8 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
         message((strat->honey ? strat->P.ecart : 0) + strat->P.pFDeg(),
                 &olddeg,&reduc,strat, red_result);
 
-#ifdef DEBUGF5
+#if 1
+//#ifdef DEBUGF5
       Print("Poly before red: ");
       pWrite(strat->P.p);
 #endif
