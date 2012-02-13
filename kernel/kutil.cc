@@ -5772,9 +5772,9 @@ void initSyzRules (kStrategy strat)
     if( strat->S[1] )
     {
   printf("HERE syz 2 \n");
-      omFreeSize(strat->syzIdx,(strat->syzidxmax)*sizeof(int));
+      __omFreeSize(strat->syzIdx,(strat->syzidxmax)*sizeof(int));
   printf("HERE syz 3\n");
-      omFreeSize(strat->sevSyz,(strat->syzmax)*sizeof(unsigned long));
+      __omFreeSize(strat->sevSyz,(strat->syzmax)*sizeof(unsigned long));
   printf("HERE syz 4 -- syzmax %d\n", strat->syzmax);
       printf("--- syz ---\n");
       for(int si=0; si<strat->syzmax;si++)
@@ -5782,8 +5782,8 @@ void initSyzRules (kStrategy strat)
         printf("%d -- ",si);
         pWrite(strat->syz[si]);
       }
-      printf("---------\n");
-      omFreeSize(strat->syz,(strat->syzmax)*sizeof(poly));
+      printf("----- %p -----\n",strat->syz);
+      __omFreeSize(strat->syz,(strat->syzmax)*sizeof(poly));
   printf("HERE syz 5\n");
     }
     int i, j, k, diff, comp, comp_old, ps=0, ctr=0;
@@ -5803,7 +5803,8 @@ void initSyzRules (kStrategy strat)
     comp              = strat->currIdx;
     strat->syzIdx     = initec(comp);
     strat->sevSyz     = initsevS(ps);
-    strat->syz        = (poly *)omAlloc0(ps*sizeof(poly));
+    strat->syz        = (poly *)omAlloc(ps*sizeof(poly));
+    printf("STRAT->SYZ ----- %p -----\n",strat->syz);
     strat->syzl       = strat->syzmax = ps;
     strat->syzidxmax  = comp;
 #ifdef DEBUGF5 || DEBUGF51
@@ -7357,22 +7358,22 @@ void exitSba (kStrategy strat)
 {
   /*- release temp data -*/
   cleanT(strat);
-  omFreeSize(strat->T,(strat->tmax)*sizeof(TObject));
-  omFreeSize(strat->R,(strat->tmax)*sizeof(TObject*));
-  omFreeSize(strat->sevT, (strat->tmax)*sizeof(unsigned long));
-  omFreeSize(strat->ecartS,IDELEMS(strat->Shdl)*sizeof(int));
-  omFreeSize(strat->fromS,IDELEMS(strat->Shdl)*sizeof(int));
-  omFreeSize((ADDRESS)strat->sevS,IDELEMS(strat->Shdl)*sizeof(unsigned long));
-  omFreeSize((ADDRESS)strat->sevSig,IDELEMS(strat->Shdl)*sizeof(unsigned long));
-  omFreeSize((ADDRESS)strat->sevSyz,(strat->syzmax)*sizeof(unsigned long));
-  omFreeSize(strat->syzIdx,(strat->syzidxmax)*sizeof(int));
-  omFreeSize(strat->S_2_R,IDELEMS(strat->Shdl)*sizeof(int));
+  __omFreeSize(strat->T,(strat->tmax)*sizeof(TObject));
+  __omFreeSize(strat->R,(strat->tmax)*sizeof(TObject*));
+  __omFreeSize(strat->sevT, (strat->tmax)*sizeof(unsigned long));
+  __omFreeSize(strat->ecartS,IDELEMS(strat->Shdl)*sizeof(int));
+  __omFreeSize(strat->fromS,IDELEMS(strat->Shdl)*sizeof(int));
+  __omFreeSize((ADDRESS)strat->sevS,IDELEMS(strat->Shdl)*sizeof(unsigned long));
+  __omFreeSize((ADDRESS)strat->sevSig,IDELEMS(strat->Shdl)*sizeof(unsigned long));
+  __omFreeSize((ADDRESS)strat->sevSyz,(strat->syzmax)*sizeof(unsigned long));
+  __omFreeSize(strat->syzIdx,(strat->syzidxmax)*sizeof(int));
+  __omFreeSize(strat->S_2_R,IDELEMS(strat->Shdl)*sizeof(int));
   /*- set L: should be empty -*/
-  omFreeSize(strat->L,(strat->Lmax)*sizeof(LObject));
+  __omFreeSize(strat->L,(strat->Lmax)*sizeof(LObject));
   /*- set B: should be empty -*/
-  omFreeSize(strat->B,(strat->Bmax)*sizeof(LObject));
+  __omFreeSize(strat->B,(strat->Bmax)*sizeof(LObject));
   /*- set sig: no need for the signatures anymore -*/
-  omFreeSize(strat->sig,IDELEMS(strat->Shdl)*sizeof(poly));
+  __omFreeSize(strat->sig,IDELEMS(strat->Shdl)*sizeof(poly));
   pLmDelete(&strat->tail);
   strat->syzComp=0;
   if (strat->kIdeal!=NULL)
