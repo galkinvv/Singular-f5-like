@@ -5766,13 +5766,25 @@ void initSLSba (ideal F, ideal Q,kStrategy strat)
 
 void initSyzRules (kStrategy strat)
 {
+  printf("HERE syz\n");
   if( strat->S[0] )
   {
     if( strat->S[1] )
     {
+  printf("HERE syz 2 \n");
       omFreeSize(strat->syzIdx,(strat->syzidxmax)*sizeof(int));
-      omFreeSize(strat->sevSyz,(strat->syzmax)*sizeof(int));
+  printf("HERE syz 3\n");
+      omFreeSize(strat->sevSyz,(strat->syzmax)*sizeof(unsigned long));
+  printf("HERE syz 4 -- syzmax %d\n", strat->syzmax);
+      printf("--- syz ---\n");
+      for(int si=0; si<strat->syzmax;si++)
+      {
+        printf("%d -- ",si);
+        pWrite(strat->syz[si]);
+      }
+      printf("---------\n");
       omFreeSize(strat->syz,(strat->syzmax)*sizeof(poly));
+  printf("HERE syz 5\n");
     }
     int i, j, k, diff, comp, comp_old, ps=0, ctr=0;
     /************************************************************
@@ -5786,6 +5798,7 @@ void initSyzRules (kStrategy strat)
       }
     }
     ps += strat->sl+1;
+    printf("PS %d\n",ps);
     //comp              = pGetComp (strat->P.sig);
     comp              = strat->currIdx;
     strat->syzIdx     = initec(comp);
@@ -5870,21 +5883,22 @@ void initSyzRules (kStrategy strat)
     strat->syzIdx[j]  = ctr;
     for (k = 0; k<strat->sl+1; k++)
     {
-      pWrite(pHead(strat->S[k]));
       strat->syz[ctr] = p_Copy (pHead(strat->S[k]), currRing);
       p_SetCompP (strat->syz[ctr], comp, currRing);
-      poly q          = p_Copy (pHead(strat->P.p), currRing);
+      poly q          = p_Copy (pHead(strat->L[strat->Ll].p), currRing);
       q               = p_Neg (q, currRing);
       p_SetCompP (q, p_GetComp(strat->sig[k], currRing), currRing);
       strat->syz[ctr] = p_Add_q (strat->syz[ctr], q, currRing);
-#if DEBUGF5 || DEBUGF51
+#if 1
+//#if DEBUGF5 || DEBUGF51
+      printf("..");
       pWrite(strat->syz[ctr]);
 #endif
       strat->sevSyz[ctr] = p_GetShortExpVector(strat->syz[ctr],currRing);
       ctr++;
     }
-//#if 1
-#ifdef DEBUGF5
+#if 1
+//#ifdef DEBUGF5
     Print("Principal syzygies:\n");
     Print("--------------------------------\n");
     for(i=0;i<=ps-1;i++)
