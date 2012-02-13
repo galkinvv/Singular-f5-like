@@ -78,7 +78,6 @@ long zeroreductions = 0;
 int kFindDivisibleByInT(const TSet &T, const unsigned long* sevT,
                         const int tl, const LObject* L, const int start)
 {
-  printf("HERE\n");
   unsigned long not_sev = ~L->sev;
   int j = start;
   poly p=L->p;
@@ -525,8 +524,8 @@ int redSig (LObject* h,kStrategy strat)
   //if (h->GetLmTailRing()==NULL) return 0; // HS: SHOULD NOT BE NEEDED!
   //printf("FDEGS: %ld -- %ld\n",h->FDeg, h->pFDeg());
   assume(h->FDeg == h->pFDeg());
-#if 1
-//#ifdef DEBUGF5
+//#if 1
+#ifdef DEBUGF5
   Print("------- IN REDSIG -------\n");
   Print("p: ");
   pWrite(pHead(h->p));
@@ -554,11 +553,9 @@ int redSig (LObject* h,kStrategy strat)
     j = kFindDivisibleByInT(strat->T, strat->sevT, strat->tl, h, start);
     if (j < 0)
     {
-      printf("DA\n");
       return 1;
     }
 
-    printf("j %d\n",j);
     li = strat->T[j].pLength;
     ii = j;
     /*
@@ -604,8 +601,8 @@ int redSig (LObject* h,kStrategy strat)
     }
 #endif
     assume(strat->fromT == FALSE);
-#if 1
-//#ifdef DEBUGF5
+//#if 1
+#ifdef DEBUGF5
     Print("BEFORE REDUCTION WITH %d:\n",ii);
     Print("--------------------------------\n");
     pWrite(h->sig);
@@ -621,8 +618,8 @@ int redSig (LObject* h,kStrategy strat)
     // if reduction has taken place, i.e. the reduction was sig-safe
     // otherwise start is already at the next position and the loop
     // searching reducers in T goes on from index start
-#if 1
-//#ifdef DEBUGF5
+//#if 1
+#ifdef DEBUGF5
     Print("SigSAFE: %d\n",sigSafe);
 #endif
     if (sigSafe != 3)
@@ -1610,10 +1607,8 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       if (strat->Ll<0) break;
       else strat->noClearS=TRUE;
     }
-    printf("CURRIDX %d -- L.sig %d\n",strat->currIdx, pGetComp(strat->L[strat->Ll].sig));
     if (strat->incremental && pGetComp(strat->L[strat->Ll].sig) != strat->currIdx)
     {
-    printf("DU\n");
     nrF5C++;
       strat->currIdx  = pGetComp(strat->L[strat->Ll].sig);
 #if F5C
@@ -1624,9 +1619,7 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 #endif
       // initialize new syzygy rules for the next iteration step  
       initSyzRules(strat);
-    printf("DU2\n");
     }
-    printf("DU3\n");
     /*********************************************************************
      * interrreduction step is done, we can go on with the next iteration
      * step of the signature-based algorithm
@@ -1634,8 +1627,8 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
     /* picks the last element from the lazyset L */
     strat->P = strat->L[strat->Ll];
     strat->Ll--;
-#if 1
-//#ifdef DEBUGF5
+//#if 1
+#ifdef DEBUGF5
     Print("SIG OF NEXT PAIR TO HANDLE IN SIG-BASED ALGORITHM\n");
     Print("-------------------------------------------------\n");
     pWrite(strat->P.sig);
@@ -1695,14 +1688,13 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
         message((strat->honey ? strat->P.ecart : 0) + strat->P.pFDeg(),
                 &olddeg,&reduc,strat, red_result);
 
-#if 1
-//#ifdef DEBUGF5
+//#if 1
+#ifdef DEBUGF5
       Print("Poly before red: ");
       pWrite(strat->P.p);
 #endif
       /* reduction of the element choosen from L */
       red_result = strat->red(&strat->P,strat);
-      printf("DO\n");
       if (errorreported)  break;
     }
 
@@ -1787,7 +1779,6 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       // enter into S, L, and T
       //if ((!TEST_OPT_IDLIFT) || (pGetComp(strat->P.p) <= strat->syzComp))
         enterT(strat->P, strat);
-    printf("PAIRSET %d\n",strat->Ll);
 #ifdef HAVE_RINGS
       if (rField_is_Ring(currRing))
         superenterpairs(strat->P.p,strat->sl,strat->P.ecart,pos,strat, strat->tl);
@@ -1796,8 +1787,8 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
         enterpairsSig(strat->P.p,strat->P.sig,strat->sl+1,strat->sl,strat->P.ecart,pos,strat, strat->tl);
       // posInS only depends on the leading term
       strat->enterS(strat->P, pos, strat, strat->tl);
-#if 1
-//#if DEBUGF50
+//#if 1
+#if DEBUGF50
     printf("PAIRSET %d\n",strat->Ll);
     printf("curridx %d\n",strat->currIdx);
     printf("---------------------------\n");
@@ -1844,8 +1835,8 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       if (red_result!=2) {
         zeroreductions++;
         enterSyz(strat->P,strat);
-#if 1
-//#ifdef DEBUGF5
+//#if 1
+#ifdef DEBUGF5
         Print("ADDING STUFF TO SYZ :  ");
         pWrite(strat->P.sig);
 #endif
@@ -1859,9 +1850,7 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 #ifdef KDEBUG
     memset(&(strat->P), 0, sizeof(strat->P));
 #endif /* KDEBUG */
-    printf("TS1\n");
     kTest_TS(strat);
-    printf("TS2\n");
   }
 #ifdef KDEBUG
 #if MYTEST
@@ -2179,7 +2168,7 @@ void f5c (kStrategy strat, int& olddeg, int& minimcnt, int& hilbeledeg,
   {
     strat->P = strat->L[strat->Ll];
     strat->Ll--;
-    //#if 1
+//#if 1
 #ifdef DEBUGF5
     Print("NEXT PAIR TO HANDLE IN INTERRED ALGORITHM\n");
     Print("-------------------------------------------------\n");
@@ -2415,9 +2404,9 @@ void f5c (kStrategy strat, int& olddeg, int& minimcnt, int& hilbeledeg,
     cc++;
   }
   Print("-------------------------------------------------\n");
+  printf("F5C DONE\nSTRAT SL: %d -- %d\n",strat->sl, strat->currIdx);
 #endif
 
-  printf("F5C DONE\nSTRAT SL: %d -- %d\n",strat->sl, strat->currIdx);
 }
 #endif
 

@@ -465,8 +465,6 @@ static omBin omGetOrigSpecBinOfAddr(void* addr)
 
 static void __omDebugFree(void* addr, void* size_bin, omTrackFlags_t flags, OM_FLR_DECL)
 {
-  printf("ADDR %p\n",addr);
-  printf("KEPT_ADDR BEFORE %p\n",om_KeptAddr);
   omBin bin = NULL;
 
   if (addr == NULL || ((flags & OM_FSIZE) && size_bin == NULL)) return;
@@ -513,9 +511,7 @@ static void __omDebugFree(void* addr, void* size_bin, omTrackFlags_t flags, OM_F
     {
       omError_t status = omDoCheckAddr(om_KeptAddr, NULL, OM_FKEPT, om_Opts.MinCheck,
                                        omError_MemoryCorrupted, OM_FLR_VAL);
-      printf("KEPT_ADDR %p\n",om_KeptAddr);
       addr = om_KeptAddr;
-      printf("ADDR %p\n",addr);
       if (addr!=NULL) om_KeptAddr = *((void**) addr);
       om_NumberOfKeptAddrs--;
       if (status != omError_NoError) return;
