@@ -1772,30 +1772,15 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
 #endif
   // testing by syzCriterion = F5 Criterion testing by rewCriterion =
   // Rewritten Criterion
-  if (strat->incremental)
-  {
-    if  ( strat->syzCrit(sSigMult,sSigMultNegSev,strat) ||
+  if  ( strat->syzCrit(sSigMult,sSigMultNegSev,strat) ||
         strat->syzCrit(pSigMult,pSigMultNegSev,strat) ||
         rewCriterion(sSigMult,sSigMultNegSev,strat,i+1)
-        )
-    {
-      strat->cp++;
-      pLmFree(Lp.lcm);
-      Lp.lcm=NULL;
-      return;
-    }
-  }
-  else
+      )
   {
-    if  (
-        rewCriterion(sSigMult,sSigMultNegSev,strat,i+1)
-        )
-    {
-      strat->cp++;
-      pLmFree(Lp.lcm);
-      Lp.lcm=NULL;
-      return;
-    }
+    strat->cp++;
+    pLmFree(Lp.lcm);
+    Lp.lcm=NULL;
+    return;
   }
   // in any case Lp is checked up to the next strat->P which is added
   // to S right after this critical pair creation.
@@ -1805,8 +1790,8 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
   //       gives the bigger signature. 
   Lp.checked = strat->sl+1;
   int sigCmp = p_LmCmp(pSigMult,sSigMult,currRing);
-//#if 1
-#if DEBUGF5
+#if 1
+//#if DEBUGF5
   printf("IN PAIR GENERATION - COMPARING SIGS: %d\n",sigCmp);
   pWrite(pSigMult);
   pWrite(sSigMult);
@@ -1841,17 +1826,10 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
     Lp.sig    = sSigMult;
     Lp.sevSig = ~sSigMultNegSev;
   }
-#if 0
+#if 1
   printf("SIGNATURE OF PAIR:  ");
   pWrite(Lp.sig);
 #endif
-  /****************************************************
-   * **************************************************
-   * **************************************************
-   * DELETE sSigMult and pSigMult!!!
-   * **************************************************
-   * **************************************************
-   */
   /*
   *the pair (S[i],p) enters B if the spoly != 0
   */
@@ -5680,9 +5658,9 @@ void initSLSba (ideal F, ideal Q,kStrategy strat)
   strat->sig    =   (poly *)omAlloc0(i*sizeof(poly));
   if (!strat->incremental)
   {
-    strat->syz    =   (poly *)omAlloc0(ps*sizeof(poly));
-    strat->sevSyz =   initsevS(ps);
-    strat->syzl   =   strat->syzmax = ps;
+    strat->syz      =   (poly *)omAlloc0(ps*sizeof(poly));
+    strat->sevSyz   =   initsevS(ps);
+    strat->syzl     =   strat->syzmax = ps;
   }
   /*- put polys into S -*/
   if (Q!=NULL)
@@ -5730,9 +5708,19 @@ void initSLSba (ideal F, ideal Q,kStrategy strat)
     {
       LObject h;
       h.p = pCopy(F->m[i]);
-      h.sig = pInit();
-      p_SetCoeff(h.sig,nInit(1),currRing);
+      h.sig = pOne();
+      //h.sig = pInit();
+      //p_SetCoeff(h.sig,nInit(1),currRing);
       p_SetComp(h.sig,i+1,currRing);
+      // if we are working with the Schreyer order we generate it 
+      // by multiplying the initial signatures with the leading monomial
+      // of the corresponding initial polynomials generating the ideal
+      // => we can keep the underlying monomial order and get a Schreyer 
+      //    order without any bigger overhead
+      if (!strat->incremental)
+      {
+        p_ExpVectorAdd (h.sig,F->m[i],currRing);  
+      }
       h.sevSig = pGetShortExpVector(h.sig);
 #ifdef DEBUGF5
       pWrite(h.p);
@@ -5776,6 +5764,9 @@ void initSLSba (ideal F, ideal Q,kStrategy strat)
           // each time
           poly help = pCopy(F->m[i]);
           p_SetCompP(help,j+1,currRing);
+          pWrite(strat->syz[ctr]);
+          pWrite(help);
+          printf("%d\n",pLmCmp(strat->syz[ctr],help));
           strat->syz[ctr] = p_Add_q(strat->syz[ctr],help,currRing);
           printf("%d. SYZ  ",ctr);
           pWrite(strat->syz[ctr]);
@@ -7921,6 +7912,15 @@ ring sbaRing (kStrategy strat, const ring r, BOOLEAN complete, int sgn)
   return (res);
   }
   // not incremental => use Schreyer order
+  // this is done by a trick when initializing the signatures
+  // in initSLSba():
+  // Instead of using the signature 1e_i for F->m[i], we start
+  // with the signature LM(F->m[i])e_i for F->m[i]. Doing this we get a 
+  // Schreyer order w.r.t. the underlying monomial order.
+  // => we do not need to change the underlying polynomial ring at all!
+
+
+  /*
   else
   {
     ring res = rCopy0(r, FALSE, FALSE);
@@ -8014,6 +8014,7 @@ ring sbaRing (kStrategy strat, const ring r, BOOLEAN complete, int sgn)
     strat->tailRing = res;
     return res;
   }
+  */
 }
 
 skStrategy::skStrategy()
