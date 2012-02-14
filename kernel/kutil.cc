@@ -1772,15 +1772,30 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
 #endif
   // testing by syzCriterion = F5 Criterion testing by rewCriterion =
   // Rewritten Criterion
-  if  ( strat->syzCrit(sSigMult,sSigMultNegSev,strat) ||
+  if (strat->incremental)
+  {
+    if  ( strat->syzCrit(sSigMult,sSigMultNegSev,strat) ||
         strat->syzCrit(pSigMult,pSigMultNegSev,strat) ||
         rewCriterion(sSigMult,sSigMultNegSev,strat,i+1)
-      )
+        )
+    {
+      strat->cp++;
+      pLmFree(Lp.lcm);
+      Lp.lcm=NULL;
+      return;
+    }
+  }
+  else
   {
-    strat->cp++;
-    pLmFree(Lp.lcm);
-    Lp.lcm=NULL;
-    return;
+    if  (
+        rewCriterion(sSigMult,sSigMultNegSev,strat,i+1)
+        )
+    {
+      strat->cp++;
+      pLmFree(Lp.lcm);
+      Lp.lcm=NULL;
+      return;
+    }
   }
   // in any case Lp is checked up to the next strat->P which is added
   // to S right after this critical pair creation.
@@ -1790,8 +1805,9 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
   //       gives the bigger signature. 
   Lp.checked = strat->sl+1;
   int sigCmp = p_LmCmp(pSigMult,sSigMult,currRing);
+//#if 1
 #if DEBUGF5
-  printf("IN PAIR GENERATION - COMPARING SIGS: \n");
+  printf("IN PAIR GENERATION - COMPARING SIGS: %d\n",sigCmp);
   pWrite(pSigMult);
   pWrite(sSigMult);
 #endif
@@ -1812,15 +1828,28 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
   if(sigCmp==pOrdSgn)
   {
     // pSig > sSig
+    pDelete (&sSigMult);
     Lp.sig    = pSigMult;
     Lp.sevSig = ~pSigMultNegSev;
   }
   else
   {
     // pSig < sSig
+    pDelete (&pSigMult);
     Lp.sig    = sSigMult;
     Lp.sevSig = ~sSigMultNegSev;
   }
+#if 0
+  printf("SIGNATURE OF PAIR:  ");
+  pWrite(Lp.sig);
+#endif
+  /****************************************************
+   * **************************************************
+   * **************************************************
+   * DELETE sSigMult and pSigMult!!!
+   * **************************************************
+   * **************************************************
+   */
   /*
   *the pair (S[i],p) enters B if the spoly != 0
   */
@@ -5746,6 +5775,7 @@ void initSLSba (ideal F, ideal Q,kStrategy strat)
           poly help = pCopy(F->m[i]);
           p_SetCompP(help,j+1,currRing);
           strat->syz[ctr] = p_Add_q(strat->syz[ctr],help,currRing);
+          pWrite(strat->syz[ctr]);
           strat->sevSyz[ctr] = p_GetShortExpVector(strat->syz[ctr],currRing);
           ctr++;
         }
