@@ -1790,8 +1790,8 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
   //       gives the bigger signature. 
   Lp.checked = strat->sl+1;
   int sigCmp = p_LmCmp(pSigMult,sSigMult,currRing);
-#if 1
-//#if DEBUGF5
+//#if 1
+#if DEBUGF5
   printf("IN PAIR GENERATION - COMPARING SIGS: %d\n",sigCmp);
   pWrite(pSigMult);
   pWrite(sSigMult);
@@ -1826,7 +1826,7 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
     Lp.sig    = sSigMult;
     Lp.sevSig = ~sSigMultNegSev;
   }
-#if 1
+#if DEBUGF5
   printf("SIGNATURE OF PAIR:  ");
   pWrite(Lp.sig);
 #endif
@@ -5759,6 +5759,9 @@ void initSLSba (ideal F, ideal Q,kStrategy strat)
         {
           strat->syz[ctr] = pCopy(F->m[j]);
           p_SetCompP(strat->syz[ctr],i+1,currRing);
+          // add LM(F->m[i]) to the signature to get a Schreyer order
+          // without changing the underlying polynomial ring at all
+          p_ExpVectorAdd (strat->syz[ctr],F->m[i],currRing);  
           // since p_Add_q() destroys all input
           // data we need to recreate help 
           // each time
