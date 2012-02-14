@@ -1816,6 +1816,8 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
     // printf("!!!!   EQUAL SIGS   !!!!\n");
     // pSig = sSig, delete element due to Rewritten Criterion
     strat->cp++;
+    pDelete(&pSigMult);
+    pDelete(&sSigMult);
     pLmFree(Lp.lcm);
     Lp.lcm=NULL;
     return;
