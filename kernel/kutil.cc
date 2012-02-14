@@ -1772,8 +1772,14 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
 #endif
   // testing by syzCriterion = F5 Criterion testing by rewCriterion =
   // Rewritten Criterion
+  /*
   if  ( strat->syzCrit(sSigMult,sSigMultNegSev,strat) ||
         strat->syzCrit(pSigMult,pSigMultNegSev,strat) ||
+        rewCriterion(sSigMult,sSigMultNegSev,strat,i+1)
+      )
+  {
+  */
+  if  (
         rewCriterion(sSigMult,sSigMultNegSev,strat,i+1)
       )
   {
@@ -4879,20 +4885,26 @@ loop
  */
 BOOLEAN syzCriterion(poly sig, unsigned long not_sevSig, kStrategy strat)
 {
-#if 0
+#if 1
 //#ifdef DEBUGF5
   Print("syzygy criterion checks:  ");
   pWrite(sig);
 #endif
   for (int k=0; k<strat->syzl; k++)
   {
-#if 0
+#if 1
 //#ifdef DEBUGF5
     Print("checking with: %d --  ",k);
     pWrite(pHead(strat->syz[k]));
 #endif
     if (p_LmShortDivisibleBy(strat->syz[k], strat->sevSyz[k], sig, not_sevSig, currRing))
+    {
+#if 1
+//#ifdef DEBUGF5
+      printf("DELETE!\n");
+#endif
       return TRUE;
+    }
   }
   return FALSE;
 }

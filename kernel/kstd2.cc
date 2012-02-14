@@ -1631,8 +1631,8 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
     /* picks the last element from the lazyset L */
     strat->P = strat->L[strat->Ll];
     strat->Ll--;
-//#if 1
-#ifdef DEBUGF5
+#if 1
+//#ifdef DEBUGF5
     Print("SIG OF NEXT PAIR TO HANDLE IN SIG-BASED ALGORITHM\n");
     Print("-------------------------------------------------\n");
     pWrite(strat->P.sig);
@@ -1791,10 +1791,8 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
         enterpairsSig(strat->P.p,strat->P.sig,strat->sl+1,strat->sl,strat->P.ecart,pos,strat, strat->tl);
       // posInS only depends on the leading term
       strat->enterS(strat->P, pos, strat, strat->tl);
-//#if 1
-#if DEBUGF50
-    printf("PAIRSET %d\n",strat->Ll);
-    printf("curridx %d\n",strat->currIdx);
+#if 1
+//#if DEBUGF50
     printf("---------------------------\n");
     Print("ELEMENT ADDED TO GCURR: ");
     pWrite(pHead(strat->S[strat->sl]));
@@ -1839,8 +1837,8 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       if (red_result!=2) {
         zeroreductions++;
         enterSyz(strat->P,strat);
-//#if 1
-#ifdef DEBUGF5
+#if 1
+//#ifdef DEBUGF5
         Print("ADDING STUFF TO SYZ :  ");
         pWrite(strat->P.sig);
 #endif
