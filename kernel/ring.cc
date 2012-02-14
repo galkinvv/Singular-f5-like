@@ -5009,7 +5009,6 @@ ring rAssure_InducedSchreyerOrdering(const ring r, BOOLEAN complete = TRUE, int 
     assume(ncRingType(res) == ncRingType(old_ring));
 #endif
   }
-
   return res;
 }
 
