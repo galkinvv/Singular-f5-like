@@ -5777,6 +5777,7 @@ void initSLSba (ideal F, ideal Q,kStrategy strat)
           poly help = pCopy(F->m[i]);
           p_SetCompP(help,j+1,currRing);
           strat->syz[ctr] = p_Add_q(strat->syz[ctr],help,currRing);
+          printf("%d. SYZ  ",ctr);
           pWrite(strat->syz[ctr]);
           strat->sevSyz[ctr] = p_GetShortExpVector(strat->syz[ctr],currRing);
           ctr++;
@@ -7384,7 +7385,10 @@ void exitSba (kStrategy strat)
   __omFreeSize((ADDRESS)strat->sevS,IDELEMS(strat->Shdl)*sizeof(unsigned long));
   __omFreeSize((ADDRESS)strat->sevSig,IDELEMS(strat->Shdl)*sizeof(unsigned long));
   __omFreeSize((ADDRESS)strat->sevSyz,(strat->syzmax)*sizeof(unsigned long));
-  __omFreeSize(strat->syzIdx,(strat->syzidxmax)*sizeof(int));
+  if (strat->incremental)
+  {
+    __omFreeSize(strat->syzIdx,(strat->syzidxmax)*sizeof(int));
+  }
   __omFreeSize(strat->S_2_R,IDELEMS(strat->Shdl)*sizeof(int));
   /*- set L: should be empty -*/
   __omFreeSize(strat->L,(strat->Lmax)*sizeof(LObject));
