@@ -1506,11 +1506,14 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   ideal F = F0;
   ring sRing, currRingOld;
   currRingOld  = currRing; 
-  sRing = sbaRing(strat);
-  if (sRing!=currRingOld)
+  if (strat->incremental)
   {
-    rChangeCurrRing (sRing);
-    F = idrMoveR (F0, currRingOld);
+    sRing = sbaRing(strat);
+    if (sRing!=currRingOld)
+    {
+      rChangeCurrRing (sRing);
+      F = idrMoveR (F0, currRingOld);
+    }
   }
 #if 1
   printf("SBA COMPUTATIONS DONE IN THE FOLLOWING RING:\n");
@@ -1923,7 +1926,7 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
     strat->Shdl->m[i] = NULL;
   }
 #endif
-  if (sRing!=currRingOld)
+  if (strat->incremental && sRing!=currRingOld)
   {
     rChangeCurrRing (currRingOld);
     strat->Shdl = idrMoveR_NoSort (strat->Shdl, sRing);
