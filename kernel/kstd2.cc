@@ -1630,8 +1630,8 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
     /* picks the last element from the lazyset L */
     strat->P = strat->L[strat->Ll];
     strat->Ll--;
-#if 1
-//#ifdef DEBUGF5
+//#if 1
+#ifdef DEBUGF5
     Print("SIG OF NEXT PAIR TO HANDLE IN SIG-BASED ALGORITHM\n");
     Print("-------------------------------------------------\n");
     pWrite(strat->P.sig);
@@ -1781,6 +1781,28 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 
       // enter into S, L, and T
       //if ((!TEST_OPT_IDLIFT) || (pGetComp(strat->P.p) <= strat->syzComp))
+      BOOLEAN overwrite = TRUE;
+      for (int tk=0; tk<strat->sl+1; tk++)
+      {
+        if (pGetComp(strat->sig[tk]) == pGetComp(strat->P.sig))
+        {
+          printf("TK %d / %d\n",tk,strat->sl);
+          overwrite = FALSE;
+          break;
+        }
+      }
+      printf("OVERWRITE %d\n",overwrite);
+      if (overwrite)
+      {
+        int cmp = pGetComp(strat->P.sig);
+        int* vv = (int*)omAlloc((currRing->N+1)*sizeof(int));
+        pGetExpV (strat->P.p,vv);
+        pSetExpV (strat->P.sig, vv);
+        pSetComp (strat->P.sig,cmp);
+
+        strat->P.sevSig = pGetShortExpVector (strat->P.sig);
+      }
+
         enterT(strat->P, strat);
 #ifdef HAVE_RINGS
       if (rField_is_Ring(currRing))
@@ -1793,7 +1815,7 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 #if 1
 //#if DEBUGF50
     printf("---------------------------\n");
-    Print("ELEMENT ADDED TO GCURR: ");
+    Print(" %d. ELEMENT ADDED TO GCURR: ",strat->sl+1);
     pWrite(pHead(strat->S[strat->sl]));
     pWrite(strat->sig[strat->sl]);
 #endif
@@ -1839,6 +1861,7 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 #if 1
 //#ifdef DEBUGF5
         Print("ADDING STUFF TO SYZ :  ");
+        pWrite(strat->P.p);
         pWrite(strat->P.sig);
 #endif
       }
