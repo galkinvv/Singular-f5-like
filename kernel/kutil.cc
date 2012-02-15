@@ -1745,8 +1745,8 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
   // set coeffs of multipliers m1 and m2
   pSetCoeff0(m1, nInit(1));
   pSetCoeff0(m2, nInit(1));
-//#if 1
-#ifdef DEBUGF5
+#if 1
+//#ifdef DEBUGF5
   Print("P1  ");
   pWrite(pHead(p));
   Print("FROM: %d\n", from);
@@ -1763,8 +1763,8 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
   pSigMultNegSev = ~p_GetShortExpVector(pSigMult,currRing);
   sSigMult = currRing->p_Procs->pp_Mult_mm(sSigMult,m2,currRing,last);
   sSigMultNegSev = ~p_GetShortExpVector(sSigMult,currRing);
-//#if 1
-#ifdef DEBUGF5
+#if 1
+//#ifdef DEBUGF5
   Print("----------------\n");
   pWrite(pSigMult);
   pWrite(sSigMult);
@@ -1772,17 +1772,19 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
 #endif
   // testing by syzCriterion = F5 Criterion testing by rewCriterion =
   // Rewritten Criterion
-  /*
-  if  ( strat->syzCrit(sSigMult,sSigMultNegSev,strat) ||
-        strat->syzCrit(pSigMult,pSigMultNegSev,strat) ||
+  if  ( strat->syzCrit(pSigMult,pSigMultNegSev,strat) ||
+        strat->syzCrit(sSigMult,sSigMultNegSev,strat) ||
         rewCriterion(sSigMult,sSigMultNegSev,strat,i+1)
       )
   {
-  */
+  /*
   if  (
         rewCriterion(sSigMult,sSigMultNegSev,strat,i+1)
       )
   {
+  */
+    pDelete(&pSigMult);
+    pDelete(&sSigMult);
     strat->cp++;
     pLmFree(Lp.lcm);
     Lp.lcm=NULL;
@@ -4956,19 +4958,25 @@ BOOLEAN syzCriterionInc(poly sig, unsigned long not_sevSig, kStrategy strat)
  */
 BOOLEAN rewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start)
 {
-#ifdef DEBUGF5
+#if 1
+//#ifdef DEBUGF5
   printf("rewritten criterion checks:  ");
   pWrite(sig);
 #endif
   for(int k = start; k<strat->sl+1; k++)
   {
-#ifdef DEBUGF5
+#if 1
+//#ifdef DEBUGF5
     Print("checking with:  ");
     pWrite(strat->sig[k]);
     pWrite(pHead(strat->S[k]));
 #endif
     if (p_LmShortDivisibleBy(strat->sig[k], strat->sevSig[k], sig, not_sevSig, currRing))
     {
+#if 1
+//#ifdef DEBUGF5
+      printf("DELETE!\n");
+#endif
       return TRUE;
     }
   }
