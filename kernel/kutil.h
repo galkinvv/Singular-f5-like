@@ -259,6 +259,8 @@ public:
   kStrategy next;
   int (*red)(LObject * L,kStrategy strat);
   int (*red2)(LObject * L,kStrategy strat);
+  int (*redStep)(LObject* PR, TObject* PW, long idx,
+                 poly spNoether, number *coef, kStrategy strat);
   void (*initEcart)(LObject * L);
   int (*posInT)(const TSet T,const int tl,LObject &h);
   int (*posInL)(const LSet set, const int length,
@@ -639,6 +641,27 @@ int ksReducePoly(LObject* PR,
 //         -1 tailRing change could not be performed due to exceeding exp
 //            bound of currRing
 int ksReducePolySig(LObject* PR,
+                 TObject* PW,
+                 long idx,
+                 poly spNoether = NULL,
+                 number *coef = NULL,
+                 kStrategy strat = NULL);
+
+// Reduces PR with PW
+// Assumes PR != NULL, PW != NULL, Lm(PW) divides Lm(PR)
+// Changes: PR
+// Const:   PW
+// If coef != NULL, then *coef is a/gcd(a,b), where a = LC(PR), b = LC(PW)
+// If strat != NULL, tailRing is changed if reduction would violate exp bound
+// of tailRing
+// Returns: 0 everything ok, no tailRing change
+//          1 tailRing has successfully changed (strat != NULL)
+//          2 no reduction performed, tailRing needs to be changed first
+//            (strat == NULL)
+//          3 no reduction performed, not sig-safe!!!
+//         -1 tailRing change could not be performed due to exceeding exp
+//            bound of currRing
+int ksReducePolySigInc(LObject* PR,
                  TObject* PW,
                  long idx,
                  poly spNoether = NULL,
