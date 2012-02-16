@@ -1516,7 +1516,7 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       F = idrMoveR (F0, currRingOld);
     }
   }
-#if 1
+#if 0
   printf("SBA COMPUTATIONS DONE IN THE FOLLOWING RING:\n");
   rWrite (currRing);
   printf("\n");
@@ -1833,8 +1833,8 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
             poly help = pCopy(strat->sig[ps]);
             p_ExpVectorAdd (help,strat->P.p,currRing);  
             strat->syz[i] = p_Add_q(strat->syz[i],help,currRing);
-            printf("%d. SYZ  ",i+1);
-            pWrite(strat->syz[i]);
+            //printf("%d. SYZ  ",i+1);
+            //pWrite(strat->syz[i]);
             strat->sevSyz[i] = p_GetShortExpVector(strat->syz[i],currRing);
             strat->syzl++;
           }
