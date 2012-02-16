@@ -1987,7 +1987,8 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   if (strat->incremental && sRing!=currRingOld)
   {
     rChangeCurrRing (currRingOld);
-    strat->Shdl = idrMoveR_NoSort (strat->Shdl, sRing);
+    F0          = idrMoveR (F, sRing);
+    strat->Shdl = idrMoveR (strat->Shdl, sRing);
     rDelete (sRing);
   }
   idTest(strat->Shdl);
