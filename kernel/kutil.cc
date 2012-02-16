@@ -4986,6 +4986,49 @@ BOOLEAN rewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int st
   return FALSE;
 }
 
+/*
+ * REWRITTEN CRITERION for signature-based standard basis algorithms
+ ***************************************************************************
+ * TODO:This should become the version of Arri/Perry resp. Bjarne/Stillman *
+ ***************************************************************************
+ */
+BOOLEAN rewCriterionTest(poly sig, unsigned long not_sevSig, kStrategy strat, int start)
+{
+//#if 1
+#ifdef DEBUGF5
+  printf("rewritten criterion checks:  ");
+  pWrite(sig);
+#endif
+  for(int k = 0; k<strat->Ll+1; k++)
+  {
+//#if 1
+#ifdef DEBUGF5
+    Print("checking with:  ");
+    pWrite(strat->sig[k]);
+    pWrite(pHead(strat->S[k]));
+#endif
+    //if (p_LmShortDivisibleBy(strat->sig[k], strat->sevSig[k], sig, not_sevSig, currRing))
+    if (p_LmEqual(strat->L[k].sig, sig, currRing))
+    {
+      deleteInL (strat->L,&strat->Ll,k,strat);
+//#if 1
+#ifdef DEBUGF5
+      printf("DELETE!\n");
+#endif
+      return FALSE;
+    }
+  }
+#ifdef DEBUGF5
+  Print("ALL ELEMENTS OF S\n----------------------------------------\n");
+  for(int kk = 0; kk<strat->sl+1; kk++)
+  {
+    pWrite(pHead(strat->S[kk]));
+  }
+  Print("------------------------------\n");
+#endif
+  return FALSE;
+}
+
 /***************************************************************
 *
 * Tail reductions
