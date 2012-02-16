@@ -1839,7 +1839,7 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
             strat->syzl++;
           }
         }
-        }
+      }
         enterT(strat->P, strat);
 #ifdef HAVE_RINGS
       if (rField_is_Ring(currRing))
