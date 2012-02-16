@@ -520,6 +520,7 @@ BOOLEAN newHEdge(polyset S, kStrategy strat);
 BOOLEAN syzCriterion(poly sig, unsigned long not_sevSig, kStrategy strat);
 BOOLEAN syzCriterionInc(poly sig, unsigned long not_sevSig, kStrategy strat);
 BOOLEAN rewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start);
+BOOLEAN rewCriterionTest(poly sig, unsigned long not_sevSig, kStrategy strat, int start);
 // returns index of p in TSet, or -1 if not found
 int kFindInT(poly p, TSet T, int tlength);
 
