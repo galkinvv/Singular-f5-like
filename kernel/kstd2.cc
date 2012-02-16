@@ -614,7 +614,7 @@ int redSig (LObject* h,kStrategy strat)
     Print("--------------------------------\n");
     printf("INDEX OF REDUCER T: %d\n",ii);
 #endif
-    sigSafe = ksReducePolySig(h, &(strat->T[ii]), strat->S_2_R[ii], NULL, NULL, strat);
+    sigSafe = strat->redStep(h, &(strat->T[ii]), strat->S_2_R[ii], NULL, NULL, strat);
     // if reduction has taken place, i.e. the reduction was sig-safe
     // otherwise start is already at the next position and the loop
     // searching reducers in T goes on from index start
@@ -1781,28 +1781,64 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 
       // enter into S, L, and T
       //if ((!TEST_OPT_IDLIFT) || (pGetComp(strat->P.p) <= strat->syzComp))
-      BOOLEAN overwrite = TRUE;
-      for (int tk=0; tk<strat->sl+1; tk++)
+      if(!strat->incremental)
       {
-        if (pGetComp(strat->sig[tk]) == pGetComp(strat->P.sig))
+        BOOLEAN overwrite = TRUE;
+        for (int tk=0; tk<strat->sl+1; tk++)
         {
-          printf("TK %d / %d\n",tk,strat->sl);
-          overwrite = FALSE;
-          break;
+          if (pGetComp(strat->sig[tk]) == pGetComp(strat->P.sig))
+          {
+            //printf("TK %d / %d\n",tk,strat->sl);
+            overwrite = FALSE;
+            break;
+          }
         }
-      }
-      printf("OVERWRITE %d\n",overwrite);
-      if (overwrite)
-      {
-        int cmp = pGetComp(strat->P.sig);
-        int* vv = (int*)omAlloc((currRing->N+1)*sizeof(int));
-        pGetExpV (strat->P.p,vv);
-        pSetExpV (strat->P.sig, vv);
-        pSetComp (strat->P.sig,cmp);
+        //printf("OVERWRITE %d\n",overwrite);
+        if (overwrite)
+        {
+          int cmp = pGetComp(strat->P.sig);
+          int* vv = (int*)omAlloc((currRing->N+1)*sizeof(int));
+          pGetExpV (strat->P.p,vv);
+          pSetExpV (strat->P.sig, vv);
+          pSetComp (strat->P.sig,cmp);
 
-        strat->P.sevSig = pGetShortExpVector (strat->P.sig);
-      }
+          strat->P.sevSig = pGetShortExpVector (strat->P.sig);
+          for(int ps=0;ps<strat->sl+1;ps++)
+          {
+            int i = strat->syzl;
 
+            strat->newt = TRUE;
+            if (strat->syzl == strat->syzmax)
+            {
+              pEnlargeSet(&strat->syz,strat->syzmax,setmaxTinc);
+              strat->sevSyz = (unsigned long*) omRealloc0Size(strat->sevSyz,
+                  (strat->syzmax)*sizeof(unsigned long),
+                  ((strat->syzmax)+setmaxTinc)
+                  *sizeof(unsigned long));
+              strat->syzmax += setmaxTinc;
+            }
+            strat->syz[i] = pCopy(strat->P.sig);
+            // add LM(F->m[i]) to the signature to get a Schreyer order
+            // without changing the underlying polynomial ring at all
+            p_ExpVectorAdd (strat->syz[i],strat->S[ps],currRing);  
+            // since p_Add_q() destroys all input
+            // data we need to recreate help 
+            // each time
+            // ----------------------------------------------------------
+            // in the Schreyer order we always know that the multiplied 
+            // module monomial strat->P.sig gives the leading monomial of
+            // the corresponding principal syzygy
+            // => we do not need to compute the "real" syzygy completely
+            poly help = pCopy(strat->sig[ps]);
+            p_ExpVectorAdd (help,strat->P.p,currRing);  
+            strat->syz[i] = p_Add_q(strat->syz[i],help,currRing);
+            printf("%d. SYZ  ",i+1);
+            pWrite(strat->syz[i]);
+            strat->sevSyz[i] = p_GetShortExpVector(strat->syz[i],currRing);
+            strat->syzl++;
+          }
+        }
+        }
         enterT(strat->P, strat);
 #ifdef HAVE_RINGS
       if (rField_is_Ring(currRing))
@@ -1812,8 +1848,8 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
         enterpairsSig(strat->P.p,strat->P.sig,strat->sl+1,strat->sl,strat->P.ecart,pos,strat, strat->tl);
       // posInS only depends on the leading term
       strat->enterS(strat->P, pos, strat, strat->tl);
-#if 1
-//#if DEBUGF50
+//#if 1
+#if DEBUGF50
     printf("---------------------------\n");
     Print(" %d. ELEMENT ADDED TO GCURR: ",strat->sl+1);
     pWrite(pHead(strat->S[strat->sl]));
@@ -1858,8 +1894,8 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       if (red_result!=2) {
         zeroreductions++;
         enterSyz(strat->P,strat);
-#if 1
-//#ifdef DEBUGF5
+//#if 1
+#ifdef DEBUGF5
         Print("ADDING STUFF TO SYZ :  ");
         pWrite(strat->P.p);
         pWrite(strat->P.sig);
