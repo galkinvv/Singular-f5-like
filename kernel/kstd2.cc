@@ -1530,7 +1530,6 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   int hilbeledeg=1,hilbcount=0,minimcnt=0;
   BOOLEAN withT     = FALSE;
   BOOLEAN newrules  = FALSE;
-  int nrF5C         = 0;
 
   //initBuchMoraCrit(strat); /*set Gebauer, honey, sugarCrit*/
   initSbaCrit(strat); /*set Gebauer, honey, sugarCrit*/
@@ -1612,7 +1611,6 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
     }
     if (strat->incremental && pGetComp(strat->L[strat->Ll].sig) != strat->currIdx)
     {
-    nrF5C++;
       strat->currIdx  = pGetComp(strat->L[strat->Ll].sig);
 #if F5C
       // 1. interreduction of the current standard basis
@@ -2005,9 +2003,7 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   }
 #endif
   printf("ZERO REDUCTIONS: %ld\n",zeroreductions);
-  printf("F5C:             %ld\n",nrF5C);
   zeroreductions  = 0;
-  nrF5C           = 0;
   return (strat->Shdl);
 }
 
