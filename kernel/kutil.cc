@@ -5697,14 +5697,6 @@ void initSLSba (ideal F, ideal Q,kStrategy strat)
   int   i,j,pos, ctr=0, ps=0;
   if (Q!=NULL) i=((IDELEMS(Q)+(setmaxTinc-1))/setmaxTinc)*setmaxTinc;
   else i=setmaxT;
-  if (!strat->incremental)
-  {
-    for(i=1; i<IDELEMS(F); i++)
-    {
-      ps += i;
-    }
-  }
-  ps            +=  strat->sl+1;
   strat->ecartS =   initec(i);
   strat->fromS  =   initec(i);
   strat->sevS   =   initsevS(i);
@@ -5716,9 +5708,9 @@ void initSLSba (ideal F, ideal Q,kStrategy strat)
   strat->sig    =   (poly *)omAlloc0(i*sizeof(poly));
   if (!strat->incremental)
   {
-    strat->syz    = (poly *)omAlloc0(ps*sizeof(poly));
-    strat->sevSyz = initsevS(ps);
-    strat->syzmax = ps;
+    strat->syz    = (poly *)omAlloc0(i*sizeof(poly));
+    strat->sevSyz = initsevS(i);
+    strat->syzmax = i;
     strat->syzl   = 0;
   }
   /*- put polys into S -*/
