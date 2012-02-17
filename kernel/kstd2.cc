@@ -1977,17 +1977,19 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   // entries of strat->Shdl which are dirty, i.e. not correct, but also not NULL
   // => we need to delete them before return the ideal
 #if F5C
+  /*
   for(int i=strat->sl+1;i<IDELEMS(strat->Shdl);i++)
   {
     pDelete (&strat->Shdl->m[i]);
     strat->Shdl->m[i] = NULL;
   }
+  */
 #endif
   if (strat->incremental && sRing!=currRingOld)
   {
     rChangeCurrRing (currRingOld);
     F0          = idrMoveR (F, sRing);
-    strat->Shdl = idrMoveR (strat->Shdl, sRing);
+    strat->Shdl = idrMoveR_NoSort (strat->Shdl, sRing);
     rDelete (sRing);
   }
   idTest(strat->Shdl);
