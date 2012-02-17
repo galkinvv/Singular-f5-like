@@ -284,6 +284,8 @@ public:
   polyset S;
   polyset syz;
   polyset sig;
+  // ratio[i] stores sig[i] / S[i]
+  polyset ratio;
   intset ecartS;
   intset fromS; // from which S[i] S[j] comes from
                 // this is important for signature-based
