@@ -4992,7 +4992,7 @@ BOOLEAN rewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int st
  * TODO:This should become the version of Arri/Perry resp. Bjarne/Stillman *
  ***************************************************************************
  */
-BOOLEAN rewCriterionTest(poly sig, unsigned long not_sevSig, kStrategy strat, int start)
+BOOLEAN findMinLMPair(poly sig, unsigned long not_sevSig, kStrategy strat, int start)
 {
 //#if 1
 #ifdef DEBUGF5
