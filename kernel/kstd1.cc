@@ -1901,7 +1901,7 @@ ideal kStd(ideal F, ideal Q, tHomog h,intvec ** w, intvec *hilb,int syzComp,
   return r;
 }
 
-ideal kSba(ideal F, ideal Q, tHomog h,intvec ** w, int incremental, intvec *hilb,int syzComp,
+ideal kSba(ideal F, ideal Q, tHomog h,intvec ** w, int incremental, int arri, intvec *hilb,int syzComp,
           int newIdeal, intvec *vw)
 {
   if(idIs0(F))
@@ -1918,6 +1918,14 @@ ideal kSba(ideal F, ideal Q, tHomog h,intvec ** w, int incremental, intvec *hilb
   else
   {
     strat->incremental = FALSE;
+  }
+  if (arri!=0)
+  {
+    strat->rewCrit = arriRewCriterion;
+  }
+  else
+  {
+    strat->rewCrit = faugereRewCriterion;
   }
 
   if(!TEST_OPT_RETURN_SB)
