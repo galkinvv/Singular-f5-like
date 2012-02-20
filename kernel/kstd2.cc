@@ -1529,6 +1529,7 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   int   srmax,lrmax, red_result = 1;
   int   olddeg,reduc;
   int hilbeledeg=1,hilbcount=0,minimcnt=0;
+  LObject L;
   BOOLEAN withT     = FALSE;
   BOOLEAN newrules  = FALSE;
 
@@ -1584,6 +1585,7 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   //kDebugPrint(strat);
 #endif
   /* compute------------------------------------------------------- */
+  arriAgain:
   while (strat->Ll >= 0)
   {
     if (strat->Ll > lrmax) lrmax =strat->Ll;/*stat.*/
@@ -1671,6 +1673,97 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       // create the real one
       ksCreateSpoly(&(strat->P), NULL, strat->use_buckets,
                     strat->tailRing, m1, m2, strat->R);
+
+      /****************************************************
+       * Rewritten ala Arri
+       ***************************************************/
+      while (strat->Ll > 0 && pLmEqual(strat->L[strat->Ll].sig,strat->P.sig))
+      {
+        /*
+        printf("!!!!!!!!! ARRI DEBUGGING !!!!!!!!!!\n");
+        printf("P.sig:  ");
+        pWrite(strat->P.sig);
+        printf("L.sig:  ");
+        pWrite(strat->L[strat->Ll].sig);
+        */
+        // deletes the short spoly
+#ifdef HAVE_RINGS
+        if (rField_is_Ring(currRing))
+          pLmDelete(strat->L[strat->Ll].p);
+        else
+#endif
+          pLmFree(strat->L[strat->Ll].p);
+
+        // TODO: needs some masking
+        // TODO: masking needs to vanish once the signature
+        //       sutff is completely implemented
+        strat->L[strat->Ll].p = NULL;
+        poly m1 = NULL, m2 = NULL;
+
+        // check that spoly creation is ok
+        while (strat->tailRing != currRing &&
+              !kCheckSpolyCreation(&(strat->L[strat->Ll]), strat, m1, m2))
+        {
+          assume(m1 == NULL && m2 == NULL);
+          // if not, change to a ring where exponents are at least
+          // large enough
+          if (!kStratChangeTailRing(strat))
+          {
+            WerrorS("OVERFLOW...");
+            break;
+          }
+        }
+        // create the real one
+        ksCreateSpoly(&(strat->L[strat->Ll]), NULL, strat->use_buckets,
+                      strat->tailRing, m1, m2, strat->R);
+        /*
+        printf("lm(P)  ");
+        pWrite(pHead(strat->P.p));
+        pWrite(strat->P.GetLmCurrRing());
+        pWrite(pHead(strat->P.p1));
+        pWrite(pHead(strat->P.p2));
+        printf("lm(L)  ");
+        pWrite(pHead(strat->L[strat->Ll].p));
+        pWrite(strat->L[strat->Ll].GetLmCurrRing());
+        pWrite(pHead(strat->L[strat->Ll].p1));
+        pWrite(pHead(strat->L[strat->Ll].p2));
+        */
+        if (strat->P.GetLmCurrRing() == NULL)
+        {
+          deleteInL(strat->L,&strat->Ll,strat->Ll,strat);
+        }
+        if (strat->L[strat->Ll].GetLmCurrRing() == NULL)
+        {
+          strat->P.Delete();
+          strat->P = strat->L[strat->Ll];
+          strat->Ll--;
+        }
+
+        if (strat->P.GetLmCurrRing() != NULL && strat->L[strat->Ll].GetLmCurrRing() != NULL)
+        {
+          if (pLmCmp(strat->P.GetLmCurrRing(),strat->L[strat->Ll].GetLmCurrRing()) == -1)
+          {
+            deleteInL(strat->L,&strat->Ll,strat->Ll,strat);
+          }
+          else
+          {
+            strat->P.Delete();
+            strat->P = strat->L[strat->Ll];
+            strat->Ll--;
+          }
+        }
+      }
+      for (int ii=strat->sl; ii>-1; ii--)
+      {
+        if (p_LmShortDivisibleBy(strat->sig[ii], strat->sevSig[ii], strat->P.sig, ~strat->P.sevSig, currRing))
+        {
+          if (pLmCmp(ppMult_mm(strat->P.sig,pHead(strat->S[ii])),ppMult_mm(strat->sig[ii],strat->P.GetLmCurrRing())) == -1)
+          {
+            strat->P.Delete();
+            goto arriAgain;
+          }
+        }
+      }
     }
     else if (strat->P.p1 == NULL)
     {
