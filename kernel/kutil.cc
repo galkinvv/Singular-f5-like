@@ -1774,7 +1774,7 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
   // Rewritten Criterion
   if  ( strat->syzCrit(pSigMult,pSigMultNegSev,strat) ||
         strat->syzCrit(sSigMult,sSigMultNegSev,strat) 
-        || rewCriterion(sSigMult,sSigMultNegSev,strat,i+1)
+        //|| rewCriterion(sSigMult,sSigMultNegSev,strat,i+1)
       )
   {
     pDelete(&pSigMult);
@@ -4950,9 +4950,9 @@ BOOLEAN syzCriterionInc(poly sig, unsigned long not_sevSig, kStrategy strat)
 /*
  * REWRITTEN CRITERION for signature-based standard basis algorithms
  */
-BOOLEAN rewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start)
+BOOLEAN faugereRewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start=0)
 {
-  return FALSE;
+  printf("Faugere Rewritten Criterion\n");
 //#if 1
 #ifdef DEBUGF5
   printf("rewritten criterion checks:  ");
@@ -4993,40 +4993,96 @@ BOOLEAN rewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int st
  * TODO:This should become the version of Arri/Perry resp. Bjarne/Stillman *
  ***************************************************************************
  */
-BOOLEAN findMinLMPair(poly sig, unsigned long not_sevSig, kStrategy strat, int start)
+BOOLEAN arriRewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start=0)
 {
-//#if 1
-#ifdef DEBUGF5
-  printf("rewritten criterion checks:  ");
-  pWrite(sig);
-#endif
-  for(int k = 0; k<strat->Ll+1; k++)
+  printf("Arri Rewritten Criterion\n");
+  while (strat->Ll > 0 && pLmEqual(strat->L[strat->Ll].sig,strat->P.sig))
   {
-//#if 1
-#ifdef DEBUGF5
-    Print("checking with:  ");
-    pWrite(strat->sig[k]);
-    pWrite(pHead(strat->S[k]));
+    /*
+    printf("!!!!!!!!! ARRI DEBUGGING !!!!!!!!!!\n");
+    printf("P.sig:  ");
+    pWrite(strat->P.sig);
+    printf("L.sig:  ");
+    pWrite(strat->L[strat->Ll].sig);
+    */
+    // deletes the short spoly
+#ifdef HAVE_RINGS
+    if (rField_is_Ring(currRing))
+      pLmDelete(strat->L[strat->Ll].p);
+    else
 #endif
-    //if (p_LmShortDivisibleBy(strat->sig[k], strat->sevSig[k], sig, not_sevSig, currRing))
-    if (p_LmEqual(strat->L[k].sig, sig, currRing))
+      pLmFree(strat->L[strat->Ll].p);
+
+    // TODO: needs some masking
+    // TODO: masking needs to vanish once the signature
+    //       sutff is completely implemented
+    strat->L[strat->Ll].p = NULL;
+    poly m1 = NULL, m2 = NULL;
+
+    // check that spoly creation is ok
+    while (strat->tailRing != currRing &&
+          !kCheckSpolyCreation(&(strat->L[strat->Ll]), strat, m1, m2))
     {
-      deleteInL (strat->L,&strat->Ll,k,strat);
-//#if 1
-#ifdef DEBUGF5
-      printf("DELETE!\n");
-#endif
-      return FALSE;
+      assume(m1 == NULL && m2 == NULL);
+      // if not, change to a ring where exponents are at least
+      // large enough
+      if (!kStratChangeTailRing(strat))
+      {
+        WerrorS("OVERFLOW...");
+        break;
+      }
+    }
+    // create the real one
+    ksCreateSpoly(&(strat->L[strat->Ll]), NULL, strat->use_buckets,
+                  strat->tailRing, m1, m2, strat->R);
+    /*
+    printf("lm(P)  ");
+    pWrite(pHead(strat->P.p));
+    pWrite(strat->P.GetLmCurrRing());
+    pWrite(pHead(strat->P.p1));
+    pWrite(pHead(strat->P.p2));
+    printf("lm(L)  ");
+    pWrite(pHead(strat->L[strat->Ll].p));
+    pWrite(strat->L[strat->Ll].GetLmCurrRing());
+    pWrite(pHead(strat->L[strat->Ll].p1));
+    pWrite(pHead(strat->L[strat->Ll].p2));
+    */
+    if (strat->P.GetLmCurrRing() == NULL)
+    {
+      deleteInL(strat->L,&strat->Ll,strat->Ll,strat);
+    }
+    if (strat->L[strat->Ll].GetLmCurrRing() == NULL)
+    {
+      strat->P.Delete();
+      strat->P = strat->L[strat->Ll];
+      strat->Ll--;
+    }
+
+    if (strat->P.GetLmCurrRing() != NULL && strat->L[strat->Ll].GetLmCurrRing() != NULL)
+    {
+      if (pLmCmp(strat->P.GetLmCurrRing(),strat->L[strat->Ll].GetLmCurrRing()) == -1)
+      {
+        deleteInL(strat->L,&strat->Ll,strat->Ll,strat);
+      }
+      else
+      {
+        strat->P.Delete();
+        strat->P = strat->L[strat->Ll];
+        strat->Ll--;
+      }
     }
   }
-#ifdef DEBUGF5
-  Print("ALL ELEMENTS OF S\n----------------------------------------\n");
-  for(int kk = 0; kk<strat->sl+1; kk++)
+  for (int ii=strat->sl; ii>-1; ii--)
   {
-    pWrite(pHead(strat->S[kk]));
+    if (p_LmShortDivisibleBy(strat->sig[ii], strat->sevSig[ii], strat->P.sig, ~strat->P.sevSig, currRing))
+    {
+      if (pLmCmp(ppMult_mm(strat->P.sig,pHead(strat->S[ii])),ppMult_mm(strat->sig[ii],strat->P.GetLmCurrRing())) == -1)
+      {
+        strat->P.Delete();
+        return TRUE;
+      }
+    }
   }
-  Print("------------------------------\n");
-#endif
   return FALSE;
 }
 
