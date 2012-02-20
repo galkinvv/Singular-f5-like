@@ -1921,11 +1921,13 @@ ideal kSba(ideal F, ideal Q, tHomog h,intvec ** w, int incremental, int arri, in
   }
   if (arri!=0)
   {
-    strat->rewCrit = arriRewCriterion;
+    strat->rewCrit1 = arriRewDummy;
+    strat->rewCrit2 = arriRewCriterion;
   }
   else
   {
-    strat->rewCrit = faugereRewCriterion;
+    strat->rewCrit1 = faugereRewCriterion;
+    strat->rewCrit2 = faugereRewCriterion;
   }
 
   if(!TEST_OPT_RETURN_SB)

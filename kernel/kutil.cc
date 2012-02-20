@@ -1774,7 +1774,7 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
   // Rewritten Criterion
   if  ( strat->syzCrit(pSigMult,pSigMultNegSev,strat) ||
         strat->syzCrit(sSigMult,sSigMultNegSev,strat) 
-        //|| rewCriterion(sSigMult,sSigMultNegSev,strat,i+1)
+        || strat->rewCrit1(sSigMult,sSigMultNegSev,strat,i+1)
       )
   {
     pDelete(&pSigMult);
@@ -4952,7 +4952,7 @@ BOOLEAN syzCriterionInc(poly sig, unsigned long not_sevSig, kStrategy strat)
  */
 BOOLEAN faugereRewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start=0)
 {
-  printf("Faugere Rewritten Criterion\n");
+  //printf("Faugere Rewritten Criterion\n");
 //#if 1
 #ifdef DEBUGF5
   printf("rewritten criterion checks:  ");
@@ -4993,18 +4993,14 @@ BOOLEAN faugereRewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat,
  * TODO:This should become the version of Arri/Perry resp. Bjarne/Stillman *
  ***************************************************************************
  */
+
+// real implementation of arri's rewritten criterion, only called once in
+// kstd2.cc, right before starting reduction
 BOOLEAN arriRewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start=0)
 {
-  printf("Arri Rewritten Criterion\n");
+  //printf("Arri Rewritten Criterion\n");
   while (strat->Ll > 0 && pLmEqual(strat->L[strat->Ll].sig,strat->P.sig))
   {
-    /*
-    printf("!!!!!!!!! ARRI DEBUGGING !!!!!!!!!!\n");
-    printf("P.sig:  ");
-    pWrite(strat->P.sig);
-    printf("L.sig:  ");
-    pWrite(strat->L[strat->Ll].sig);
-    */
     // deletes the short spoly
 #ifdef HAVE_RINGS
     if (rField_is_Ring(currRing))
@@ -5035,18 +5031,6 @@ BOOLEAN arriRewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, in
     // create the real one
     ksCreateSpoly(&(strat->L[strat->Ll]), NULL, strat->use_buckets,
                   strat->tailRing, m1, m2, strat->R);
-    /*
-    printf("lm(P)  ");
-    pWrite(pHead(strat->P.p));
-    pWrite(strat->P.GetLmCurrRing());
-    pWrite(pHead(strat->P.p1));
-    pWrite(pHead(strat->P.p2));
-    printf("lm(L)  ");
-    pWrite(pHead(strat->L[strat->Ll].p));
-    pWrite(strat->L[strat->Ll].GetLmCurrRing());
-    pWrite(pHead(strat->L[strat->Ll].p1));
-    pWrite(pHead(strat->L[strat->Ll].p2));
-    */
     if (strat->P.GetLmCurrRing() == NULL)
     {
       deleteInL(strat->L,&strat->Ll,strat->Ll,strat);
@@ -7149,6 +7133,10 @@ void initSbaCrit(kStrategy strat)
   strat->enterOnePair = enterOnePairNormal;
   //strat->chainCrit=chainCritNormal;
   strat->chainCrit    = chainCritSig;
+  // always use Faugere's Rewritten Criterion as a check
+  // for the lower signature element, even if Arri's Rewritten
+  // Criterion is used for the higher signature element!
+  //strat->rewCrit1     = faugereRewCriterion;
   if (strat->incremental)
   {
     strat->syzCrit  = syzCriterionInc;
