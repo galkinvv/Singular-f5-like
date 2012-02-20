@@ -272,6 +272,7 @@ public:
   void (*enterOnePair) (int i,poly p,int ecart, int isFromQ,kStrategy strat, int atR /*= -1*/);
   void (*chainCrit) (poly p,int ecart,kStrategy strat);
   BOOLEAN (*syzCrit) (poly sig, unsigned long not_sevSig, kStrategy strat);
+  BOOLEAN (*rewCrit) (poly sig, unsigned long not_sevSig, kStrategy strat, int start /*= 0*/);
   pFDegProc pOrigFDeg;
   pLDegProc pOrigLDeg;
   pFDegProc pOrigFDeg_TailRing;
@@ -521,7 +522,8 @@ BOOLEAN homogTest(polyset F, int Fmax);
 BOOLEAN newHEdge(polyset S, kStrategy strat);
 BOOLEAN syzCriterion(poly sig, unsigned long not_sevSig, kStrategy strat);
 BOOLEAN syzCriterionInc(poly sig, unsigned long not_sevSig, kStrategy strat);
-BOOLEAN rewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start);
+BOOLEAN arriRewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start);
+BOOLEAN faugereRewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start);
 BOOLEAN findMinLMPair(poly sig, unsigned long not_sevSig, kStrategy strat, int start);
 // returns index of p in TSet, or -1 if not found
 int kFindInT(poly p, TSet T, int tlength);
