@@ -1692,7 +1692,7 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       pWrite(strat->P.p);
 #endif
       /* reduction of the element choosen from L */
-      if (!strat->rewCrit(strat->P.sig, ~strat->P.sevSig, strat, strat->P.checked+1))
+      if (!strat->rewCrit2(strat->P.sig, ~strat->P.sevSig, strat, strat->P.checked+1))
         red_result = strat->red(&strat->P,strat);
       else
       {
