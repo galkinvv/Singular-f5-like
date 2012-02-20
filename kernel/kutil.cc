@@ -4952,6 +4952,7 @@ BOOLEAN syzCriterionInc(poly sig, unsigned long not_sevSig, kStrategy strat)
  */
 BOOLEAN rewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start)
 {
+  return FALSE;
 //#if 1
 #ifdef DEBUGF5
   printf("rewritten criterion checks:  ");
