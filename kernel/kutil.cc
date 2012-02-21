@@ -4996,6 +4996,16 @@ BOOLEAN faugereRewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat,
 
 // real implementation of arri's rewritten criterion, only called once in
 // kstd2.cc, right before starting reduction
+// IDEA:  Arri says that it is enough to consider 1 polynomial for each unique
+//        signature appearing during the computations. Thus we first of all go
+//        through strat->L and delete all other pairs of the same signature,
+//        keeping only the one with least possible leading monomial. After this
+//        we check if we really need to compute this critical pair at all: There
+//        can be elements already in strat->S whose signatures divide the
+//        signature of the critical pair in question and whose multiplied
+//        leading monomials are smaller than the leading monomial of the
+//        critical pair. In this situation we can discard the critical pair
+//        completely.
 BOOLEAN arriRewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start=0)
 {
   //printf("Arri Rewritten Criterion\n");
