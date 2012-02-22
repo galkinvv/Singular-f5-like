@@ -2231,6 +2231,15 @@ void f5c (kStrategy strat, int& olddeg, int& minimcnt, int& hilbeledeg,
           int& hilbcount, int& srmax, int& lrmax, int& reduc, ideal Q,
           intvec *w,intvec *hilb )
 {
+#if RATIO
+  int ratioDeg  = 0;
+  int* help1    = (int*)omAlloc((currRing->N+1)*sizeof(int));
+  int* help2    = (int*)omAlloc((currRing->N+1)*sizeof(int));
+  for (int ii=strat->tl; ii; ii--)
+  {
+    omFreeSize (strat->T[ii].ratio, (currRing->N+2)*sizeof(int));
+  }
+#endif
   int Ll_old, red_result = 1;
   BOOLEAN withT = FALSE;
   int pos  = 0;
@@ -2308,130 +2317,130 @@ void f5c (kStrategy strat, int& olddeg, int& minimcnt, int& hilbeledeg,
 #endif
         pLmFree(strat->P.p);
 
-      // TODO: needs some masking
-      // TODO: masking needs to vanish once the signature
-      //       sutff is completely implemented
-      strat->P.p = NULL;
-      poly m1 = NULL, m2 = NULL;
+        // TODO: needs some masking
+        // TODO: masking needs to vanish once the signature
+        //       sutff is completely implemented
+        strat->P.p = NULL;
+        poly m1 = NULL, m2 = NULL;
 
-      // check that spoly creation is ok
-      while (strat->tailRing != currRing &&
-          !kCheckSpolyCreation(&(strat->P), strat, m1, m2))
-      {
-        assume(m1 == NULL && m2 == NULL);
-        // if not, change to a ring where exponents are at least
-        // large enough
-        if (!kStratChangeTailRing(strat))
+        // check that spoly creation is ok
+        while (strat->tailRing != currRing &&
+            !kCheckSpolyCreation(&(strat->P), strat, m1, m2))
         {
-          WerrorS("OVERFLOW...");
-          break;
+          assume(m1 == NULL && m2 == NULL);
+          // if not, change to a ring where exponents are at least
+          // large enough
+          if (!kStratChangeTailRing(strat))
+          {
+            WerrorS("OVERFLOW...");
+            break;
+          }
         }
+        // create the real one
+        ksCreateSpoly(&(strat->P), NULL, strat->use_buckets,
+            strat->tailRing, m1, m2, strat->R);
       }
-      // create the real one
-      ksCreateSpoly(&(strat->P), NULL, strat->use_buckets,
-          strat->tailRing, m1, m2, strat->R);
-    }
-    else if (strat->P.p1 == NULL)
-    {
-      if (strat->minim > 0)
-        strat->P.p2=p_Copy(strat->P.p, currRing, strat->tailRing);
-      // for input polys, prepare reduction
-      strat->P.PrepareRed(strat->use_buckets);
-    }
-
-    if (strat->P.p == NULL && strat->P.t_p == NULL)
-    {
-      red_result = 0;
-    }
-    else
-    {
-      if (TEST_OPT_PROT)
-        message((strat->honey ? strat->P.ecart : 0) + strat->P.pFDeg(),
-            &olddeg,&reduc,strat, red_result);
-
-#ifdef DEBUGF5
-      Print("Poly before red: ");
-      pWrite(strat->P.p);
-#endif
-      /* complete reduction of the element choosen from L */
-      red_result = strat->red2(&strat->P,strat);
-      if (errorreported)  break;
-    }
-
-    if (strat->overflow)
-    {
-      if (!kStratChangeTailRing(strat)) { Werror("OVERFLOW.."); break;}
-    }
-
-    // reduction to non-zero new poly
-    if (red_result == 1)
-    {
-      // get the polynomial (canonicalize bucket, make sure P.p is set)
-      strat->P.GetP(strat->lmBin);
-      // in the homogeneous case FDeg >= pFDeg (sugar/honey)
-      // but now, for entering S, T, we reset it
-      // in the inhomogeneous case: FDeg == pFDeg
-      if (strat->homog) strat->initEcart(&(strat->P));
-
-      /* statistic */
-      if (TEST_OPT_PROT) PrintS("s");
-
-      int pos=posInS(strat,strat->sl,strat->P.p,strat->P.ecart);
-
-#ifdef KDEBUG
-#if MYTEST
-      PrintS("New S: "); pDebugPrint(strat->P.p); PrintLn();
-#endif /* MYTEST */
-#endif /* KDEBUG */
-
-      // reduce the tail and normalize poly
-      // in the ring case we cannot expect LC(f) = 1,
-      // therefore we call pContent instead of pNorm
-#if F5CTAILRED
-      if ((TEST_OPT_INTSTRATEGY) || (rField_is_Ring(currRing)))
+      else if (strat->P.p1 == NULL)
       {
-        strat->P.pCleardenom();
-        if ((TEST_OPT_REDSB)||(TEST_OPT_REDTAIL))
-        {
-          strat->P.p = redtailBba(&(strat->P),pos-1,strat, withT);
-          strat->P.pCleardenom();
-        }
+        if (strat->minim > 0)
+          strat->P.p2=p_Copy(strat->P.p, currRing, strat->tailRing);
+        // for input polys, prepare reduction
+        strat->P.PrepareRed(strat->use_buckets);
+      }
+
+      if (strat->P.p == NULL && strat->P.t_p == NULL)
+      {
+        red_result = 0;
       }
       else
       {
-        strat->P.pNorm();
-        if ((TEST_OPT_REDSB)||(TEST_OPT_REDTAIL))
-          strat->P.p = redtailBba(&(strat->P),pos-1,strat, withT);
-      }
+        if (TEST_OPT_PROT)
+          message((strat->honey ? strat->P.ecart : 0) + strat->P.pFDeg(),
+              &olddeg,&reduc,strat, red_result);
+
+#ifdef DEBUGF5
+        Print("Poly before red: ");
+        pWrite(strat->P.p);
 #endif
+        /* complete reduction of the element choosen from L */
+        red_result = strat->red2(&strat->P,strat);
+        if (errorreported)  break;
+      }
+
+      if (strat->overflow)
+      {
+        if (!kStratChangeTailRing(strat)) { Werror("OVERFLOW.."); break;}
+      }
+
+      // reduction to non-zero new poly
+      if (red_result == 1)
+      {
+        // get the polynomial (canonicalize bucket, make sure P.p is set)
+        strat->P.GetP(strat->lmBin);
+        // in the homogeneous case FDeg >= pFDeg (sugar/honey)
+        // but now, for entering S, T, we reset it
+        // in the inhomogeneous case: FDeg == pFDeg
+        if (strat->homog) strat->initEcart(&(strat->P));
+
+        /* statistic */
+        if (TEST_OPT_PROT) PrintS("s");
+
+        int pos=posInS(strat,strat->sl,strat->P.p,strat->P.ecart);
+
 #ifdef KDEBUG
-      if (TEST_OPT_DEBUG){PrintS("new s:");strat->P.wrp();PrintLn();}
 #if MYTEST
-//#if 1
-      PrintS("New (reduced) S: "); pDebugPrint(strat->P.p); PrintLn();
+        PrintS("New S: "); pDebugPrint(strat->P.p); PrintLn();
 #endif /* MYTEST */
 #endif /* KDEBUG */
 
-      // min_std stuff
-      if ((strat->P.p1==NULL) && (strat->minim>0))
-      {
-        if (strat->minim==1)
+        // reduce the tail and normalize poly
+        // in the ring case we cannot expect LC(f) = 1,
+        // therefore we call pContent instead of pNorm
+#if F5CTAILRED
+        if ((TEST_OPT_INTSTRATEGY) || (rField_is_Ring(currRing)))
         {
-          strat->M->m[minimcnt]=p_Copy(strat->P.p,currRing,strat->tailRing);
-          p_Delete(&strat->P.p2, currRing, strat->tailRing);
+          strat->P.pCleardenom();
+          if ((TEST_OPT_REDSB)||(TEST_OPT_REDTAIL))
+          {
+            strat->P.p = redtailBba(&(strat->P),pos-1,strat, withT);
+            strat->P.pCleardenom();
+          }
         }
         else
         {
-          strat->M->m[minimcnt]=strat->P.p2;
-          strat->P.p2=NULL;
+          strat->P.pNorm();
+          if ((TEST_OPT_REDSB)||(TEST_OPT_REDTAIL))
+            strat->P.p = redtailBba(&(strat->P),pos-1,strat, withT);
         }
-        if (strat->tailRing!=currRing && pNext(strat->M->m[minimcnt])!=NULL)
-          pNext(strat->M->m[minimcnt])
-            = strat->p_shallow_copy_delete(pNext(strat->M->m[minimcnt]),
-                strat->tailRing, currRing,
-                currRing->PolyBin);
-        minimcnt++;
-      }
+#endif
+#ifdef KDEBUG
+        if (TEST_OPT_DEBUG){PrintS("new s:");strat->P.wrp();PrintLn();}
+#if MYTEST
+  //#if 1
+        PrintS("New (reduced) S: "); pDebugPrint(strat->P.p); PrintLn();
+#endif /* MYTEST */
+#endif /* KDEBUG */
+
+        // min_std stuff
+        if ((strat->P.p1==NULL) && (strat->minim>0))
+        {
+          if (strat->minim==1)
+          {
+            strat->M->m[minimcnt]=p_Copy(strat->P.p,currRing,strat->tailRing);
+            p_Delete(&strat->P.p2, currRing, strat->tailRing);
+          }
+          else
+          {
+            strat->M->m[minimcnt]=strat->P.p2;
+            strat->P.p2=NULL;
+          }
+          if (strat->tailRing!=currRing && pNext(strat->M->m[minimcnt])!=NULL)
+            pNext(strat->M->m[minimcnt])
+              = strat->p_shallow_copy_delete(pNext(strat->M->m[minimcnt]),
+                  strat->tailRing, currRing,
+                  currRing->PolyBin);
+          minimcnt++;
+        }
 
       // enter into S, L, and T
       // here we need to recompute new signatures, but those are trivial ones
@@ -2480,8 +2489,34 @@ void f5c (kStrategy strat, int& olddeg, int& minimcnt, int& hilbeledeg,
     strat->T[cc].sevSig = pGetShortExpVector(strat->T[cc].sig);
     strat->sig[cc]      = strat->T[cc].sig;
     strat->sevSig[cc]   = strat->T[cc].sevSig;
+#if RATIO
+    // compute ratio vector for faster comparisons in the following
+    //strat->P.ratio    = (int*)omAlloc((currRing->N+2)*sizeof(int));
+    ratioDeg      = 0;
+    pWrite(strat->T[cc].sig);
+    pWrite(strat->T[cc].GetLmCurrRing());
+    p_GetExpV (strat->T[cc].sig, help1, currRing);
+    p_GetExpV (strat->T[cc].GetLmCurrRing(), help2, currRing);
+    //if (!strat->T[cc].ratio)
+      strat->T[cc].ratio  = (int*)omAlloc((currRing->N+2)*sizeof(int));
+    printf("%p\n",strat->T[cc].ratio);
+    for(int ii=currRing->N; ii; ii--)
+    {
+      strat->T[cc].ratio[ii]  =   help1[ii] - help2[ii];
+      printf("%d ",strat->T[cc].ratio[ii]);
+      ratioDeg            +=  strat->T[cc].ratio[ii];
+    }
+
+    strat->T[cc].ratio[currRing->N+1] = ratioDeg;
+    printf("|%d\n\n",strat->T[cc].ratio[currRing->N+1]);
+    strat->T[cc].ratio[0]             = p_GetComp(strat->T[cc].sig, currRing);
+#endif
     cc++;
   }
+#if RATIO
+  omFreeSize (help1, (currRing->N+1)*sizeof(int));
+  omFreeSize (help2, (currRing->N+1)*sizeof(int));
+#endif
   // set current signature index of upcoming iteration step
   // NOTE:  this needs to be set here, as otherwise initSyzRules cannot compute
   //        the corresponding syzygy rules correctly
