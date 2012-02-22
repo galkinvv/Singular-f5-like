@@ -1784,6 +1784,7 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
     Lp.lcm=NULL;
     return;
   }
+
   // in any case Lp is checked up to the next strat->P which is added
   // to S right after this critical pair creation.
   // NOTE: this even holds if the 2nd generator gives the bigger signature
@@ -5066,11 +5067,24 @@ BOOLEAN arriRewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, in
       }
     }
   }
+  /*
   for (int ii=strat->sl; ii>-1; ii--)
   {
     if (p_LmShortDivisibleBy(strat->sig[ii], strat->sevSig[ii], strat->P.sig, ~strat->P.sevSig, currRing))
     {
       if (pLmCmp(ppMult_mm(strat->P.sig,pHead(strat->S[ii])),ppMult_mm(strat->sig[ii],strat->P.GetLmCurrRing())) == -1)
+      {
+        strat->P.Delete();
+        return TRUE;
+      }
+    }
+  }
+  */
+  for (int ii=strat->tl; ii>-1; ii--)
+  {
+    if (p_LmShortDivisibleBy(strat->T[ii].sig, strat->T[ii].sevSig, strat->P.sig, ~strat->P.sevSig, currRing))
+    {
+      if (pLmCmp(ppMult_mm(strat->P.sig,strat->T[ii].GetLmCurrRing()),ppMult_mm(strat->T[ii].sig,strat->P.GetLmCurrRing())) == -1)
       {
         strat->P.Delete();
         return TRUE;

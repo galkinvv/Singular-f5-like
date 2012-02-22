@@ -42,6 +42,7 @@
 //#define DEBUGF5 1
 #endif
 
+#define RATIO     1
 #define F5C       1
 #if F5C
   #define F5CTAILRED 0
@@ -1509,6 +1510,12 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       F = idrMoveR (F0, currRingOld);
     }
   }
+#if RATIO
+  int ratioDeg  = 0;
+  int* help1    = (int*)omAlloc((currRing->N+1)*sizeof(int));
+  int* help2    = (int*)omAlloc((currRing->N+1)*sizeof(int));
+#endif
+
 #if 0
   printf("SBA COMPUTATIONS DONE IN THE FOLLOWING RING:\n");
   rWrite (currRing);
@@ -1691,6 +1698,26 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       Print("Poly before red: ");
       pWrite(strat->P.p);
 #endif
+#if RATIO
+      // compute ratio vector for faster comparisons in the following
+      strat->P.ratio  = (int*)omAlloc((currRing->N+2)*sizeof(int));
+      ratioDeg        = 0;
+      pWrite(strat->P.sig);
+      pWrite(strat->P.GetLmCurrRing());
+      p_GetExpV (strat->P.sig, help1, currRing);
+      p_GetExpV (strat->P.GetLmCurrRing(), help2, currRing);
+      for(int ii=currRing->N; ii; ii--)
+      {
+        strat->P.ratio[ii]  =   help1[ii] - help2[ii];
+        printf("%d ",strat->P.ratio[ii]);
+        ratioDeg            +=  strat->P.ratio[ii];
+      }
+      
+      strat->P.ratio[currRing->N+1] = ratioDeg;
+      printf("|%d\n\n",strat->P.ratio[currRing->N+1]);
+      strat->P.ratio[0]             = p_GetComp(strat->P.sig, currRing);
+#endif
+
       /* reduction of the element choosen from L */
       if (!strat->rewCrit2(strat->P.sig, ~strat->P.sevSig, strat, strat->P.checked+1))
         red_result = strat->red(&strat->P,strat);
@@ -1841,6 +1868,28 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
           }
         }
       }
+#if RATIO
+      // compute ratio vector for faster comparisons in the following
+      //strat->P.ratio    = (int*)omAlloc((currRing->N+2)*sizeof(int));
+      ratioDeg      = 0;
+      pWrite(strat->P.sig);
+      pWrite(strat->P.GetLmCurrRing());
+      p_GetExpV (strat->P.sig, help1, currRing);
+      p_GetExpV (strat->P.GetLmCurrRing(), help2, currRing);
+      if (!strat->P.ratio)
+       strat->P.ratio  = (int*)omAlloc((currRing->N+2)*sizeof(int));
+      printf("%p\n",strat->P.ratio);
+      for(int ii=currRing->N; ii; ii--)
+      {
+        strat->P.ratio[ii]  =   help1[ii] - help2[ii];
+        printf("%d ",strat->P.ratio[ii]);
+        ratioDeg            +=  strat->P.ratio[ii];
+      }
+      
+      strat->P.ratio[currRing->N+1] = ratioDeg;
+      printf("|%d\n\n",strat->P.ratio[currRing->N+1]);
+      strat->P.ratio[0]             = p_GetComp(strat->P.sig, currRing);
+#endif
         enterT(strat->P, strat);
 #ifdef HAVE_RINGS
       if (rField_is_Ring(currRing))

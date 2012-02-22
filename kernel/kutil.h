@@ -65,7 +65,8 @@ class sTObject
 {
 public:
   unsigned long sevSig;
-  poly sig;   // the signature of the element
+  poly sig;     // the signature of the element
+  int* ratio;   // integer vector storing sig / lm ratio for faster comparisons
   poly p;       // Lm(p) \in currRing Tail(p) \in tailRing
   poly t_p;     // t_p \in tailRing: as monomials Lm(t_p) == Lm(p)
   poly max;     // p_GetMaxExpP(pNext(p))
@@ -286,7 +287,7 @@ public:
   polyset S;
   polyset syz;
   polyset sig;
-  // ratio[i] stores sig[i] / S[i]
+  // ratio[i] stores sig[i] / lm(S[i])
   polyset ratio;
   intset ecartS;
   intset fromS; // from which S[i] S[j] comes from
