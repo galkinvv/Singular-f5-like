@@ -5010,6 +5010,11 @@ BOOLEAN faugereRewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat,
 BOOLEAN arriRewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start=0)
 {
   //printf("Arri Rewritten Criterion\n");
+#if RATIO
+  int ratioDeg  = 0;
+  int* help1    = (int*)omAlloc((currRing->N+1)*sizeof(int));
+  int* help2    = (int*)omAlloc((currRing->N+1)*sizeof(int));
+#endif
   while (strat->Ll > 0 && pLmEqual(strat->L[strat->Ll].sig,strat->P.sig))
   {
     // deletes the short spoly
@@ -5052,40 +5057,68 @@ BOOLEAN arriRewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, in
       strat->P = strat->L[strat->Ll];
       strat->Ll--;
     }
+#if RATIO
+    // compute ratio vector for faster comparisons in the following
+    int* v    = (int*)omAlloc((currRing->N+2)*sizeof(int));
+    ratioDeg  = 0;
+    pWrite(strat->L[strat->Ll].sig);
+    pWrite(strat->L[strat->Ll].GetLmCurrRing());
+    p_GetExpV (strat->L[strat->Ll].sig, help1, currRing);
+    p_GetExpV (strat->L[strat->Ll].GetLmCurrRing(), help2, currRing);
+    for(int ii=currRing->N; ii; ii--)
+    {
+      v[ii]  =   help1[ii] - help2[ii];
+      printf("%d ",v[ii]);
+      ratioDeg            +=  v[ii];
+    }
+    
+    v[currRing->N+1] = ratioDeg;
+    printf("|%d\n\n",v[currRing->N+1]);
+    v[0]             = p_GetComp(strat->L[strat->Ll].sig, currRing);
+    strat->Ll.ratio = v;
+#endif
 
     if (strat->P.GetLmCurrRing() != NULL && strat->L[strat->Ll].GetLmCurrRing() != NULL)
     {
+#if RATIO
       if (pLmCmp(strat->P.GetLmCurrRing(),strat->L[strat->Ll].GetLmCurrRing()) == -1)
       {
+#else
+      if (pLmCmp(strat->P.GetLmCurrRing(),strat->L[strat->Ll].GetLmCurrRing()) == -1)
+      {
+#endif
+#if RATIO
+        omFreeSize (v, (currRing->N+2)*sizeof(int));
+#endif
         deleteInL(strat->L,&strat->Ll,strat->Ll,strat);
       }
       else
       {
+#if RATIO
+        omFreeSize (strat->P.ratio, (currRing->N+2)*sizeof(int));
+#endif
         strat->P.Delete();
         strat->P = strat->L[strat->Ll];
         strat->Ll--;
       }
     }
   }
-  /*
-  for (int ii=strat->sl; ii>-1; ii--)
-  {
-    if (p_LmShortDivisibleBy(strat->sig[ii], strat->sevSig[ii], strat->P.sig, ~strat->P.sevSig, currRing))
-    {
-      if (pLmCmp(ppMult_mm(strat->P.sig,pHead(strat->S[ii])),ppMult_mm(strat->sig[ii],strat->P.GetLmCurrRing())) == -1)
-      {
-        strat->P.Delete();
-        return TRUE;
-      }
-    }
-  }
-  */
+#if RATIO
+  omFreeSize (help1, (currRing->N+1)*sizeof(int));
+  omFreeSize (help2, (currRing->N+1)*sizeof(int));
+#endif
+
+  // check with elements already in strat->T, possibly we do not need to compute
+  // a critical pair at all!
   for (int ii=strat->tl; ii>-1; ii--)
   {
     if (p_LmShortDivisibleBy(strat->T[ii].sig, strat->T[ii].sevSig, strat->P.sig, ~strat->P.sevSig, currRing))
     {
       if (pLmCmp(ppMult_mm(strat->P.sig,strat->T[ii].GetLmCurrRing()),ppMult_mm(strat->T[ii].sig,strat->P.GetLmCurrRing())) == -1)
       {
+#if RATIO
+        omFreeSize (strat->P.ratio, (currRing->N+2)*sizeof(int));
+#endif
         strat->P.Delete();
         return TRUE;
       }

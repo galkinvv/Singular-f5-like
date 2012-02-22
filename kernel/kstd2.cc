@@ -1682,6 +1682,25 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       // for input polys, prepare reduction
       strat->P.PrepareRed(strat->use_buckets);
     }
+#if RATIO
+    // compute ratio vector for faster comparisons in the following
+    strat->P.ratio  = (int*)omAlloc((currRing->N+2)*sizeof(int));
+    ratioDeg        = 0;
+    pWrite(strat->P.sig);
+    pWrite(strat->P.GetLmCurrRing());
+    p_GetExpV (strat->P.sig, help1, currRing);
+    p_GetExpV (strat->P.GetLmCurrRing(), help2, currRing);
+    for(int ii=currRing->N; ii; ii--)
+    {
+      strat->P.ratio[ii]  =   help1[ii] - help2[ii];
+      printf("%d ",strat->P.ratio[ii]);
+      ratioDeg            +=  strat->P.ratio[ii];
+    }
+    
+    strat->P.ratio[currRing->N+1] = ratioDeg;
+    printf("|%d\n\n",strat->P.ratio[currRing->N+1]);
+    strat->P.ratio[0]             = p_GetComp(strat->P.sig, currRing);
+#endif
 
     if (strat->P.p == NULL && strat->P.t_p == NULL)
     {
@@ -1697,25 +1716,6 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 #ifdef DEBUGF5
       Print("Poly before red: ");
       pWrite(strat->P.p);
-#endif
-#if RATIO
-      // compute ratio vector for faster comparisons in the following
-      strat->P.ratio  = (int*)omAlloc((currRing->N+2)*sizeof(int));
-      ratioDeg        = 0;
-      pWrite(strat->P.sig);
-      pWrite(strat->P.GetLmCurrRing());
-      p_GetExpV (strat->P.sig, help1, currRing);
-      p_GetExpV (strat->P.GetLmCurrRing(), help2, currRing);
-      for(int ii=currRing->N; ii; ii--)
-      {
-        strat->P.ratio[ii]  =   help1[ii] - help2[ii];
-        printf("%d ",strat->P.ratio[ii]);
-        ratioDeg            +=  strat->P.ratio[ii];
-      }
-      
-      strat->P.ratio[currRing->N+1] = ratioDeg;
-      printf("|%d\n\n",strat->P.ratio[currRing->N+1]);
-      strat->P.ratio[0]             = p_GetComp(strat->P.sig, currRing);
 #endif
 
       /* reduction of the element choosen from L */
@@ -2006,6 +2006,14 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   }
   else if (TEST_OPT_PROT) PrintLn();
 
+#if RATIO
+  omFreeSize (help1, (currRing->N+1)*sizeof(int));
+  omFreeSize (help2, (currRing->N+1)*sizeof(int));
+  for (int ii=strat->tl; ii; ii--)
+  {
+    omFreeSize (strat->T[ii].ratio, (currRing->N+2)*sizeof(int));
+  }
+#endif
   exitSba(strat);
   if (TEST_OPT_WEIGHTM)
   {
