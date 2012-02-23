@@ -42,7 +42,8 @@
 //#define DEBUGF5 1
 #endif
 
-#define RATIO     1
+#define RATIO     0
+#define RATIO2    0
 #define F5C       1
 #if F5C
   #define F5CTAILRED 0
@@ -531,6 +532,11 @@ int redSig (LObject* h,kStrategy strat)
   Print("---------------------------\n");
 #endif
   poly h_p;
+#if RATIO2
+  int* help1 = (int*) omAlloc((currRing->N+1)*sizeof(int));
+  int* help2 = (int*) omAlloc((currRing->N+1)*sizeof(int));
+  int ratioDeg;
+#endif
   int i,j,at,pass, ii;
   int start=0;
   int sigSafe;
@@ -609,66 +615,86 @@ int redSig (LObject* h,kStrategy strat)
     Print("--------------------------------\n");
     printf("INDEX OF REDUCER T: %d\n",ii);
 #endif
-    sigSafe = strat->redStep(h, &(strat->T[ii]), strat->S_2_R[ii], NULL, NULL, strat);
-    // if reduction has taken place, i.e. the reduction was sig-safe
-    // otherwise start is already at the next position and the loop
-    // searching reducers in T goes on from index start
-//#if 1
-#ifdef DEBUGF5
-    Print("SigSAFE: %d\n",sigSafe);
-#endif
-    if (sigSafe != 3)
+#if RATIO2
+    if (strat->ratioCmp(strat->T[ii].ratio, h->ratio, currRing))
     {
-      // start the next search for reducers in T from the beginning
-      start = 0;
-#ifdef KDEBUG
-      if (TEST_OPT_DEBUG)
+      p_GetExpV (h->GetLmCurrRing(), help1, currRing);
+      ratioDeg = 0;
+#endif
+      sigSafe = strat->redStep(h, &(strat->T[ii]), strat->S_2_R[ii], NULL, NULL, strat);
+      // if reduction has taken place, i.e. the reduction was sig-safe
+      // otherwise start is already at the next position and the loop
+      // searching reducers in T goes on from index start
+      //#if 1
+#ifdef DEBUGF5
+      Print("SigSAFE: %d\n",sigSafe);
+#endif
+      if (sigSafe != 3)
       {
-        PrintS("\nto ");
-        h->wrp();
-        PrintLn();
-      }
+        // start the next search for reducers in T from the beginning
+        start = 0;
+#ifdef KDEBUG
+        if (TEST_OPT_DEBUG)
+        {
+          PrintS("\nto ");
+          h->wrp();
+          PrintLn();
+        }
 #endif
 
-      h_p = h->GetLmTailRing();
-      if (h_p == NULL)
-      {
-        if (h->lcm!=NULL) pLmFree(h->lcm);
-#ifdef KDEBUG
-        h->lcm=NULL;
-#endif
-        return 0;
-      }
-      h->SetShortExpVector();
-      not_sev = ~ h->sev;
-      /*
-      * try to reduce the s-polynomial h
-      *test first whether h should go to the lazyset L
-      *-if the degree jumps
-      *-if the number of pre-defined reductions jumps
-      */
-      pass++;
-      if (!TEST_OPT_REDTHROUGH && (strat->Ll >= 0) && (pass > strat->LazyPass))
-      {
-        h->SetLmCurrRing();
-        at = strat->posInL(strat->L,strat->Ll,h,strat);
-        if (at <= strat->Ll)
+        h_p = h->GetLmTailRing();
+        if (h_p == NULL)
         {
-          int dummy=strat->sl;
-          if (kFindDivisibleByInS(strat, &dummy, h) < 0)
-          {
-            return 1;
-          }
-          enterL(&strat->L,&strat->Ll,&strat->Lmax,*h,at);
+          if (h->lcm!=NULL) pLmFree(h->lcm);
 #ifdef KDEBUG
-          if (TEST_OPT_DEBUG)
-            Print(" lazy: -> L%d\n",at);
+          h->lcm=NULL;
 #endif
-          h->Clear();
-          return -1;
+          return 0;
+        }
+        h->SetShortExpVector();
+        not_sev = ~ h->sev;
+        /*
+         * try to reduce the s-polynomial h
+         *test first whether h should go to the lazyset L
+         *-if the degree jumps
+         *-if the number of pre-defined reductions jumps
+         */
+        pass++;
+        if (!TEST_OPT_REDTHROUGH && (strat->Ll >= 0) && (pass > strat->LazyPass))
+        {
+          h->SetLmCurrRing();
+          at = strat->posInL(strat->L,strat->Ll,h,strat);
+          if (at <= strat->Ll)
+          {
+            int dummy=strat->sl;
+            if (kFindDivisibleByInS(strat, &dummy, h) < 0)
+            {
+              return 1;
+            }
+            enterL(&strat->L,&strat->Ll,&strat->Lmax,*h,at);
+#ifdef KDEBUG
+            if (TEST_OPT_DEBUG)
+              Print(" lazy: -> L%d\n",at);
+#endif
+            h->Clear();
+            return -1;
+          }
         }
       }
+#if RATIO2
+      p_GetExpV (h->GetLmCurrRing(), help2, currRing);
+      for (int kk=currRing->N; kk; kk--)
+      {
+        h->ratio[kk]  =   h->ratio[kk] + help1[kk] - help2[kk];
+        //printf("%d ",h.ratio[ii]);
+        ratioDeg            +=  h->ratio[kk];
+      }
+      
+      h->ratio[currRing->N+1] = ratioDeg;
     }
+    else
+      printf("RATIOCMP-DETECTED\n");
+#endif
   }
 }
 
@@ -1585,7 +1611,6 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   //kDebugPrint(strat);
 #endif
   /* compute------------------------------------------------------- */
-  arriAgain:
   while (strat->Ll >= 0)
   {
     if (strat->Ll > lrmax) lrmax =strat->Ll;/*stat.*/
@@ -1686,19 +1711,19 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
     // compute ratio vector for faster comparisons in the following
     strat->P.ratio  = (int*)omAlloc((currRing->N+2)*sizeof(int));
     ratioDeg        = 0;
-    pWrite(strat->P.sig);
-    pWrite(strat->P.GetLmCurrRing());
+    //pWrite(strat->P.sig);
+    //pWrite(strat->P.GetLmCurrRing());
     p_GetExpV (strat->P.sig, help1, currRing);
     p_GetExpV (strat->P.GetLmCurrRing(), help2, currRing);
     for(int ii=currRing->N; ii; ii--)
     {
       strat->P.ratio[ii]  =   help1[ii] - help2[ii];
-      printf("%d ",strat->P.ratio[ii]);
+      //printf("%d ",strat->P.ratio[ii]);
       ratioDeg            +=  strat->P.ratio[ii];
     }
     
     strat->P.ratio[currRing->N+1] = ratioDeg;
-    printf("|%d\n\n",strat->P.ratio[currRing->N+1]);
+    //printf("|%d\n\n",strat->P.ratio[currRing->N+1]);
     strat->P.ratio[0]             = p_GetComp(strat->P.sig, currRing);
 #endif
 
@@ -1720,7 +1745,9 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 
       /* reduction of the element choosen from L */
       if (!strat->rewCrit2(strat->P.sig, ~strat->P.sevSig, strat, strat->P.checked+1))
+      {
         red_result = strat->red(&strat->P,strat);
+      }
       else
       {
         if (strat->P.lcm!=NULL)
@@ -1872,22 +1899,22 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       // compute ratio vector for faster comparisons in the following
       //strat->P.ratio    = (int*)omAlloc((currRing->N+2)*sizeof(int));
       ratioDeg      = 0;
-      pWrite(strat->P.sig);
-      pWrite(strat->P.GetLmCurrRing());
+      //pWrite(strat->P.sig);
+      //pWrite(strat->P.GetLmCurrRing());
       p_GetExpV (strat->P.sig, help1, currRing);
       p_GetExpV (strat->P.GetLmCurrRing(), help2, currRing);
       if (!strat->P.ratio)
        strat->P.ratio  = (int*)omAlloc((currRing->N+2)*sizeof(int));
-      printf("%p\n",strat->P.ratio);
+      //printf("%p\n",strat->P.ratio);
       for(int ii=currRing->N; ii; ii--)
       {
         strat->P.ratio[ii]  =   help1[ii] - help2[ii];
-        printf("%d ",strat->P.ratio[ii]);
+        //printf("%d ",strat->P.ratio[ii]);
         ratioDeg            +=  strat->P.ratio[ii];
       }
       
       strat->P.ratio[currRing->N+1] = ratioDeg;
-      printf("|%d\n\n",strat->P.ratio[currRing->N+1]);
+      //printf("|%d\n\n",strat->P.ratio[currRing->N+1]);
       strat->P.ratio[0]             = p_GetComp(strat->P.sig, currRing);
 #endif
         enterT(strat->P, strat);
@@ -2493,22 +2520,22 @@ void f5c (kStrategy strat, int& olddeg, int& minimcnt, int& hilbeledeg,
     // compute ratio vector for faster comparisons in the following
     //strat->P.ratio    = (int*)omAlloc((currRing->N+2)*sizeof(int));
     ratioDeg      = 0;
-    pWrite(strat->T[cc].sig);
-    pWrite(strat->T[cc].GetLmCurrRing());
+    //pWrite(strat->T[cc].sig);
+    //pWrite(strat->T[cc].GetLmCurrRing());
     p_GetExpV (strat->T[cc].sig, help1, currRing);
     p_GetExpV (strat->T[cc].GetLmCurrRing(), help2, currRing);
     //if (!strat->T[cc].ratio)
       strat->T[cc].ratio  = (int*)omAlloc((currRing->N+2)*sizeof(int));
-    printf("%p\n",strat->T[cc].ratio);
+    //printf("%p\n",strat->T[cc].ratio);
     for(int ii=currRing->N; ii; ii--)
     {
       strat->T[cc].ratio[ii]  =   help1[ii] - help2[ii];
-      printf("%d ",strat->T[cc].ratio[ii]);
+      //printf("%d ",strat->T[cc].ratio[ii]);
       ratioDeg            +=  strat->T[cc].ratio[ii];
     }
 
     strat->T[cc].ratio[currRing->N+1] = ratioDeg;
-    printf("|%d\n\n",strat->T[cc].ratio[currRing->N+1]);
+    //printf("|%d\n\n",strat->T[cc].ratio[currRing->N+1]);
     strat->T[cc].ratio[0]             = p_GetComp(strat->T[cc].sig, currRing);
 #endif
     cc++;

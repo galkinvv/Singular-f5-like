@@ -1914,11 +1914,13 @@ ideal kSba(ideal F, ideal Q, tHomog h,intvec ** w, int incremental, int arri, in
   kStrategy strat=new skStrategy;
   if (incremental!=0)
   {
-    strat->incremental = TRUE;
+    strat->incremental  = TRUE;
+    strat->ratioCmp     = ratioCmp_C_dp; 
   }
   else
   {
-    strat->incremental = FALSE;
+    strat->incremental  = FALSE;
+    strat->ratioCmp     = ratioCmp_dp; 
   }
   if (arri!=0)
   {

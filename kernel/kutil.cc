@@ -29,6 +29,8 @@
 #define KDEBUG 2
 #endif
 
+#define RATIO 0
+
 #ifdef DEBUGF5
 #undef DEBUGF5
 //#define DEBUGF5 1
@@ -5010,6 +5012,7 @@ BOOLEAN faugereRewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat,
 BOOLEAN arriRewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start=0)
 {
   //printf("Arri Rewritten Criterion\n");
+  LObject h;
 #if RATIO
   int ratioDeg  = 0;
   int* help1    = (int*)omAlloc((currRing->N+1)*sizeof(int));
@@ -5047,48 +5050,51 @@ BOOLEAN arriRewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, in
     // create the real one
     ksCreateSpoly(&(strat->L[strat->Ll]), NULL, strat->use_buckets,
                   strat->tailRing, m1, m2, strat->R);
+    h = strat->L[strat->Ll];
     if (strat->P.GetLmCurrRing() == NULL)
     {
       deleteInL(strat->L,&strat->Ll,strat->Ll,strat);
     }
-    if (strat->L[strat->Ll].GetLmCurrRing() == NULL)
+    if (h.GetLmCurrRing() == NULL)
     {
       strat->P.Delete();
-      strat->P = strat->L[strat->Ll];
+      strat->P = h;
       strat->Ll--;
     }
 #if RATIO
     // compute ratio vector for faster comparisons in the following
-    int* v    = (int*)omAlloc((currRing->N+2)*sizeof(int));
-    ratioDeg  = 0;
-    pWrite(strat->L[strat->Ll].sig);
-    pWrite(strat->L[strat->Ll].GetLmCurrRing());
-    p_GetExpV (strat->L[strat->Ll].sig, help1, currRing);
-    p_GetExpV (strat->L[strat->Ll].GetLmCurrRing(), help2, currRing);
+    h.ratio  = (int*)omAlloc((currRing->N+2)*sizeof(int));
+    ratioDeg = 0;
+    //printf("ARW\n");
+    //pWrite(h.sig);
+    //pWrite(h.GetLmCurrRing());
+    p_GetExpV (h.sig, help1, currRing);
+    p_GetExpV (h.GetLmCurrRing(), help2, currRing);
     for(int ii=currRing->N; ii; ii--)
     {
-      v[ii]  =   help1[ii] - help2[ii];
-      printf("%d ",v[ii]);
-      ratioDeg            +=  v[ii];
+      h.ratio[ii]  =   help1[ii] - help2[ii];
+      //printf("%d ",h.ratio[ii]);
+      ratioDeg            +=  h.ratio[ii];
     }
     
-    v[currRing->N+1] = ratioDeg;
-    printf("|%d\n\n",v[currRing->N+1]);
-    v[0]             = p_GetComp(strat->L[strat->Ll].sig, currRing);
-    strat->Ll.ratio = v;
+    h.ratio[currRing->N+1] = ratioDeg;
+    //printf("|%d\n\n",h.ratio[currRing->N+1]);
+    h.ratio[0]  = p_GetComp(h.sig, currRing);
 #endif
 
-    if (strat->P.GetLmCurrRing() != NULL && strat->L[strat->Ll].GetLmCurrRing() != NULL)
+    if (strat->P.GetLmCurrRing() != NULL && h.GetLmCurrRing() != NULL)
     {
 #if RATIO
-      if (pLmCmp(strat->P.GetLmCurrRing(),strat->L[strat->Ll].GetLmCurrRing()) == -1)
+      printf("R1 %d\n",strat->ratioCmp(h.ratio, strat->P.ratio, currRing));
+      if (pLmCmp(strat->P.GetLmCurrRing(),h.GetLmCurrRing()) == -1)
       {
+        printf("-R2 %d\n",strat->ratioCmp(h.ratio, strat->P.ratio, currRing));
 #else
-      if (pLmCmp(strat->P.GetLmCurrRing(),strat->L[strat->Ll].GetLmCurrRing()) == -1)
+      if (pLmCmp(strat->P.GetLmCurrRing(),h.GetLmCurrRing()) == -1)
       {
 #endif
 #if RATIO
-        omFreeSize (v, (currRing->N+2)*sizeof(int));
+        omFreeSize (h.ratio, (currRing->N+2)*sizeof(int));
 #endif
         deleteInL(strat->L,&strat->Ll,strat->Ll,strat);
       }
@@ -5098,7 +5104,7 @@ BOOLEAN arriRewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, in
         omFreeSize (strat->P.ratio, (currRing->N+2)*sizeof(int));
 #endif
         strat->P.Delete();
-        strat->P = strat->L[strat->Ll];
+        strat->P = h;
         strat->Ll--;
       }
     }
@@ -8378,6 +8384,7 @@ void enterSMora (LObject p,int atS,kStrategy strat, int atR=-1);
 void enterSMoraNF (LObject p,int atS,kStrategy strat, int atR=-1);
 // ../Singular/misc.cc:
 char *  showOption();
+
 
 void kDebugPrint(kStrategy strat)
 {

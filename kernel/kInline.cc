@@ -1170,5 +1170,85 @@ KINLINE BOOLEAN arriRewDummy(poly sig, unsigned long not_sevSig, kStrategy strat
   return FALSE;
 }
 
+// comparison routines for sba():
+// returns TRUE   if ratio1 < ratio2
+// returns FALSE  else
+KINLINE BOOLEAN ratioCmp_dp(int* ratio1, int* ratio2, ring r)
+{
+  // ratio vectors are of length r->N+2, the last entry is the degree
+  // difference between the signature and the leading monomial of the
+  // corresponding polynomial
+  
+  // look at the degree difference first
+  if (ratio1[r->N+1] < ratio2[r->N+1])
+    return TRUE;
+  // look at the entries
+  for (int i=r->N; i; i--)
+  {
+    if (ratio1[i] > ratio2[i])
+      return TRUE;
+  }
+  // look at the component
+  if (ratio1[0] < ratio2[0])
+    return TRUE;
+  return FALSE;
+}
+
+KINLINE BOOLEAN ratioCmp_C_dp(int* ratio1, int* ratio2, ring r)
+{
+  // ratio vectors are of length r->N+2, the last entry is the degree
+  // difference between the signature and the leading monomial of the
+  // corresponding polynomial
+  
+  // look at the component
+  if (ratio1[0] < ratio2[0])
+    return TRUE;
+  // look at the degree difference first
+  if (ratio1[r->N+1] < ratio2[r->N+1])
+    return TRUE;
+  // look at the entries
+  for (int i=r->N; i; i--)
+  {
+    if (ratio1[i] > ratio2[i])
+      return TRUE;
+  }
+  return FALSE;
+}
+
+KINLINE BOOLEAN ratioCmp_lp(int* ratio1, int* ratio2, ring r)
+{
+  // ratio vectors are of length r->N+2, the last entry is the degree
+  // difference between the signature and the leading monomial of the
+  // corresponding polynomial
+  
+  // look at the entries
+  for (int i=1; i<r->N+1; i++)
+  {
+    if (ratio1[i] < ratio2[i])
+      return TRUE;
+  }
+  // look at the component
+  if (ratio1[0] < ratio2[0])
+    return TRUE;
+  return FALSE;
+}
+
+KINLINE BOOLEAN ratioCmp_C_lp(int* ratio1, int* ratio2, ring r)
+{
+  // ratio vectors are of length r->N+2, the last entry is the degree
+  // difference between the signature and the leading monomial of the
+  // corresponding polynomial
+  
+  // look at the component
+  if (ratio1[0] < ratio2[0])
+    return TRUE;
+  // look at the entries
+  for (int i=1; i<r->N+1; i++)
+  {
+    if (ratio1[i] < ratio2[i])
+      return TRUE;
+  }
+  return FALSE;
+}
 #endif // defined(KINLINE) || defined(KUTIL_CC)
 #endif // KINLINE_CC

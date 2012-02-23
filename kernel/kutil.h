@@ -275,6 +275,10 @@ public:
   BOOLEAN (*syzCrit) (poly sig, unsigned long not_sevSig, kStrategy strat);
   BOOLEAN (*rewCrit1) (poly sig, unsigned long not_sevSig, kStrategy strat, int start /*= 0*/);
   BOOLEAN (*rewCrit2) (poly sig, unsigned long not_sevSig, kStrategy strat, int start /*= 0*/);
+  // compares the sig / lm ratios in sba()
+  // has to be a function pointer in order to handle different orders on the
+  // underlying polynomial ring correctly
+  BOOLEAN (*ratioCmp) (int* ratio1, int* ratio2, ring r);
   pFDegProc pOrigFDeg;
   pLDegProc pOrigLDeg;
   pFDegProc pOrigFDeg_TailRing;
@@ -526,6 +530,10 @@ BOOLEAN syzCriterion(poly sig, unsigned long not_sevSig, kStrategy strat);
 BOOLEAN syzCriterionInc(poly sig, unsigned long not_sevSig, kStrategy strat);
 KINLINE BOOLEAN arriRewDummy(poly sig, unsigned long not_sevSig, kStrategy strat, int start);
 BOOLEAN arriRewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start);
+KINLINE BOOLEAN ratioCmp_dp(int* ratio1, int* ratio2, ring r);
+KINLINE BOOLEAN ratioCmp_C_dp(int* ratio1, int* ratio2, ring r);
+KINLINE BOOLEAN ratioCmp_lp(int* ratio1, int* ratio2, ring r);
+KINLINE BOOLEAN ratioCmp_C_lp(int* ratio1, int* ratio2, ring r);
 BOOLEAN faugereRewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, int start);
 BOOLEAN findMinLMPair(poly sig, unsigned long not_sevSig, kStrategy strat, int start);
 // returns index of p in TSet, or -1 if not found
