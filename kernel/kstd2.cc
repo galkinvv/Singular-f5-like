@@ -42,8 +42,8 @@
 //#define DEBUGF5 1
 #endif
 
-#define RATIO     0
-#define RATIO2    0
+#define RATIO     1
+#define RATIO2    1
 #define F5C       1
 #if F5C
   #define F5CTAILRED 0
@@ -621,7 +621,8 @@ int redSig (LObject* h,kStrategy strat)
       p_GetExpV (h->GetLmCurrRing(), help1, currRing);
       ratioDeg = 0;
 #endif
-      sigSafe = strat->redStep(h, &(strat->T[ii]), strat->S_2_R[ii], NULL, NULL, strat);
+      ksReducePoly(h, &(strat->T[ii]), NULL, NULL, strat);
+      //sigSafe = strat->redStep(h, &(strat->T[ii]), strat->S_2_R[ii], NULL, NULL, strat);
       // if reduction has taken place, i.e. the reduction was sig-safe
       // otherwise start is already at the next position and the loop
       // searching reducers in T goes on from index start
@@ -692,8 +693,199 @@ int redSig (LObject* h,kStrategy strat)
       
       h->ratio[currRing->N+1] = ratioDeg;
     }
-    else
-      printf("RATIOCMP-DETECTED\n");
+#endif
+  }
+}
+/*2
+*  reduction procedure for signature-based standard
+*  basis algorithms:
+*  all reductions have to be sig-safe!
+*
+*  2 is returned if and only if the pair is rejected by the rewritten criterion
+*  at exactly this point of the computations. This is the last possible point
+*  such a check can be done => checks with the biggest set of available
+*  signatures
+*/
+int redSigInc (LObject* h,kStrategy strat)
+{
+  if (strat->tl<0) return 1;
+  //if (h->GetLmTailRing()==NULL) return 0; // HS: SHOULD NOT BE NEEDED!
+  //printf("FDEGS: %ld -- %ld\n",h->FDeg, h->pFDeg());
+  assume(h->FDeg == h->pFDeg());
+//#if 1
+#ifdef DEBUGF5
+  Print("------- IN REDSIG -------\n");
+  Print("p: ");
+  pWrite(pHead(h->p));
+  Print("p1: ");
+  pWrite(pHead(h->p1));
+  Print("p2: ");
+  pWrite(pHead(h->p2));
+  Print("---------------------------\n");
+#endif
+  poly h_p;
+#if RATIO2
+  int* help1 = (int*) omAlloc((currRing->N+1)*sizeof(int));
+  int* help2 = (int*) omAlloc((currRing->N+1)*sizeof(int));
+  int ratioDeg;
+#endif
+  int i,j,at,pass, ii;
+  int start=0;
+  int sigSafe;
+  unsigned long not_sev;
+  long reddeg,d;
+
+  pass = j = 0;
+  d = reddeg = h->GetpFDeg();
+  h->SetShortExpVector();
+  int li;
+  h_p = h->GetLmTailRing();
+  not_sev = ~ h->sev;
+  loop
+  {
+    j = kFindDivisibleByInT(strat->T, strat->sevT, strat->tl, h, start);
+    if (j < 0)
+    {
+      return 1;
+    }
+
+    li = strat->T[j].pLength;
+    ii = j;
+    /*
+     * the polynomial to reduce with (up to the moment) is;
+     * pi with length li
+     */
+    i = j;
+#if 1
+    if (TEST_OPT_LENGTH)
+    loop
+    {
+      /*- search the shortest possible with respect to length -*/
+      i++;
+      if (i > strat->tl)
+        break;
+      if (li<=1)
+        break;
+      if ((strat->T[i].pLength < li)
+         &&
+          p_LmShortDivisibleBy(strat->T[i].GetLmTailRing(), strat->sevT[i],
+                               h_p, not_sev, strat->tailRing))
+      {
+        /*
+         * the polynomial to reduce with is now;
+         */
+        li = strat->T[i].pLength;
+        ii = i;
+      }
+    }
+    start = ii+1;
+#endif
+
+    /*
+     * end of search: have to reduce with pi
+     */
+#ifdef KDEBUG
+    if (TEST_OPT_DEBUG)
+    {
+      PrintS("red:");
+      h->wrp();
+      PrintS(" with ");
+      strat->T[ii].wrp();
+    }
+#endif
+    assume(strat->fromT == FALSE);
+//#if 1
+#ifdef DEBUGF5
+    Print("BEFORE REDUCTION WITH %d:\n",ii);
+    Print("--------------------------------\n");
+    pWrite(h->sig);
+    pWrite(strat->T[ii].sig);
+    pWrite(h->GetLmCurrRing());
+    pWrite(pHead(h->p1));
+    pWrite(pHead(h->p2));
+    pWrite(pHead(strat->T[ii].p));
+    Print("--------------------------------\n");
+    printf("INDEX OF REDUCER T: %d\n",ii);
+#endif
+#if RATIO2
+    if (pGetComp(strat->T[ii].sig) != strat->currIdx
+        || strat->ratioCmp(strat->T[ii].ratio, h->ratio, currRing))
+    {
+      p_GetExpV (h->GetLmCurrRing(), help1, currRing);
+      ratioDeg = 0;
+#endif
+      ksReducePoly(h, &(strat->T[ii]), NULL, NULL, strat);
+      //sigSafe = strat->redStep(h, &(strat->T[ii]), strat->S_2_R[ii], NULL, NULL, strat);
+      // if reduction has taken place, i.e. the reduction was sig-safe
+      // otherwise start is already at the next position and the loop
+      // searching reducers in T goes on from index start
+      //#if 1
+#ifdef DEBUGF5
+      Print("SigSAFE: %d\n",sigSafe);
+#endif
+      if (sigSafe != 3)
+      {
+        // start the next search for reducers in T from the beginning
+        start = 0;
+#ifdef KDEBUG
+        if (TEST_OPT_DEBUG)
+        {
+          PrintS("\nto ");
+          h->wrp();
+          PrintLn();
+        }
+#endif
+
+        h_p = h->GetLmTailRing();
+        if (h_p == NULL)
+        {
+          if (h->lcm!=NULL) pLmFree(h->lcm);
+#ifdef KDEBUG
+          h->lcm=NULL;
+#endif
+          return 0;
+        }
+        h->SetShortExpVector();
+        not_sev = ~ h->sev;
+        /*
+         * try to reduce the s-polynomial h
+         *test first whether h should go to the lazyset L
+         *-if the degree jumps
+         *-if the number of pre-defined reductions jumps
+         */
+        pass++;
+        if (!TEST_OPT_REDTHROUGH && (strat->Ll >= 0) && (pass > strat->LazyPass))
+        {
+          h->SetLmCurrRing();
+          at = strat->posInL(strat->L,strat->Ll,h,strat);
+          if (at <= strat->Ll)
+          {
+            int dummy=strat->sl;
+            if (kFindDivisibleByInS(strat, &dummy, h) < 0)
+            {
+              return 1;
+            }
+            enterL(&strat->L,&strat->Ll,&strat->Lmax,*h,at);
+#ifdef KDEBUG
+            if (TEST_OPT_DEBUG)
+              Print(" lazy: -> L%d\n",at);
+#endif
+            h->Clear();
+            return -1;
+          }
+        }
+      }
+#if RATIO2
+      p_GetExpV (h->GetLmCurrRing(), help2, currRing);
+      for (int kk=currRing->N; kk; kk--)
+      {
+        h->ratio[kk]  =   h->ratio[kk] + help1[kk] - help2[kk];
+        //printf("%d ",h.ratio[ii]);
+        ratioDeg            +=  h->ratio[kk];
+      }
+      
+      h->ratio[currRing->N+1] = ratioDeg;
+    }
 #endif
   }
 }

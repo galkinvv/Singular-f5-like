@@ -21,6 +21,7 @@
 #include <kernel/polys.h>
 #endif
 
+#define RATIO2 1
 #ifdef KDEBUG
 int red_count = 0;
 int create_count = 0;
@@ -190,8 +191,11 @@ int ksReducePolySig(LObject* PR,
   kTest_L(PR);
   kTest_T(PW);
 
-  poly f1 = p_Copy(PR->GetLmCurrRing(),currRing);
+#if RATIO2
+
+#else
   poly f2 = PW->GetLmCurrRing();
+  poly f1 = p_Copy(PR->GetLmCurrRing(),currRing);
   poly sigMult = pCopy(PW->sig);   // copy signature of reducer
   p_ExpVectorSub(f1, f2, currRing); // Calculate the Monomial we must multiply to p2
 //#if 1
@@ -202,6 +206,9 @@ int ksReducePolySig(LObject* PR,
   pWrite(sigMult);
   printf("--------------\n");
 #endif
+#endif
+#if RATIO2
+#else
   sigMult = pp_Mult_qq(f1,sigMult,currRing);
 //#if 1
 #ifdef DEBUGF5
@@ -227,6 +234,7 @@ int ksReducePolySig(LObject* PR,
   { 
     return 3;
   }
+#endif
   poly p1 = PR->GetLmTailRing();   // p2 | p1
   poly p2 = PW->GetLmTailRing();   // i.e. will reduce p1 with p2; lm = LT(p1) / LM(p2)
   poly t2 = pNext(p2), lm = p1;    // t2 = p2 - LT(p2); really compute P = LC(p2)*p1 - LT(p1)/LM(p2)*p2
@@ -382,6 +390,7 @@ int ksReducePolySigInc(LObject* PR,
   if (pGetComp(PW->sig) == strat->currIdx)
   {
     poly f1 = p_Copy(PR->GetLmCurrRing(),currRing);
+    pWrite(pHead(f1));
     poly f2 = PW->GetLmCurrRing();
     poly sigMult = pCopy(PW->sig);   // copy signature of reducer
     p_ExpVectorSub(f1, f2, currRing); // Calculate the Monomial we must multiply to p2
@@ -394,12 +403,13 @@ int ksReducePolySigInc(LObject* PR,
     printf("--------------\n");
 #endif
     sigMult = pp_Mult_qq(f1,sigMult,currRing);
-//#if 1
-#ifdef DEBUGF5
+#if 1
+///#ifdef DEBUGF5
     printf("------------------- IN KSREDUCEPOLYSIG: --------------------\n");
     pWrite(pHead(f1));
     pWrite(pHead(f2));
     pWrite(sigMult);
+    pWrite(PW->sig);
     pWrite(PR->sig);
     printf("--------------\n");
 #endif
@@ -408,8 +418,8 @@ int ksReducePolySigInc(LObject* PR,
     // sig-safeness of the reduction step
     pDelete(&f1);
     pDelete(&sigMult);
-//#if 1
-#ifdef DEBUGF5
+#if 1
+//#ifdef DEBUGF5
     printf("SIGSAFE: %d\n",sigSafe);
 #endif
     // go on with the computations only if the signature of p2 is greater than the
@@ -460,7 +470,6 @@ int ksReducePolySigInc(LObject* PR,
   }
 
   p_ExpVectorSub(lm, p2, tailRing); // Calculate the Monomial we must multiply to p2
-
   if (tailRing != currRing)
   {
     // check that reduction does not violate exp bound

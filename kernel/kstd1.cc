@@ -1161,10 +1161,10 @@ void initSba(ideal F,kStrategy strat)
       mflush();
     }
   }
-  // for sig-safe reductions in signature-based
-  // standard basis computations
-  strat->red          = redSig;
-  //strat->incremental  = TRUE;
+  if (strat->incremental)
+    strat->red  = redSigInc;
+  else
+    strat->red  = redSig;
   strat->currIdx      = 1;
 }
 

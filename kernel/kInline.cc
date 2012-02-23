@@ -1187,6 +1187,8 @@ KINLINE BOOLEAN ratioCmp_dp(int* ratio1, int* ratio2, ring r)
   {
     if (ratio1[i] > ratio2[i])
       return TRUE;
+    if (ratio1[i] < ratio2[i])
+      return FALSE;
   }
   // look at the component
   if (ratio1[0] < ratio2[0])
@@ -1200,6 +1202,19 @@ KINLINE BOOLEAN ratioCmp_C_dp(int* ratio1, int* ratio2, ring r)
   // difference between the signature and the leading monomial of the
   // corresponding polynomial
   
+#ifdef DEBUGF5
+  printf("RATIO1: %d | %d | ",ratio1[r->N+1],ratio1[0]);
+  for(int ii=1; ii<currRing->N+1;ii++)
+  {
+    printf("%d ",ratio1[ii]);
+  }
+  printf("\n");
+  printf("RATIO2: %d | %d | ",ratio2[r->N+1],ratio2[0]);
+  for(int ii=1; ii<currRing->N+1;ii++)
+  {
+    printf("%d ",ratio2[ii]);
+  }
+#endif
   // look at the component
   if (ratio1[0] < ratio2[0])
     return TRUE;
@@ -1211,6 +1226,8 @@ KINLINE BOOLEAN ratioCmp_C_dp(int* ratio1, int* ratio2, ring r)
   {
     if (ratio1[i] > ratio2[i])
       return TRUE;
+    if (ratio1[i] < ratio2[i])
+      return FALSE;
   }
   return FALSE;
 }
@@ -1226,6 +1243,8 @@ KINLINE BOOLEAN ratioCmp_lp(int* ratio1, int* ratio2, ring r)
   {
     if (ratio1[i] < ratio2[i])
       return TRUE;
+    if (ratio1[i] > ratio2[i])
+      return FALSE;
   }
   // look at the component
   if (ratio1[0] < ratio2[0])
@@ -1247,6 +1266,8 @@ KINLINE BOOLEAN ratioCmp_C_lp(int* ratio1, int* ratio2, ring r)
   {
     if (ratio1[i] < ratio2[i])
       return TRUE;
+    if (ratio1[i] > ratio2[i])
+      return FALSE;
   }
   return FALSE;
 }

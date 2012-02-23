@@ -29,7 +29,7 @@
 #define KDEBUG 2
 #endif
 
-#define RATIO 0
+#define RATIO 1
 
 #ifdef DEBUGF5
 #undef DEBUGF5
@@ -5085,10 +5085,8 @@ BOOLEAN arriRewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, in
     if (strat->P.GetLmCurrRing() != NULL && h.GetLmCurrRing() != NULL)
     {
 #if RATIO
-      printf("R1 %d\n",strat->ratioCmp(h.ratio, strat->P.ratio, currRing));
       if (pLmCmp(strat->P.GetLmCurrRing(),h.GetLmCurrRing()) == -1)
       {
-        printf("-R2 %d\n",strat->ratioCmp(h.ratio, strat->P.ratio, currRing));
 #else
       if (pLmCmp(strat->P.GetLmCurrRing(),h.GetLmCurrRing()) == -1)
       {
