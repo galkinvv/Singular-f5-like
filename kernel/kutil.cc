@@ -29,7 +29,7 @@
 #define KDEBUG 2
 #endif
 
-#define RATIO 1
+//#define RATIO 1
 
 #ifdef DEBUGF5
 #undef DEBUGF5
@@ -5085,7 +5085,7 @@ BOOLEAN arriRewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, in
     if (strat->P.GetLmCurrRing() != NULL && h.GetLmCurrRing() != NULL)
     {
 #if RATIO
-      if (pLmCmp(strat->P.GetLmCurrRing(),h.GetLmCurrRing()) == -1)
+      if (strat->ratioCmp(h.ratio,strat->P.ratio, currRing))
       {
 #else
       if (pLmCmp(strat->P.GetLmCurrRing(),h.GetLmCurrRing()) == -1)
@@ -5118,8 +5118,13 @@ BOOLEAN arriRewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat, in
   {
     if (p_LmShortDivisibleBy(strat->T[ii].sig, strat->T[ii].sevSig, strat->P.sig, ~strat->P.sevSig, currRing))
     {
+#if RATIO
+      if (strat->ratioCmp(strat->P.ratio,strat->T[ii].ratio,currRing))
+      {
+#else
       if (pLmCmp(ppMult_mm(strat->P.sig,strat->T[ii].GetLmCurrRing()),ppMult_mm(strat->T[ii].sig,strat->P.GetLmCurrRing())) == -1)
       {
+#endif
 #if RATIO
         omFreeSize (strat->P.ratio, (currRing->N+2)*sizeof(int));
 #endif

@@ -2041,7 +2041,7 @@ ideal kSba(ideal F, ideal Q, tHomog h,intvec ** w, int incremental, int arri, in
     pRestoreDegProcs(pFDegOld, pLDegOld);
   }
   pLexOrder = b;
-//Print("%d reductions canceled \n",strat->cel);
+  //Print("%d reductions canceled \n",strat->cel);
   HCord=strat->HCord;
   delete(strat);
   if ((delete_w)&&(w!=NULL)&&(*w!=NULL)) delete *w;

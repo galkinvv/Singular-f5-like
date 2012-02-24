@@ -33,6 +33,8 @@
 #define setmaxTinc 16
 #endif
 
+#define RATIO   1
+#define RATIO2  1
 // if you want std computations as in Singular version < 2:
 // This disables RedThrough, tailReductions against T (bba),
 // sets posInT = posInT15 (bba, strat->honey), and enables redFirst with LDeg

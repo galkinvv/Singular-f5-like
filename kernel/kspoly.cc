@@ -21,7 +21,7 @@
 #include <kernel/polys.h>
 #endif
 
-#define RATIO2 1
+//#define RATIO2 1
 #ifdef KDEBUG
 int red_count = 0;
 int create_count = 0;
@@ -653,7 +653,8 @@ void ksCreateSpoly(LObject* Pair,   poly spNoether,
     Pair->SetShortExpVector();
   }
 #endif
-#ifdef DEBUGF5
+#if 0
+//#ifdef DEBUGF5
   printf("ENDE VON SPOLY CREATION:\n");
   pWrite(Pair->p1);
   pWrite(Pair->p2);

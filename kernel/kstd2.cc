@@ -42,8 +42,8 @@
 //#define DEBUGF5 1
 #endif
 
-#define RATIO     1
-#define RATIO2    1
+//#define RATIO     1
+//#define RATIO2    1
 #define F5C       1
 #if F5C
   #define F5CTAILRED 0
@@ -2255,13 +2255,8 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   // entries of strat->Shdl which are dirty, i.e. not correct, but also not NULL
   // => we need to delete them before return the ideal
 #if F5C
-  /*
-  for(int i=strat->sl+1;i<IDELEMS(strat->Shdl);i++)
-  {
-    pDelete (&strat->Shdl->m[i]);
+  for(int i=strat->sl;i<IDELEMS(strat->Shdl);i++)
     strat->Shdl->m[i] = NULL;
-  }
-  */
 #endif
   if (strat->incremental && sRing!=currRingOld)
   {
@@ -2272,6 +2267,7 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   }
   idTest(strat->Shdl);
 
+//#if 1
 #ifdef DEBUGF5
   printf("SIZE OF SHDL: %d\n",IDELEMS(strat->Shdl));
   int oo = 0;
@@ -2459,7 +2455,7 @@ void f5c (kStrategy strat, int& olddeg, int& minimcnt, int& hilbeledeg,
     omFreeSize (strat->T[ii].ratio, (currRing->N+2)*sizeof(int));
   }
 #endif
-  int Ll_old, red_result = 1;
+  int tl_old, Ll_old, red_result = 1;
   BOOLEAN withT = FALSE;
   int pos  = 0;
   hilbeledeg=1;
@@ -2470,7 +2466,8 @@ void f5c (kStrategy strat, int& olddeg, int& minimcnt, int& hilbeledeg,
   // we cannot use strat->T anymore
   //cleanT(strat);
   //strat->tl = -1;
-  Ll_old    = strat->Ll;
+  Ll_old  = strat->Ll;
+  tl_old  = strat->tl;
   while (strat->tl >= 0)
   {
     LObject h;
