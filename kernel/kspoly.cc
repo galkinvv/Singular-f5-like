@@ -416,11 +416,11 @@ int ksReducePolySigInc(LObject* PR,
     // signature of fm*p1
     if(sigSafe != 1)
     { 
-      h->is_redundant = TRUE;
+      PR->is_redundant = TRUE;
       return 3;
     }
   }
-  h->is_redundant = FALSE;
+  PR->is_redundant = FALSE;
   poly p1 = PR->GetLmTailRing();   // p2 | p1
   poly p2 = PW->GetLmTailRing();   // i.e. will reduce p1 with p2; lm = LT(p1) / LM(p2)
   poly t2 = pNext(p2), lm = p1;    // t2 = p2 - LT(p2); really compute P = LC(p2)*p1 - LT(p1)/LM(p2)*p2
