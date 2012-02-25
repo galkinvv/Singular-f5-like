@@ -1961,7 +1961,7 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
         nDelete(&(Lp.p->coef));
     }
 
-    l = strat->posInL(strat->B,strat->Bl,&Lp,strat);
+    l = strat->posInLSba(strat->B,strat->Bl,&Lp,strat);
     enterL(&strat->B,&strat->Bl,&strat->Bmax,Lp,l);
   }
 }
@@ -2070,6 +2070,29 @@ void kMergeBintoL(kStrategy strat)
   for (i=strat->Bl; i>=0; i--)
   {
     j = strat->posInL(strat->L,j,&(strat->B[i]),strat);
+    enterL(&strat->L,&strat->Ll,&strat->Lmax,strat->B[i],j);
+  }
+  strat->Bl = -1;
+}
+
+/*2
+* merge set B into L
+*/
+void kMergeBintoLSba(kStrategy strat)
+{
+  int j=strat->Ll+strat->Bl+1;
+  if (j>strat->Lmax)
+  {
+    j=((j+setmaxLinc-1)/setmaxLinc)*setmaxLinc;
+    strat->L = (LSet)omReallocSize(strat->L,strat->Lmax*sizeof(LObject),
+                                 j*sizeof(LObject));
+    strat->Lmax=j;
+  }
+  j = strat->Ll;
+  int i;
+  for (i=strat->Bl; i>=0; i--)
+  {
+    j = strat->posInLSba(strat->L,j,&(strat->B[i]),strat);
     enterL(&strat->L,&strat->Ll,&strat->Lmax,strat->B[i],j);
   }
   strat->Bl = -1;
@@ -2296,7 +2319,7 @@ void chainCritNormal (poly p,int ecart,kStrategy strat)
 void chainCritSig (poly p,int ecart,kStrategy strat)
 {
   int i,j,l;
-  kMergeBintoL(strat);
+  kMergeBintoLSba(strat);
   j = strat->Ll;
   loop  /*cannot be changed into a for !!! */
   {
@@ -4467,6 +4490,18 @@ loop
 }
 
 /*2
+* 
+* is only used in F5C, must ensure that the interreduction process does add new
+* critical pairs to strat->L only behind all other critical pairs which are
+* still in strat->L!
+*/
+int posInLF5C (const LSet set, const int length,
+            LObject* p,const kStrategy strat)
+{
+  return strat->Ll+1;
+}
+
+/*2
 * looks up the position of polynomial p in set
 * e is the ecart of p
 * set[length] is the smallest element in set with respect
@@ -5850,7 +5885,7 @@ void initSLSba (ideal F, ideal Q,kStrategy strat)
           if (strat->Ll==-1)
             pos =0;
           else
-            pos = strat->posInL(strat->L,strat->Ll,&h,strat);
+            pos = strat->posInLSba(strat->L,strat->Ll,&h,strat);
           h.sev = pGetShortExpVector(h.p);
           enterL(&strat->L,&strat->Ll,&strat->Lmax,h,pos);
         }
@@ -7406,8 +7441,10 @@ void exitBuchMora (kStrategy strat)
 void initSbaPos (kStrategy strat)
 {
   strat->posInLDependsOnLength = FALSE;
-  strat->posInL = posInLSig;
-  strat->posInT = posInT15;
+  strat->posInLSba  = posInLSig;
+  //strat->posInL     = posInLSig;
+  strat->posInL     = posInLF5C;
+  strat->posInT     = posInT15;
 }
 
 void initSbaBuchMora (ideal F,ideal Q,kStrategy strat)
