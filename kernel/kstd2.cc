@@ -618,7 +618,6 @@ int redSig (LObject* h,kStrategy strat)
 #endif
     if (sigSafe != 3)
     {
-      h->is_redundant = FALSE;
       // start the next search for reducers in T from the beginning
       start = 0;
 #ifdef KDEBUG
@@ -669,8 +668,6 @@ int redSig (LObject* h,kStrategy strat)
         }
       }
     }
-    else
-      h->is_redundant = TRUE;
   }
 }
 
