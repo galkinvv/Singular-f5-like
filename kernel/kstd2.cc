@@ -617,6 +617,7 @@ int redSig (LObject* h,kStrategy strat)
 #endif
     if (sigSafe != 3)
     {
+      h->is_redundant = FALSE;
       // start the next search for reducers in T from the beginning
       start = 0;
 #ifdef KDEBUG
@@ -667,6 +668,8 @@ int redSig (LObject* h,kStrategy strat)
         }
       }
     }
+    else
+      h->is_redundant = TRUE;
   }
 }
 
@@ -2187,32 +2190,35 @@ void f5c (kStrategy strat, int& olddeg, int& minimcnt, int& hilbeledeg,
   Ll_old    = strat->Ll;
   while (strat->tl >= 0)
   {
-    LObject h;
-    h.p = strat->T[strat->tl].p;
-    h.tailRing = strat->T[strat->tl].tailRing;
-    h.t_p = strat->T[strat->tl].t_p;
-    if (h.p!=NULL)
+    if(!strat->T[strat->tl].is_redundant)
     {
-      if (pOrdSgn==-1)
-      {
-        cancelunit(&h);  
-        deleteHC(&h, strat);
-      }
+      LObject h;
+      h.p = strat->T[strat->tl].p;
+      h.tailRing = strat->T[strat->tl].tailRing;
+      h.t_p = strat->T[strat->tl].t_p;
       if (h.p!=NULL)
       {
-        if (TEST_OPT_INTSTRATEGY)
+        if (pOrdSgn==-1)
         {
-          //pContent(h.p);
-          h.pCleardenom(); // also does a pContent
+          cancelunit(&h);  
+          deleteHC(&h, strat);
         }
-        else
+        if (h.p!=NULL)
         {
-          h.pNorm();
+          if (TEST_OPT_INTSTRATEGY)
+          {
+            //pContent(h.p);
+            h.pCleardenom(); // also does a pContent
+          }
+          else
+          {
+            h.pNorm();
+          }
+          strat->initEcart(&h);
+          pos = strat->Ll+1;
+          h.sev = pGetShortExpVector(h.p);
+          enterL(&strat->L,&strat->Ll,&strat->Lmax,h,pos);
         }
-        strat->initEcart(&h);
-        pos = strat->Ll+1;
-        h.sev = pGetShortExpVector(h.p);
-        enterL(&strat->L,&strat->Ll,&strat->Lmax,h,pos);
       }
     }
     strat->tl--;

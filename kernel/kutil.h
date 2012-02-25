@@ -61,6 +61,12 @@ typedef denominator_list_s *denominator_list;
 struct denominator_list_s{number n; denominator_list next;};
 extern denominator_list DENOMINATOR_LIST;
 
+struct bitarray
+{
+  BITSET set:1;
+};
+typedef struct bitarray bitarray;
+
 class sTObject
 {
 public:
@@ -76,6 +82,13 @@ public:
     pLength,    // either == 0, or == pLength(p)
     i_r;        // index of TObject in R set, or -1 if not in T
   BOOLEAN is_normalized; // true, if pNorm was called on p, false otherwise
+  // used in incremental sba() with F5C:
+  // we know some of the redundant elements in 
+  // strat->T beforehand, so we can just discard
+  // them and do not need to consider them in the
+  // interreduction process
+  BOOLEAN is_redundant;
+
 
 #ifdef HAVE_PLURAL  
   BOOLEAN is_special; // true, it is a new special S-poly (e.g. for SCA)
@@ -309,6 +322,11 @@ public:
   TSet T;
   LSet L;
   LSet    B;
+  // used in sba's sig-safe reduction:
+  // sometimes we already know that a reducer
+  // is sig-safe, so no need for a real
+  // sig-safeness check
+  bitarray* sigsafe;
   poly    kHEdge;
   poly    kNoether;
   poly    t_kHEdge; // same polys in tailring
