@@ -7185,12 +7185,10 @@ void initSbaCrit(kStrategy strat)
   if (strat->incremental)
   {
     strat->syzCrit  = syzCriterionInc;
-    strat->redStep  = ksReducePolySigInc;
   }
   else
   {
     strat->syzCrit  = syzCriterion;
-    strat->redStep  = ksReducePolySig;
   }
 #ifdef HAVE_RINGS
   if (rField_is_Ring(currRing))
@@ -7444,7 +7442,7 @@ void initSbaPos (kStrategy strat)
   strat->posInLSba  = posInLSig;
   //strat->posInL     = posInLSig;
   strat->posInL     = posInLF5C;
-  strat->posInT     = posInT15;
+  strat->posInT     = posInTSig;
 }
 
 void initSbaBuchMora (ideal F,ideal Q,kStrategy strat)

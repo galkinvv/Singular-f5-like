@@ -607,7 +607,7 @@ int redSig (LObject* h,kStrategy strat)
     Print("--------------------------------\n");
     printf("INDEX OF REDUCER T: %d\n",ii);
 #endif
-    sigSafe = strat->redStep(h, &(strat->T[ii]), strat->S_2_R[ii], NULL, NULL, strat);
+    sigSafe = ksReducePolySig(h, &(strat->T[ii]), strat->S_2_R[ii], NULL, NULL, strat);
     // if reduction has taken place, i.e. the reduction was sig-safe
     // otherwise start is already at the next position and the loop
     // searching reducers in T goes on from index start
@@ -1524,6 +1524,7 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   LObject L;
   BOOLEAN withT     = FALSE;
   BOOLEAN newrules  = FALSE;
+  strat->max_lower_index = 0;
 
   //initBuchMoraCrit(strat); /*set Gebauer, honey, sugarCrit*/
   initSbaCrit(strat); /*set Gebauer, honey, sugarCrit*/
@@ -1697,7 +1698,7 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
       {
         if (strat->P.lcm!=NULL)
           pLmFree(strat->P.lcm);
-        red_result = 2;;
+        red_result = 2;
       }
       if (errorreported)  break;
     }
@@ -1706,7 +1707,10 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
     {
         if (!kStratChangeTailRing(strat)) { Werror("OVERFLOW.."); break;}
     }
-
+    for (int jj = strat->max_lower_index+1; jj<strat->tl+1; jj++)
+    {
+      strat->T[jj].is_sigsafe = FALSE;
+    }
     // reduction to non-zero new poly
     if (red_result == 1)
     {
@@ -1840,7 +1844,8 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
           }
         }
       }
-        enterT(strat->P, strat);
+        enterT(strat->P, strat, strat->tl+1);
+        strat->T[strat->tl].is_sigsafe = FALSE;
 #ifdef HAVE_RINGS
       if (rField_is_Ring(currRing))
         superenterpairs(strat->P.p,strat->sl,strat->P.ecart,pos,strat, strat->tl);
@@ -2420,13 +2425,15 @@ void f5c (kStrategy strat, int& olddeg, int& minimcnt, int& hilbeledeg,
   int cc = 0;
   while (cc<strat->tl+1)
   {
-    strat->T[cc].sig = pOne();
+    strat->T[cc].sig        = pOne();
     p_SetComp(strat->T[cc].sig,cc+1,currRing);
-    strat->T[cc].sevSig = pGetShortExpVector(strat->T[cc].sig);
-    strat->sig[cc]      = strat->T[cc].sig;
-    strat->sevSig[cc]   = strat->T[cc].sevSig;
+    strat->T[cc].sevSig     = pGetShortExpVector(strat->T[cc].sig);
+    strat->sig[cc]          = strat->T[cc].sig;
+    strat->sevSig[cc]       = strat->T[cc].sevSig;
+    strat->T[cc].is_sigsafe = TRUE;  
     cc++;
   }
+  strat->max_lower_index = strat->tl;
   // set current signature index of upcoming iteration step
   // NOTE:  this needs to be set here, as otherwise initSyzRules cannot compute
   //        the corresponding syzygy rules correctly
@@ -2436,6 +2443,7 @@ void f5c (kStrategy strat, int& olddeg, int& minimcnt, int& hilbeledeg,
     p_SetComp(strat->L[cd].sig,cc+1,currRing);
     cc++;
   }
+//#if 1
 #if DEBUGF5
   Print("------------------- STRAT S ---------------------\n");
   cc = 0;
