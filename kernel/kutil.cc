@@ -7438,11 +7438,98 @@ void exitBuchMora (kStrategy strat)
 
 void initSbaPos (kStrategy strat)
 {
+  if (pOrdSgn==1)
+  {
+    if (strat->honey)
+    {
+      strat->posInL = posInL15;
+      // ok -- here is the deal: from my experiments for Singular-2-0
+      // I conclude that that posInT_EcartpLength is the best of
+      // posInT15, posInT_EcartFDegpLength, posInT_FDegLength, posInT_pLength
+      // see the table at the end of this file
+      if (TEST_OPT_OLDSTD)
+        strat->posInT = posInT15;
+      else
+        strat->posInT = posInT_EcartpLength;
+    }
+    else if (pLexOrder && !TEST_OPT_INTSTRATEGY)
+    {
+      strat->posInL = posInL11;
+      strat->posInT = posInT11;
+    }
+    else if (TEST_OPT_INTSTRATEGY)
+    {
+      strat->posInL = posInL11;
+      strat->posInT = posInT11;
+    }
+    else
+    {
+      strat->posInL = posInL0;
+      strat->posInT = posInT0;
+    }
+    //if (strat->minim>0) strat->posInL =posInLSpecial;
+    if (strat->homog)
+    {
+       strat->posInL = posInL110;
+       strat->posInT = posInT110;
+    }
+  }
+  else
+  {
+    if (strat->homog)
+    {
+      strat->posInL = posInL11;
+      strat->posInT = posInT11;
+    }
+    else
+    {
+      if ((currRing->order[0]==ringorder_c)
+      ||(currRing->order[0]==ringorder_C))
+      {
+        strat->posInL = posInL17_c;
+        strat->posInT = posInT17_c;
+      }
+      else
+      {
+        strat->posInL = posInL17;
+        strat->posInT = posInT17;
+      }
+    }
+  }
+  if (strat->minim>0) strat->posInL =posInLSpecial;
+  // for further tests only
+  if ((BTEST1(11)) || (BTEST1(12)))
+    strat->posInL = posInL11;
+  else if ((BTEST1(13)) || (BTEST1(14)))
+    strat->posInL = posInL13;
+  else if ((BTEST1(15)) || (BTEST1(16)))
+    strat->posInL = posInL15;
+  else if ((BTEST1(17)) || (BTEST1(18)))
+    strat->posInL = posInL17;
+  if (BTEST1(11))
+    strat->posInT = posInT11;
+  else if (BTEST1(13))
+    strat->posInT = posInT13;
+  else if (BTEST1(15))
+    strat->posInT = posInT15;
+  else if ((BTEST1(17)))
+    strat->posInT = posInT17;
+  else if ((BTEST1(19)))
+    strat->posInT = posInT19;
+  else if (BTEST1(12) || BTEST1(14) || BTEST1(16) || BTEST1(18))
+    strat->posInT = posInT1;
+#ifdef HAVE_RINGS
+  if (rField_is_Ring(currRing))
+  {
+    strat->posInL = posInL11;
+    strat->posInT = posInT11;
+  }
+#endif
   strat->posInLDependsOnLength = FALSE;
   strat->posInLSba  = posInLSig;
   //strat->posInL     = posInLSig;
   strat->posInL     = posInLF5C;
-  strat->posInT     = posInTSig;
+  //strat->posInT     = posInTSig;
 }
 
 void initSbaBuchMora (ideal F,ideal Q,kStrategy strat)
