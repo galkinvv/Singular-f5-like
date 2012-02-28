@@ -1707,10 +1707,24 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
     {
         if (!kStratChangeTailRing(strat)) { Werror("OVERFLOW.."); break;}
     }
-    for (int jj = strat->max_lower_index+1; jj<strat->tl+1; jj++)
+    if (strat->incremental)
     {
-      strat->T[jj].is_sigsafe = FALSE;
+      for (int jj = 0; jj<strat->tl+1; jj++)
+      {
+        if (pGetComp(strat->T[jj].sig) == strat->currIdx)
+        {
+          strat->T[jj].is_sigsafe = FALSE;
+        }
+      }
     }
+    else
+    {
+      for (int jj = 0; jj<strat->tl+1; jj++)
+      {
+        strat->T[jj].is_sigsafe = FALSE;
+      }
+    }
+
     // reduction to non-zero new poly
     if (red_result == 1)
     {
@@ -1844,7 +1858,7 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
           }
         }
       }
-        enterT(strat->P, strat, strat->tl+1);
+        enterT(strat->P, strat);
         strat->T[strat->tl].is_sigsafe = FALSE;
 #ifdef HAVE_RINGS
       if (rField_is_Ring(currRing))
