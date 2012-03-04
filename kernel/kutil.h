@@ -312,6 +312,8 @@ public:
                 // syzygy of component i comes up
                 // important for signature-based algorithms
   BOOLEAN incremental;
+  unsigned long redStep;
+  unsigned long higherSig;
   unsigned long currIdx;
   int max_lower_index;
   intset lenS;

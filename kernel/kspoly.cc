@@ -254,6 +254,8 @@ int ksReducePolySig(LObject* PR,
     pDelete(&sigMult);
     // go on with the computations only if the signature of p2 is greater than the
     // signature of fm*p1
+    if(sigSafe == -1)
+      strat->higherSig++;
     if(sigSafe != 1)
     { 
       PR->is_redundant = TRUE;
@@ -261,6 +263,7 @@ int ksReducePolySig(LObject* PR,
     }
     PW->is_sigsafe  = TRUE;
   }
+  strat->redStep++;
   PR->is_redundant = FALSE;
   poly p1 = PR->GetLmTailRing();   // p2 | p1
   poly p2 = PW->GetLmTailRing();   // i.e. will reduce p1 with p2; lm = LT(p1) / LM(p2)

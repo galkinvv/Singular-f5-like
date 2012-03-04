@@ -1525,7 +1525,9 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   LObject L;
   BOOLEAN withT     = FALSE;
   BOOLEAN newrules  = FALSE;
-  strat->max_lower_index = 0;
+  strat->max_lower_index  = 0;
+  strat->higherSig        = 0;
+  strat->redStep          = 0;
 
   //initBuchMoraCrit(strat); /*set Gebauer, honey, sugarCrit*/
   initSbaCrit(strat); /*set Gebauer, honey, sugarCrit*/
@@ -2023,7 +2025,9 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
     oo++;
   }
 #endif
-  printf("ZERO REDUCTIONS: %ld\n",zeroreductions);
+  printf("ZERO REDUCTIONS:  %ld\n",zeroreductions);
+  printf("HIGHER SIG REDS:  %ld\n",strat->higherSig);
+  printf("SIG-SAFE REDS:    %ld\n",strat->redStep);
   zeroreductions  = 0;
   return (strat->Shdl);
 }
