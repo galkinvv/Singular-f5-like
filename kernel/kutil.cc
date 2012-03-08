@@ -7611,6 +7611,7 @@ void exitSba (kStrategy strat)
   __omFreeSize(strat->fromS,IDELEMS(strat->Shdl)*sizeof(int));
   __omFreeSize((ADDRESS)strat->sevS,IDELEMS(strat->Shdl)*sizeof(unsigned long));
   __omFreeSize((ADDRESS)strat->sevSig,IDELEMS(strat->Shdl)*sizeof(unsigned long));
+  __omFreeSize((ADDRESS)strat->syz,(strat->syzmax)*sizeof(poly));
   __omFreeSize((ADDRESS)strat->sevSyz,(strat->syzmax)*sizeof(unsigned long));
   if (strat->incremental)
   {
