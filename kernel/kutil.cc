@@ -1770,8 +1770,8 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
   pWrite(sSigMult);
   Print("----------------\n");
 #endif
-  // testing by syzCriterion = F5 Criterion testing by rewCriterion =
-  // Rewritten Criterion
+  // testing by syzCrit = F5 Criterion 
+  // testing by rewCrit1 = Rewritten Criterion
   if  ( strat->syzCrit(pSigMult,pSigMultNegSev,strat) ||
         strat->syzCrit(sSigMult,sSigMultNegSev,strat) 
         || strat->rewCrit1(sSigMult,sSigMultNegSev,strat,i+1)
