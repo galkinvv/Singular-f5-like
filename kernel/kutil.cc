@@ -7183,10 +7183,11 @@ void initSbaCrit(kStrategy strat)
   strat->enterOnePair = enterOnePairNormal;
   //strat->chainCrit=chainCritNormal;
   strat->chainCrit    = chainCritSig;
-  // always use Faugere's Rewritten Criterion as a check
-  // for the lower signature element, even if Arri's Rewritten
-  // Criterion is used for the higher signature element!
-  strat->rewCrit1     = faugereRewCriterion;
+  /******************************************
+   * rewCrit1 and rewCrit2 are already set in
+   * kSba() in kstd1.cc
+   *****************************************/
+  //strat->rewCrit1     = faugereRewCriterion;
   if (strat->incremental)
   {
     strat->syzCrit  = syzCriterionInc;
