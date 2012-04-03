@@ -1763,6 +1763,10 @@ void enterOnePairSig (int i, poly p, poly pSig, int from, int ecart, int isFromQ
   pSigMultNegSev = ~p_GetShortExpVector(pSigMult,currRing);
   sSigMult = currRing->p_Procs->pp_Mult_mm(sSigMult,m2,currRing,last);
   sSigMultNegSev = ~p_GetShortExpVector(sSigMult,currRing);
+  
+  pDelete (&m1);
+  pDelete (&m2);
+
 //#if 1
 #ifdef DEBUGF5
   Print("----------------\n");
@@ -4993,7 +4997,8 @@ BOOLEAN faugereRewCriterion(poly sig, unsigned long not_sevSig, kStrategy strat,
   printf("rewritten criterion checks:  ");
   pWrite(sig);
 #endif
-  for(int k = start; k<strat->sl+1; k++)
+  //for(int k = start; k<strat->sl+1; k++)
+  for(int k = strat->sl; k>start+1; k--)
   {
 //#if 1
 #ifdef DEBUGF5
@@ -7181,7 +7186,7 @@ void initSbaCrit(kStrategy strat)
   // always use Faugere's Rewritten Criterion as a check
   // for the lower signature element, even if Arri's Rewritten
   // Criterion is used for the higher signature element!
-  //strat->rewCrit1     = faugereRewCriterion;
+  strat->rewCrit1     = faugereRewCriterion;
   if (strat->incremental)
   {
     strat->syzCrit  = syzCriterionInc;
