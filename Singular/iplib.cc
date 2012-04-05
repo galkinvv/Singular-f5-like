@@ -761,11 +761,11 @@ BOOLEAN iiTryLoadLib(leftv v, const char *id)
       #ifdef HAVE_DYNAMIC_LOADING
       else if ((LT==LT_ELF) || (LT==LT_HPUX))
         LoadResult = load_modules(s,libnamebuf,FALSE);
-      #endif
       else if (LT==LT_BUILTIN)
       {
         LoadResult=load_builtin(s,FALSE,(SModulFunc_t)NULL);
       }
+      #endif
       if(!LoadResult )
       {
         v->name = iiConvName(libname);
