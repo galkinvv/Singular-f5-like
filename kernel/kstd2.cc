@@ -68,6 +68,7 @@
 #include <kernel/shiftgb.h>
 
 #include <set>
+#include <list>
 
 long zeroreductions = 0;
 
@@ -1518,8 +1519,9 @@ struct LabeledPoly
 {
 	poly p_;
 	poly s_monom_;
-	struct GvwLess
+	class GvwLess
 	{
+	  public:
 		bool operator()(const LabeledPoly* l1, const LabeledPoly* l2)const
 		{
 			if (l1->p_ == NULL)
@@ -1540,11 +1542,8 @@ struct LabeledPoly
 			}
 			pExpVectorSum(r1_, l1->p_, l2->s_monom_);
 			pExpVectorSum(r2_, l2->p_, l1->s_monom_);
-			bool result = pLmCmp(r1_, r2_) == -1;
-			return result;
+			return pLmCmp(r1_, r2_) == -1;
 		}
-		poly r1_;
-		poly r2_;
 		GvwLess():
 			r1_(pInit()), r2_(pInit())
 		{
@@ -1555,18 +1554,10 @@ struct LabeledPoly
 			pDelete(&r2_);
 		}
 	private:
+		poly r1_;
+		poly r2_;
 		GvwLess(const GvwLess&);
 		void operator=(const GvwLess&);
-	};
-	struct GvwLessAsComparator
-	{
-		GvwLessAsComparator():gvw_less_(NULL){}
-		GvwLessAsComparator(const GvwLess &gvw_less):gvw_less_(&gvw_less){}
-		const GvwLess *gvw_less_;
-		bool operator()(const LabeledPoly* l1, const LabeledPoly* l2)const
-		{
-			return (*gvw_less_)(l1, l2);
-		}
 	};
 	static LabeledPoly* CreateZeroSig(const poly p)
 	{		
@@ -1599,13 +1590,13 @@ struct LabeledPoly
 	bool sig_divides(const LabeledPolyMuled* premuled)const
 	{
 		if (s_monom_ == NULL) return false;
-		return pLmDivisibleBy(premuled->smuled_monom_, s_monom_);
+		return pLmDivisibleBy(s_monom_, premuled->smuled_monom_);
 	}
 	
 	bool possibly_reduce_by(const LabeledPoly* other)
 	{
 		if (other->p_ == NULL) return false;
-		bool divisible = pLmDivisibleBy(p_, other->p_);
+		bool divisible = pLmDivisibleBy(other->p_, p_);
 		if (divisible)
 		{
 			poly monom = pInit();
@@ -1634,40 +1625,62 @@ LabeledPolyMuled::LabeledPolyMuled(const poly other_spair_poly, const LabeledPol
 	not_muled_(not_muled), mul_by_monom_(pInit()), smuled_monom_(NULL)
 {
 	pLcm(other_spair_poly, not_muled_.p_, mul_by_monom_);
+	pSetm(mul_by_monom_); //need to adjust after Lcm calc
 	pExpVectorSub(mul_by_monom_, not_muled_.p_);
 	smuled_monom_ = ppMult_mm(mul_by_monom_, not_muled_.s_monom_);
 }
 
-typedef std::multiset<LabeledPoly*, LabeledPoly::GvwLessAsComparator> LPolysByGvw;
+typedef std::list<LabeledPoly*> LPolysByGvw;
 typedef std::multiset<LabeledPolyMuled*, LabeledPolyMuled::SigMuledLess> LPolysMuledBySig;
 ideal ssg (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 {
 	ideal I0 = idCopyFirstK(F,1);
 	int zero_reductions = 0;
 	LabeledPoly::GvwLess gvw_less;
-	for (int n = 2; n < IDELEMS(F); ++n)
+	for (int n = 1; n < IDELEMS(F); ++n)
 	{
 		idDelDiv(I0);
 		idSkipZeroes(I0);
-		LPolysByGvw R((LabeledPoly::GvwLessAsComparator(gvw_less)));
+		LPolysByGvw R;
 		LPolysMuledBySig B;
 		LabeledPoly* p = LabeledPoly::CreateOneSig(F->m[n]);
-		for(int n0 = 1; n0 <= IDELEMS(I0); n0++)
+		for(int n0 = 0; n0 < IDELEMS(I0); ++n0)
 		{
-			R.insert(LabeledPoly::CreateZeroSig(I0->m[n0]));
+			R.push_back(LabeledPoly::CreateZeroSig(I0->m[n0]));
 		}
+		const LPolysByGvw::iterator first_zero_sig = R.begin();
 		while(1)
 		{
 			bool reduced_to_zero = false;
 			//LPolysByGvw::const_reverse_iterator min_used_reductor;
+			LPolysByGvw::iterator known_gvw_greater_p = first_zero_sig;
 			while(1)
 			{
 				bool was_reduced = false;
-				for(LPolysByGvw::const_reverse_iterator ir = R.rbegin(); ir !=R.rend(); ++ir)
+				LPolysByGvw::iterator ir = --R.end();
+				while(1)
 				{
-					if (!gvw_less(p, *ir)) break;
 					was_reduced = p->possibly_reduce_by(*ir);
 					if (was_reduced) break;
+					if (ir == known_gvw_greater_p) break;
+					--ir;
+				}
+				if (!was_reduced && ir != R.begin())
+				{
+					--ir;
+					while(1)
+					{
+						if (!gvw_less(p, *ir))
+						{
+							++ir;
+							break;
+						}
+						was_reduced = p->possibly_reduce_by(*ir);
+						if (was_reduced) break;
+						if (ir == R.begin()) break;
+						--ir;
+					}
+					known_gvw_greater_p = ir;
 				}
 				if (!was_reduced) break;
 				reduced_to_zero = p->p_ == NULL;
@@ -1677,12 +1690,14 @@ ideal ssg (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 					break;
 				}
 			}
-			LPolysByGvw::const_iterator p_insert_pos = R.insert(p);
+			const LPolysByGvw::iterator p_insert_pos =
+				R.insert(known_gvw_greater_p, p);
 			LPolysMuledBySig::iterator ib = B.begin();
 			while (ib != B.end())
 			{
 				LabeledPolyMuled* b = *ib;
-				LPolysMuledBySig::iterator ib_next = ++ib;
+				LPolysMuledBySig::iterator ib_next = ib;
+				++ib_next;
 				if (p->sig_divides(b) && gvw_less(p,&b->not_muled_))
 				{
 					B.erase(ib);
@@ -1742,19 +1757,16 @@ ideal ssg (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 		idDelete(&I0);
 		I0 = idInit(R.size());
 		int i0_idx = 0;
-		for(LPolysByGvw::const_iterator ir = R.begin();ir != R.end();++ir,++i0_idx)
+		for(LPolysByGvw::iterator ir = R.begin();ir != R.end();++ir,++i0_idx)
 		{
 			std::swap(I0->m[i0_idx], (*ir)->p_);
+			delete (*ir);
+			
 		}
-		for(LPolysByGvw::const_iterator ir = R.begin();ir != R.end();)
-		{
-			LPolysByGvw::const_iterator ir_next = ++ir;
-			LabeledPoly* r = *ir;
-			R.erase(ir);
-			delete r;
-			ir = ir_next;
-		}
+		R.clear();
 	}
+	printf("ZERO REDUCTIONS: %d\n", zero_reductions);
+
 	return I0;
 }
 ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
