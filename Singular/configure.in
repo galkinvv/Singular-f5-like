@@ -484,7 +484,7 @@ if test "${GXX}" = yes; then
     CXXFLAGS="${temp_flags} --no-rtti"
   fi
   temp_flags="${CXXFLAGS}"
-  CXXTEMPLFLAGS="-fno-implicit-templates"
+  CXXTEMPLFLAGS=""
   if test "${ac_cv_cxx_have_exceptions}" = yes; then
     CXXTEMPLFLAGS="${CXXTEMPLFLAGS} --no-exceptions"
   fi

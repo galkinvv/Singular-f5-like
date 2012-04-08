@@ -730,7 +730,7 @@ CCM		= gcc -MM -MG -DGENERATE_DEPEND
 
 CFLAGSG		= -g -Wall -Wno-unused ${PIPE}
 CXXFLAGSG	= -g -Wall -Wno-unused ${PIPE}
-CXXTEMPLFLAGSG	= -fno-implicit-templates
+CXXTEMPLFLAGSG	= 
 DEFSG		= -D@SING_UNAME@ @DEFS@ -DDL_TAIL=$(DL_TAILG)
 
 ##
@@ -809,7 +809,7 @@ CXXP		= ${CXX}
 
 CFLAGSP		= -g -pg -O -Wall -Wno-unused ${PIPE}
 CXXFLAGSP	= -g -pg -O -Wall -Wno-unused ${PIPE}
-CXXTEMPLFLAGSP	= -fno-implicit-templates
+CXXTEMPLFLAGSP	= 
 DEFSP		= -D@SING_UNAME@ @DEFS@ -DDL_TAIL=$(DL_TAILP)
 
 ##
