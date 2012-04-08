@@ -67,6 +67,8 @@
 /* shiftgb stuff */
 #include <kernel/shiftgb.h>
 
+#include <set>
+
 long zeroreductions = 0;
 
   int (*test_PosInT)(const TSet T,const int tl,LObject &h);
@@ -1487,6 +1489,141 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   return (strat->Shdl);
 }
 
+struct LabeledPoly;
+
+struct LabeledPolyMuled
+{
+	const LabeledPoly& not_muled_;
+	poly mul_by_monom_;
+	poly smuled_monom_;
+	struct SigMuledLess
+	{
+		bool operator()(const LabeledPolyMuled* l1, const LabeledPolyMuled* l2)const
+		{
+			return pLmCmp(l1->smuled_monom_, l2->smuled_monom_) == -1;
+		}
+	};
+	LabeledPolyMuled(const poly other_spair_poly, const LabeledPoly& not_muled);
+	~LabeledPolyMuled()
+	{
+		pDelete(&smuled_monom_);
+		pDelete(&mul_by_monom_);
+	}
+private:
+	LabeledPolyMuled(const LabeledPolyMuled&);
+	void operator=(const LabeledPolyMuled&);	
+};
+
+struct LabeledPoly
+{
+	poly p_;
+	poly s_monom_;
+	struct GvwLess
+	{
+		bool operator()(const LabeledPoly* l1, const LabeledPoly* l2)const
+		{
+			if (l1->p_ == NULL)
+			{
+				return l2->p_ != NULL;
+			}
+			if (l2->p_ == NULL)
+			{
+				return false;
+			}
+			if (l2->s_monom_ == NULL)
+			{
+				return l1->s_monom_ != NULL;
+			}
+			if (l1->s_monom_ == NULL)
+			{
+				return false;
+			}
+			poly r1 = pInit();
+			poly r2 = pInit();
+			pExpVectorSum(r1, l1->p_, l2->s_monom_);
+			pExpVectorSum(r2, l2->p_, l1->s_monom_);
+			bool result = pLmCmp(r1, r2) == -1;
+			pDelete(&r1);
+			pDelete(&r2);
+			return result;
+		}
+	};
+	static LabeledPoly* CreateZeroSig(const poly p)
+	{		
+		poly p_copy = pCopy(p);
+		pNorm(p_copy);
+		return new LabeledPoly(p_copy, NULL);
+	}
+	static LabeledPoly* CreateOneSig(const poly p)
+	{		
+		poly p_copy = pCopy(p);
+		pNorm(p_copy);
+		return new LabeledPoly(p_copy, pInit());
+	}
+	
+	static LabeledPoly* CreateZeroPoly(const poly having_hm_sig)
+	{		
+		return new LabeledPoly(NULL, pLmInit(having_hm_sig));
+	}
+	
+	static LabeledPoly* ConvertFromAndDelete(LabeledPolyMuled* premuled)
+	{		
+		poly new_sig_monom = premuled->smuled_monom_;
+		premuled->smuled_monom_ = NULL;
+		pSetCoeff(premuled->mul_by_monom_, nInit(1));
+		poly new_p = ppMult_mm(premuled->not_muled_.p_, premuled->mul_by_monom_);
+		delete premuled;
+		return new LabeledPoly(new_p, new_sig_monom);
+	}
+	
+	bool sig_divides(const LabeledPolyMuled* premuled)const
+	{
+		if (s_monom_ == NULL) return false;
+		return pLmDivisibleBy(premuled->smuled_monom_, s_monom_);
+	}
+	bool possibly_reduce_by(const LabeledPoly* other)
+	{
+		if (other->p_ == NULL) return false;
+		bool divisible = pLmDivisibleBy(p_, other->p_);
+		if (divisible)
+		{
+			poly monom = pInit();
+			pExpVectorDiff(monom, p_, other->p_);
+			pSetCoeff(monom, nInit(-1));
+			p_ = pPlus_mm_Mult_qq(p_, monom, other->p_);
+			pNorm(p_);
+			pDelete(&monom);
+		}
+		return divisible;
+	}
+	~LabeledPoly()
+	{
+		pDelete(&p_);
+		pDelete(&s_monom_);
+	}
+private:
+	LabeledPoly(poly p, poly s_monom):
+		p_(p),s_monom_(s_monom)
+	{}
+	LabeledPoly(const LabeledPoly&);
+	void operator=(const LabeledPoly&);
+};
+
+LabeledPolyMuled::LabeledPolyMuled(const poly other_spair_poly, const LabeledPoly& not_muled):
+	not_muled_(not_muled)
+{
+	mul_by_monom_ = pInit();
+	pLcm(other_spair_poly, not_muled_.p_, mul_by_monom_);
+	pExpVectorSub(mul_by_monom_, not_muled_.p_);
+	smuled_monom_ = ppMult_mm(mul_by_monom_, not_muled_.s_monom_);
+}
+
+typedef std::set<LabeledPoly*, LabeledPoly::GvwLess> LPolysByGvw;
+typedef std::set<LabeledPolyMuled*, LabeledPolyMuled::SigMuledLess> LPolysMuledBySig;
+ideal ssg (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
+{
+	return idCopy(F);
+}
 ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 {
   // ring order stuff:
