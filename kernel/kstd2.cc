@@ -1569,7 +1569,7 @@ struct LabeledPoly
 	{		
 		poly p_copy = pCopy(p);
 		pNorm(p_copy);
-		return new LabeledPoly(p_copy, pInit());
+		return new LabeledPoly(p_copy, pOne());
 	}
 	
 	static LabeledPoly* CreateZeroPoly(const poly having_hm_sig)
@@ -1649,11 +1649,30 @@ ideal ssg (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 			R.push_back(LabeledPoly::CreateZeroSig(I0->m[n0]));
 		}
 		const LPolysByGvw::iterator first_zero_sig = R.begin();
+		for(int n0 = 0; n0 < IDELEMS(I0); ++n0)
+		{
+			//R.push_front(LabeledPoly::CreateZeroPoly(I0->m[n0]));
+		}
 		while(1)
 		{
 			bool reduced_to_zero = false;
-			//LPolysByGvw::const_reverse_iterator min_used_reductor;
 			LPolysByGvw::iterator known_gvw_greater_p = first_zero_sig;
+			if (n ==  IDELEMS(F) - 1)
+			{
+				printf("\nR = \n");
+				for(LPolysByGvw::iterator ir = R.begin(); ir != R.end(); ++ir)
+				{
+					printf("p = ");pWrite((*ir)->p_);
+					printf("s = ");pWrite((*ir)->s_monom_);
+				}
+				printf("B = \n");
+				for(LPolysMuledBySig::iterator ib = B.begin(); ib != B.end(); ++ib)
+				{
+					printf("smuled = ");pWrite((*ib)->smuled_monom_);
+					printf("s = ");pWrite((*ib)->not_muled_.s_monom_);
+				}
+
+			}
 			while(1)
 			{
 				bool was_reduced = false;
@@ -1687,6 +1706,7 @@ ideal ssg (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 				if (reduced_to_zero)
 				{
 					++zero_reductions;
+					known_gvw_greater_p = R.begin();
 					break;
 				}
 			}
@@ -1709,12 +1729,15 @@ ideal ssg (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 			{
 				for(LPolysByGvw::const_iterator ir = --R.end();ir != p_insert_pos;--ir)
 				{
-					if (!gvw_less(p, *ir)) break;
 					LabeledPolyMuled* bnew = new LabeledPolyMuled((*ir)->p_, *p);
+					printf("smuled new = ");pWrite(bnew->smuled_monom_);
+					printf("s new = ");pWrite(bnew->not_muled_.s_monom_);
+
 					for(LPolysByGvw::const_iterator ir2 = R.begin();ir2 != p_insert_pos;++ir2)
 					{
 						if ((*ir2)->sig_divides(bnew))
 						{
+							printf("rejected by sig = ");pWrite((*ir2)->s_monom_);
 							delete bnew;
 							bnew = NULL;
 							break;
