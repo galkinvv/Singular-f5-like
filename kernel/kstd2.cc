@@ -69,6 +69,7 @@
 
 #include <set>
 #include <list>
+#include <algorithm>
 
 long zeroreductions = 0;
 
@@ -1492,6 +1493,14 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 
 struct LabeledPoly;
 
+struct LmCompareForNonZeroPolys
+{
+	bool operator()(const poly p1, const poly p2)const
+	{
+		return pLmCmp(p1, p2) == -1;
+	}
+};
+
 struct LabeledPolyMuled
 {
 	const LabeledPoly& not_muled_;
@@ -1600,8 +1609,8 @@ struct LabeledPoly
 		if (divisible)
 		{
 			poly monom = pInit();
+			pSetCoeff0(monom, nInit(-1));
 			pExpVectorDiff(monom, p_, other->p_);
-			pSetCoeff(monom, nInit(-1));
 			p_ = pPlus_mm_Mult_qq(p_, monom, other->p_);
 			pNorm(p_);
 			pDelete(&monom);
@@ -1622,7 +1631,7 @@ private:
 };
 
 LabeledPolyMuled::LabeledPolyMuled(const poly other_spair_poly, const LabeledPoly& not_muled):
-	not_muled_(not_muled), mul_by_monom_(pInit()), smuled_monom_(NULL)
+	not_muled_(not_muled), mul_by_monom_(pOne()), smuled_monom_(NULL)
 {
 	pLcm(other_spair_poly, not_muled_.p_, mul_by_monom_);
 	pSetm(mul_by_monom_); //need to adjust after Lcm calc
@@ -1634,29 +1643,57 @@ typedef std::list<LabeledPoly*> LPolysByGvw;
 typedef std::multiset<LabeledPolyMuled*, LabeledPolyMuled::SigMuledLess> LPolysMuledBySig;
 ideal ssg (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 {
-	ideal I0 = idCopyFirstK(F,1);
+	int current_input_idx = 0;
+	while (F->m[current_input_idx] == NULL && current_input_idx < IDELEMS(F))
+	{
+		++current_input_idx;
+	}
+	ideal I0 = idInit(1);
+	if (current_input_idx >= IDELEMS(F))
+	{
+		return I0;
+	}
+	I0->m[0] = pCopy(F->m[current_input_idx]);
 	int zero_reductions = 0;
 	LabeledPoly::GvwLess gvw_less;
-	for (int n = 1; n < IDELEMS(F); ++n)
+	for (current_input_idx +=1; current_input_idx < IDELEMS(F); ++current_input_idx)
 	{
+		if (!F->m[current_input_idx]) continue;
 		idDelDiv(I0);
 		idSkipZeroes(I0);
+		std::sort(I0->m, I0->m+IDELEMS(I0), LmCompareForNonZeroPolys());
+		
+		ideal I0_tail_reduced = idInit(IDELEMS(I0));		
+		//tail reducton
+		for(int n0 = IDELEMS(I0) - 1; n0 > 0; --n0)
+		{
+			poly p_old = NULL;
+			std::swap(p_old,I0->m[n0]);
+			poly p_new = kNF(I0, Q, p_old);
+			pDelete(&p_old);
+			I0_tail_reduced->m[n0] = p_new;
+		}
+		std::swap(I0_tail_reduced->m[0], I0->m[0]);
+		idDelete(&I0);
+		I0 = I0_tail_reduced;
+		
 		LPolysByGvw R;
 		LPolysMuledBySig B;
-		LabeledPoly* p = LabeledPoly::CreateOneSig(F->m[n]);
-		for(int n0 = 0; n0 < IDELEMS(I0); ++n0)
+		LabeledPoly* p = 	LabeledPoly::CreateOneSig(F->m[current_input_idx]);
+		for(int n0 = IDELEMS(I0) - 1; n0 >=0; --n0)
 		{
 			R.push_back(LabeledPoly::CreateZeroSig(I0->m[n0]));
 		}
 		const LPolysByGvw::iterator first_zero_sig = R.begin();
-		for(int n0 = 0; n0 < IDELEMS(I0); ++n0)
+		for(int n0 = IDELEMS(I0) - 1; n0 >=0; --n0)
 		{
-			//R.push_front(LabeledPoly::CreateZeroPoly(I0->m[n0]));
+			R.push_front(LabeledPoly::CreateZeroPoly(I0->m[n0]));
 		}
 		while(1)
 		{
 			bool reduced_to_zero = false;
 			LPolysByGvw::iterator known_gvw_greater_p = first_zero_sig;
+#if 0
 			if (n ==  IDELEMS(F) - 1)
 			{
 				printf("\nR = \n");
@@ -1671,8 +1708,8 @@ ideal ssg (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 					printf("smuled = ");pWrite((*ib)->smuled_monom_);
 					printf("s = ");pWrite((*ib)->not_muled_.s_monom_);
 				}
-
 			}
+#endif
 			while(1)
 			{
 				bool was_reduced = false;
@@ -1730,14 +1767,10 @@ ideal ssg (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 				for(LPolysByGvw::const_iterator ir = --R.end();ir != p_insert_pos;--ir)
 				{
 					LabeledPolyMuled* bnew = new LabeledPolyMuled((*ir)->p_, *p);
-					printf("smuled new = ");pWrite(bnew->smuled_monom_);
-					printf("s new = ");pWrite(bnew->not_muled_.s_monom_);
-
 					for(LPolysByGvw::const_iterator ir2 = R.begin();ir2 != p_insert_pos;++ir2)
 					{
 						if ((*ir2)->sig_divides(bnew))
 						{
-							printf("rejected by sig = ");pWrite((*ir2)->s_monom_);
 							delete bnew;
 							bnew = NULL;
 							break;
