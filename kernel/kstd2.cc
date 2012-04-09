@@ -1501,27 +1501,6 @@ struct LmCompareForNonZeroPolys
 	}
 };
 
-struct SigMuledMinimumInVectorFinder
-{
-	SigMuledMinimumFinder(const std::vector<LabeledPolyMuled*> &vector):
-		minimum_idx_(-1),
-		vector_(vector)
-	{}
-	int minimum_idx_;
-	const std::vector<LabeledPolyMuled*> &vector_;
-	void UpdateBy(int next_idx)
-	{
-		if (minimum_idx_ == -1 || pLmCmp(vector_[next_idx]->smuled_monom_, vector_[minimum_idx_]->smuled_monom_) == -1)
-		{
-			minimum_idx_ = next_idx;			
-		}
-	}
-}
-bool SigMuledLess(const LabeledPolyMuled* l1, const LabeledPolyMuled* l2)const
-{
-	return  == -1;
-}
-
 struct LabeledPolyMuled
 {
 	const LabeledPoly& not_muled_;
@@ -1536,6 +1515,24 @@ struct LabeledPolyMuled
 private:
 	LabeledPolyMuled(const LabeledPolyMuled&);
 	void operator=(const LabeledPolyMuled&);	
+};
+
+struct SigMuledMinimumFinder
+{
+	static const int NO_ELEMENTS = -1;
+	SigMuledMinimumFinder(const std::vector<LabeledPolyMuled*> &vector):
+		minimum_idx_(NO_ELEMENTS),
+		vector_(vector)
+	{}
+	int minimum_idx_;
+	const std::vector<LabeledPolyMuled*> &vector_;
+	void UpdateBy(int next_idx)
+	{
+		if (minimum_idx_ == NO_ELEMENTS || pLmCmp(vector_[next_idx]->smuled_monom_, vector_[minimum_idx_]->smuled_monom_) == -1)
+		{
+			minimum_idx_ = next_idx;			
+		}
+	}
 };
 
 struct LabeledPoly
@@ -1661,7 +1658,8 @@ struct LPolysMuledBySig:public std::vector<LabeledPolyMuled*>
 		(*this)[i] = back();
 		pop_back();
 	}
-}
+};
+
 ideal ssg (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 {
 	int current_input_idx = 0;
@@ -1700,7 +1698,7 @@ ideal ssg (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 		
 		LPolysByGvw R;
 		LPolysMuledBySig B;
-		LabeledPoly* p = 	LabeledPoly::CreateOneSig(F->m[current_input_idx]);
+		LabeledPoly* p = LabeledPoly::CreateOneSig(F->m[current_input_idx]);
 		for(int n0 = IDELEMS(I0) - 1; n0 >=0; --n0)
 		{
 			R.push_back(LabeledPoly::CreateZeroSig(I0->m[n0]));
@@ -1770,18 +1768,19 @@ ideal ssg (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 			}
 			const LPolysByGvw::iterator p_insert_pos =
 				R.insert(known_gvw_greater_p, p);
-			LPolysMuledBySig::iterator ib = B.begin();
-			while (ib != B.end())
+			SigMuledMinimumFinder b_min_finder(B);
+			for(int i=0;i<B.size();)
 			{
-				LabeledPolyMuled* b = *ib;
-				LPolysMuledBySig::iterator ib_next = ib;
-				++ib_next;
+				LabeledPolyMuled* b = B[i];
 				if (p->sig_divides(b) && gvw_less(p,&b->not_muled_))
 				{
-					B.erase(ib);
+					B.erase_and_move_from_back(i);
 					delete b;
+				}else
+				{
+					b_min_finder.UpdateBy(i);
+					++i;
 				}
-				ib = ib_next;		
 			}
 			if (!reduced_to_zero)
 			{
@@ -1799,7 +1798,9 @@ ideal ssg (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 					}
 					if (bnew)
 					{
-						B.insert(bnew);
+						B.push_back(bnew);
+						b_min_finder.UpdateBy(B.size() - 1);
+
 					}
 				}
 				for(LPolysByGvw::const_iterator ir = R.begin();ir != p_insert_pos;++ir)
@@ -1818,16 +1819,17 @@ ideal ssg (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 					}
 					if (bnew)
 					{
-						B.insert(bnew);
+						B.push_back(bnew);
+						b_min_finder.UpdateBy(B.size() - 1);
 					}
 				}
 			}
-			if (B.empty())
+			if (b_min_finder.minimum_idx_ == SigMuledMinimumFinder::NO_ELEMENTS)
 			{
 				break;
 			}else{
-				LabeledPolyMuled* bminimal = *B.begin();
-				B.erase(B.begin());
+				LabeledPolyMuled* bminimal = B[b_min_finder.minimum_idx_];
+				B.erase_and_move_from_back(b_min_finder.minimum_idx_);
 				p = LabeledPoly::ConvertFromAndDelete(bminimal);
 			}
 		}
