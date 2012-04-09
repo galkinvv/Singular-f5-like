@@ -67,7 +67,7 @@
 /* shiftgb stuff */
 #include <kernel/shiftgb.h>
 
-#include <set>
+#include <vector>
 #include <list>
 #include <algorithm>
 
@@ -1501,18 +1501,32 @@ struct LmCompareForNonZeroPolys
 	}
 };
 
+struct SigMuledMinimumInVectorFinder
+{
+	SigMuledMinimumFinder(const std::vector<LabeledPolyMuled*> &vector):
+		minimum_idx_(-1),
+		vector_(vector)
+	{}
+	int minimum_idx_;
+	const std::vector<LabeledPolyMuled*> &vector_;
+	void UpdateBy(int next_idx)
+	{
+		if (minimum_idx_ == -1 || pLmCmp(vector_[next_idx]->smuled_monom_, vector_[minimum_idx_]->smuled_monom_) == -1)
+		{
+			minimum_idx_ = next_idx;			
+		}
+	}
+}
+bool SigMuledLess(const LabeledPolyMuled* l1, const LabeledPolyMuled* l2)const
+{
+	return  == -1;
+}
+
 struct LabeledPolyMuled
 {
 	const LabeledPoly& not_muled_;
 	poly mul_by_monom_;
 	poly smuled_monom_;
-	struct SigMuledLess
-	{
-		bool operator()(const LabeledPolyMuled* l1, const LabeledPolyMuled* l2)const
-		{
-			return pLmCmp(l1->smuled_monom_, l2->smuled_monom_) == -1;
-		}
-	};
 	LabeledPolyMuled(const poly other_spair_poly, const LabeledPoly& not_muled);
 	~LabeledPolyMuled()
 	{
@@ -1640,7 +1654,14 @@ LabeledPolyMuled::LabeledPolyMuled(const poly other_spair_poly, const LabeledPol
 }
 
 typedef std::list<LabeledPoly*> LPolysByGvw;
-typedef std::multiset<LabeledPolyMuled*, LabeledPolyMuled::SigMuledLess> LPolysMuledBySig;
+struct LPolysMuledBySig:public std::vector<LabeledPolyMuled*>
+{
+	void erase_and_move_from_back(int i)
+	{
+		(*this)[i] = back();
+		pop_back();
+	}
+}
 ideal ssg (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 {
 	int current_input_idx = 0;
@@ -1663,7 +1684,7 @@ ideal ssg (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 		idSkipZeroes(I0);
 		std::sort(I0->m, I0->m+IDELEMS(I0), LmCompareForNonZeroPolys());
 		
-		ideal I0_tail_reduced = idInit(IDELEMS(I0));		
+		ideal I0_tail_reduced = idInit(IDELEMS(I0));
 		//tail reducton
 		for(int n0 = IDELEMS(I0) - 1; n0 > 0; --n0)
 		{
