@@ -1,0 +1,60 @@
+# Generated automatically from Makefile.in by configure.
+#####################################################################
+### 
+### Makefile for emacs stuff
+###
+#####################################################################
+SHELL=/bin/sh
+
+prefix		= /cygdrive/c/lapa/sing/Singular-f5-like
+docdir		= ${prefix}/doc
+examplesdir	= ${prefix}/examples
+SINGULAR	= /cygdrive/c/lapa/sing/Singular-f5-like/ix86-Win/Singular-3-1-4
+singulardir	= ${prefix}/Singular 
+emacsdir	= ${install_prefix}/emacs
+
+
+PERL		= perl
+INSTALL		= ../install-sh -c
+INSTALL_DATA	= ${INSTALL} -m 644
+MKINSTALLDIRS   = ../mkinstalldirs
+
+SINGULAR_HLP	= ${docdir}/singular.hlp
+
+all install: cmd-cmpl.el hlp-cmpl.el lib-cmpl.el ex-cmpl.el
+
+install_all: install
+
+cmd-cmpl.el: ${SINGULAR} cmpl.pl
+	${PERL} cmpl.pl -Singular ${SINGULAR} -cmpl cmd > cmd-cmpl.el
+
+hlp-cmpl.el: ${SINGULAR_HLP} cmpl.pl
+	${PERL} cmpl.pl -hlp ${SINGULAR_HLP} -cmpl hlp > hlp-cmpl.el
+
+ex-cmpl.el: cmpl.pl ${examplesdir}
+		${PERL} cmpl.pl -cmpl ex -ex_dir ${examplesdir} > ex-cmpl.el
+
+lib-cmpl-old.el: ${prefix}/Singular/Makefile cmpl.pl
+	${MAKE} --no-print-directory -s -f ${prefix}/Singular/Makefile echoLIBS > lib-temp
+	cat lib-temp | ${PERL} cmpl.pl -cmpl lib > lib-cmpl-old.el
+	rm lib-temp
+
+lib-cmpl.el: ${prefix}/Singular/Makefile lib.pl
+	(cd ${prefix}/Singular;${MAKE} --no-print-directory -s -f Makefile echoLIBS) > lib-temp
+	${PERL} lib.pl -s ${singulardir} `cat lib-temp` > lib-cmpl.el
+
+clean mostlyclean distclean:
+	rm -f cmd-cmpl.el hlp-cmpl.el lib-cmpl.el ex-cmpl.el
+
+install-sharedist: all
+	${MKINSTALLDIRS} ${emacsdir}
+	${INSTALL_DATA} cmd-cmpl.el ${emacsdir}
+	${INSTALL_DATA} lib-cmpl.el ${emacsdir}
+	${INSTALL_DATA} hlp-cmpl.el ${emacsdir}
+	${INSTALL_DATA} ex-cmpl.el ${emacsdir}
+	${INSTALL_DATA} singular.el ${emacsdir}
+	${INSTALL_DATA} .emacs-singular ${emacsdir}
+	${INSTALL_DATA} .emacs-general ${emacsdir}
+
+depend:
+	@echo "No make depend available!"

@@ -1,0 +1,4 @@
+#!/bin/sh
+cd src
+./configure CC="gcc" CXX="c++" LIBDIR=/cygdrive/c/lapa/sing/Singular-f5-like/ix86-Win/lib INCLUDEDIR=/cygdrive/c/lapa/sing/Singular-f5-like/ix86-Win/include PREFIX=/cygdrive/c/lapa/sing/Singular-f5-like NTL_GMP_LIP=on GMP_PREFIX=/cygdrive/c/lapa/sing/Singular-f5-like/ix86-Win CFLAGS=" -O2" CXXFLAGS=" -O2" LDFLAGS="-L/cygdrive/c/lapa/sing/Singular-f5-like/ix86-Win/lib -g" NTL_STD_CXX=on DOCDIR="/cygdrive/c/lapa/sing/Singular-f5-like/ntl/../doc"
+cd ..

@@ -1,0 +1,16 @@
+This file contains any messages produced by compilers while
+running configure, to aid debugging if configure makes a mistake.
+
+configure:668: checking for c++
+configure:700: checking whether the C++ compiler (c++ -O -L. -L/cygdrive/c/lapa/sing/Singular-f5-like/ix86-Win/lib -L/cygdrive/c/lapa/sing/Singular-f5-like/ix86-Win/lib -g) works
+configure:716: c++ -o conftest -O -I./factor -I/cygdrive/c/lapa/sing/Singular-f5-like/ix86-Win/include  -L. -L/cygdrive/c/lapa/sing/Singular-f5-like/ix86-Win/lib -L/cygdrive/c/lapa/sing/Singular-f5-like/ix86-Win/lib -g conftest.C  1>&5
+configure:742: checking whether the C++ compiler (c++ -O -L. -L/cygdrive/c/lapa/sing/Singular-f5-like/ix86-Win/lib -L/cygdrive/c/lapa/sing/Singular-f5-like/ix86-Win/lib -g) is a cross-compiler
+configure:747: checking whether we are using GNU C++
+configure:775: checking whether c++ accepts -g
+configure:807: checking how to run the C++ preprocessor
+configure:851: checking whether make sets ${MAKE}
+configure:880: checking for ranlib
+configure:910: checking for ar
+configure:943: checking for factory.h
+configure:996: checking whether gcc accepts -fno-rtti
+configure:1030: checking whether gcc accepts -fno-exceptions

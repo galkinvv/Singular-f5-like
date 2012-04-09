@@ -1,0 +1,60 @@
+This file contains any messages produced by compilers while
+running configure, to aid debugging if configure makes a mistake.
+
+configure:687: checking whether make sets ${MAKE}
+configure:716: checking for gcc
+configure:829: checking whether the C compiler (gcc  -L/cygdrive/c/lapa/sing/Singular-f5-like/ix86-Win/lib -g) works
+configure:845: gcc -o conftest  -I.. -I. -L/cygdrive/c/lapa/sing/Singular-f5-like/ix86-Win/lib -g conftest.c  1>&5
+configure:871: checking whether the C compiler (gcc  -L/cygdrive/c/lapa/sing/Singular-f5-like/ix86-Win/lib -g) is a cross-compiler
+configure:876: checking whether we are using GNU C
+configure:904: checking whether gcc accepts -g
+configure:936: checking how to run the C preprocessor
+configure:1018: checking for ranlib
+configure:1046: checking whether ln -s works
+configure:1097: checking for a BSD compatible install
+configure:1150: checking for working const
+configure:1225: checking for inline
+configure:1268: checking for ar
+configure:1303: checking for perl
+configure:1340: checking for addr2line
+configure:1375: checking for ANSI C header files
+configure:1482: checking for limits.h
+configure:1523: checking for unistd.h
+configure:1523: checking for sys/mman.h
+configure:1523: checking for fcntl.h
+configure:1523: checking for /usr/include/malloc.h
+configure:1563: checking for popen
+configure:1563: checking for readlink
+configure:1563: checking for getcwd
+configure:1563: checking for getwd
+configure:1563: checking for mmap
+configure:1563: checking for sbrk
+configure:1563: checking for random
+configure:1619: checking size of long
+configure:1658: checking size of void*
+configure:1697: checking size of double
+configure:1736: checking size of size_t
+configure:1786: checking size of system page
+configure:1838: checking whether mmap works
+configure:1882: checking whether alignment needs to be strict
+configure:1922: checking for external config files
+configure:1948: checking which malloc to use
+configure:2003: checking whether malloc provides SizeOfAddr
+configure:2078: checking whether working valloc exists
+configure:2126: checking which valloc to use
+configure:2151: checking whether to emulate omalloc
+configure:2163: checking how to align
+configure:2184: checking whether to use dense bins
+configure:2196: checking whether to disable debugging
+configure:2209: checking whether to have tracking debug functionality
+configure:2221: checking whether to use internal debug
+configure:2234: checking whether to inline
+configure:2270: checking whether GET_RET_ADDR works
+configure:2317: checking whether omGetBackTrace works
+configure:2369: checking whether addr2line works
+configure:2426: checking whether to track return addresses
+configure:2439: checking whether to track files and line numbers
+configure:2459: checking whether to track stack backtraces
+configure:2472: checking whether to track custom values
+configure:2485: checking return type of sbrk
+configure:2497: gcc -o conftest -g -O2 -I.. -I. -L/cygdrive/c/lapa/sing/Singular-f5-like/ix86-Win/lib -g conftest.c  1>&5

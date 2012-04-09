@@ -1,0 +1,75 @@
+This file contains any messages produced by compilers while
+running configure, to aid debugging if configure makes a mistake.
+
+configure:640: checking uname for singular
+configure:677: checking for gcc
+configure:790: checking whether the C compiler (gcc -O -g) works
+configure:806: gcc -o conftest -O  -g conftest.c  1>&5
+configure:832: checking whether the C compiler (gcc -O -g) is a cross-compiler
+configure:837: checking whether we are using GNU C
+configure:865: checking whether gcc accepts -g
+configure:897: checking how to run the C preprocessor
+configure:1007: checking for a BSD compatible install
+configure:1060: checking for AIX
+configure:1088: checking for c++
+configure:1120: checking whether the C++ compiler (c++ -O -g) works
+configure:1136: c++ -o conftest -O  -g conftest.C  1>&5
+configure:1162: checking whether the C++ compiler (c++ -O -g) is a cross-compiler
+configure:1167: checking whether we are using GNU C++
+configure:1195: checking whether c++ accepts -g
+configure:1232: checking whether compiler accepts -pipe
+configure:1273: checking for perl5
+configure:1307: checking for uudecode
+configure:1307: checking for uudeview
+configure:1342: checking for gunzip
+configure:1378: checking for gzip
+configure:1411: checking for latex2html
+configure:1438: checking whether ln -s works
+configure:1508: checking whether _AIX is defined
+configure:1539: checking for atof in -lm
+configure:1586: checking for socket in -lbsd
+configure:1633: checking for listen in -lsocket
+configure:1680: checking for gethostbyname in -lnsl
+configure:1727: checking for main in -lgmp
+configure:1770: checking for IMP_PutGmpInt in -lMP
+configure:1817: checking for MPT_GetTree in -lMPT
+configure:1864: checking for atof in -lsingcf
+configure:1911: checking for atof in -lsingfac
+configure:1958: checking for omTestAddr in -lomalloc
+configure:2005: checking for main in -lomalloc_ndebug
+configure:2052: checking for gmp.h
+configure:2052: checking for MP.h
+configure:2052: checking for MPT.h
+configure:2052: checking for factory.h
+configure:2052: checking for factor.h
+configure:2052: checking for omalloc.h
+configure:2232: checking which tmp dir to use
+configure:2247: checking whether to configure and build omalloc
+configure:2346: checking size of long
+configure:2389: checking whether to configure and build MP lib
+configure:2426: checking whether to configure and build NTL lib
+configure:2443: checking how to run the C++ preprocessor
+configure:2489: checking for iostream.h
+configure:2489: checking for iostream
+configure:2544: checking whether to configure and build factory lib
+configure:2571: checking whether to configure and build libfac lib
+configure:2286: checking whether to configure and build gfan lib
+configure:2603: checking whether to configure and build sgroup lib
+configure:2624: checking whether to configure and build Singular
+configure:2655: checking whether to build IntegerProgramming
+configure:2668: checking whether to build Plural
+configure:2680: checking whether to configure and build Texinfo
+configure:2702: checking for makeinfo
+configure:2732: checking for texindex
+configure:2762: checking for texi2pdf
+configure:2792: checking whether to configure and build Texi2html
+configure:2807: checking for texi2html
+configure:2848: checking whether to build doc
+configure:2862: checking whether to build emacs
+configure:2874: checking which apint package to use
+configure:2890: checking whether to use with MP
+configure:2910: checking whether to use with factory
+configure:2929: checking whether to use with libfac
+configure:2950: checking whether to use with Singular
+configure:3019: checking whether to use libsvd
+configure:3029: checking whether make sets ${MAKE}
