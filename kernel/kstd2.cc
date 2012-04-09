@@ -59,6 +59,7 @@
 #include <kernel/weight.h>
 #include <kernel/intvec.h>
 #include <kernel/prCopy.h>
+#include <kernel/timer.h>
 #ifdef HAVE_PLURAL
 #include <kernel/gring.h>
 #endif
@@ -1503,32 +1504,38 @@ struct LmCompareForNonZeroPolys
 
 struct LabeledPolyMuled
 {
-	const LabeledPoly& not_muled_;
+	const LabeledPoly* not_muled_;
 	poly mul_by_monom_;
 	poly smuled_monom_;
-	LabeledPolyMuled(const poly other_spair_poly, const LabeledPoly& not_muled);
-	~LabeledPolyMuled()
+	LabeledPolyMuled():not_muled_(NULL),mul_by_monom_(NULL),smuled_monom_(NULL)
+	{
+	}
+	void Init()
+	{
+		not_muled_ = NULL;
+		smuled_monom_ = NULL;
+		mul_by_monom_ = pOne();
+	}
+	void FillBy(const poly other_spair_poly, const LabeledPoly& not_muled);
+	void Release()
 	{
 		pDelete(&smuled_monom_);
 		pDelete(&mul_by_monom_);
 	}
-private:
-	LabeledPolyMuled(const LabeledPolyMuled&);
-	void operator=(const LabeledPolyMuled&);	
 };
 
 struct SigMuledMinimumFinder
 {
 	static const int NO_ELEMENTS = -1;
-	SigMuledMinimumFinder(const std::vector<LabeledPolyMuled*> &vector):
+	SigMuledMinimumFinder(const std::vector<LabeledPolyMuled> &vector):
 		minimum_idx_(NO_ELEMENTS),
 		vector_(vector)
 	{}
 	int minimum_idx_;
-	const std::vector<LabeledPolyMuled*> &vector_;
+	const std::vector<LabeledPolyMuled> &vector_;
 	void UpdateBy(int next_idx)
 	{
-		if (minimum_idx_ == NO_ELEMENTS || pLmCmp(vector_[next_idx]->smuled_monom_, vector_[minimum_idx_]->smuled_monom_) == -1)
+		if (minimum_idx_ == NO_ELEMENTS || pLmCmp(vector_[next_idx].smuled_monom_, vector_[minimum_idx_].smuled_monom_) == -1)
 		{
 			minimum_idx_ = next_idx;			
 		}
@@ -1597,36 +1604,34 @@ struct LabeledPoly
 		return new LabeledPoly(NULL, pLmInit(having_hm_sig));
 	}
 	
-	static LabeledPoly* ConvertFromAndDelete(LabeledPolyMuled* premuled)
+	static LabeledPoly* ConvertFromAndRelease(LabeledPolyMuled& premuled)
 	{		
-		poly new_sig_monom = premuled->smuled_monom_;
-		premuled->smuled_monom_ = NULL;
-		pSetCoeff(premuled->mul_by_monom_, nInit(1));
-		poly new_p = ppMult_mm(premuled->not_muled_.p_, premuled->mul_by_monom_);
-		delete premuled;
+		poly new_sig_monom = NULL;
+		std::swap(premuled.smuled_monom_, new_sig_monom);
+		poly new_p = ppMult_mm(premuled.not_muled_->p_, premuled.mul_by_monom_);
+		premuled.Release();
 		return new LabeledPoly(new_p, new_sig_monom);
 	}
 	
-	bool sig_divides(const LabeledPolyMuled* premuled)const
+	bool sig_divides(const LabeledPolyMuled& premuled)const
 	{
 		if (s_monom_ == NULL) return false;
-		return pLmDivisibleBy(s_monom_, premuled->smuled_monom_);
+		return pLmDivisibleBy(s_monom_, premuled.smuled_monom_);
 	}
 	
-	bool possibly_reduce_by(const LabeledPoly* other)
+	bool can_reduce_by(const LabeledPoly* other)
 	{
 		if (other->p_ == NULL) return false;
-		bool divisible = pLmDivisibleBy(other->p_, p_);
-		if (divisible)
-		{
-			poly monom = pInit();
-			pSetCoeff0(monom, nInit(-1));
-			pExpVectorDiff(monom, p_, other->p_);
-			p_ = pPlus_mm_Mult_qq(p_, monom, other->p_);
-			pNorm(p_);
-			pDelete(&monom);
-		}
-		return divisible;
+		return pLmDivisibleBy(other->p_, p_);
+	}
+	void reduce_by(const LabeledPoly* other)
+	{
+		poly monom = pInit();
+		pSetCoeff0(monom, nInit(-1));
+		pExpVectorDiff(monom, p_, other->p_);
+		p_ = pPlus_mm_Mult_qq(p_, monom, other->p_);
+		pNorm(p_);
+		pDelete(&monom);
 	}
 	~LabeledPoly()
 	{
@@ -1641,17 +1646,18 @@ private:
 	void operator=(const LabeledPoly&);
 };
 
-LabeledPolyMuled::LabeledPolyMuled(const poly other_spair_poly, const LabeledPoly& not_muled):
-	not_muled_(not_muled), mul_by_monom_(pOne()), smuled_monom_(NULL)
+void LabeledPolyMuled::FillBy(const poly other_spair_poly, const LabeledPoly& not_muled)
 {
-	pLcm(other_spair_poly, not_muled_.p_, mul_by_monom_);
+	not_muled_ = &not_muled;
+	pLcm(other_spair_poly, not_muled_->p_, mul_by_monom_);
 	pSetm(mul_by_monom_); //need to adjust after Lcm calc
-	pExpVectorSub(mul_by_monom_, not_muled_.p_);
-	smuled_monom_ = ppMult_mm(mul_by_monom_, not_muled_.s_monom_);
+	pExpVectorSub(mul_by_monom_, not_muled_->p_);
+	pDelete(&smuled_monom_);
+	smuled_monom_ = ppMult_mm(mul_by_monom_, not_muled_->s_monom_);
 }
 
 typedef std::list<LabeledPoly*> LPolysByGvw;
-struct LPolysMuledBySig:public std::vector<LabeledPolyMuled*>
+struct LPolysMuledBySig:public std::vector<LabeledPolyMuled>
 {
 	void erase_and_move_from_back(int i)
 	{
@@ -1660,8 +1666,23 @@ struct LPolysMuledBySig:public std::vector<LabeledPolyMuled*>
 	}
 };
 
+int time_from_last_call()
+{
+	static int prev_time = 0;
+	int new_time = getTimer();
+	int result = new_time - prev_time;
+	prev_time = new_time;
+	return result;
+}
+
 ideal ssg (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 {
+	int 
+		time_interred = 0, time_prepare = 0, time_reduction_search = 0, time_reduction = 0,
+		time_add_r = 0, time_filter_b = 0, time_add_b1_testings = 0, time_add_b1_insertion = 0,
+		time_add_b2 = 0;
+
+	time_from_last_call();
 	int current_input_idx = 0;
 	while (F->m[current_input_idx] == NULL && current_input_idx < IDELEMS(F))
 	{
@@ -1680,6 +1701,7 @@ ideal ssg (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 		if (!F->m[current_input_idx]) continue;
 		idDelDiv(I0);
 		idSkipZeroes(I0);
+#ifndef SSG_NO_INTERRED
 		std::sort(I0->m, I0->m+IDELEMS(I0), LmCompareForNonZeroPolys());
 		
 		ideal I0_tail_reduced = idInit(IDELEMS(I0));
@@ -1695,7 +1717,8 @@ ideal ssg (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 		std::swap(I0_tail_reduced->m[0], I0->m[0]);
 		idDelete(&I0);
 		I0 = I0_tail_reduced;
-		
+#endif
+		time_interred += time_from_last_call();
 		LPolysByGvw R;
 		LPolysMuledBySig B;
 		LabeledPoly* p = LabeledPoly::CreateOneSig(F->m[current_input_idx]);
@@ -1708,6 +1731,7 @@ ideal ssg (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 		{
 			R.push_front(LabeledPoly::CreateZeroPoly(I0->m[n0]));
 		}
+		time_prepare += time_from_last_call();
 		while(1)
 		{
 			bool reduced_to_zero = false;
@@ -1735,8 +1759,14 @@ ideal ssg (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 				LPolysByGvw::iterator ir = --R.end();
 				while(1)
 				{
-					was_reduced = p->possibly_reduce_by(*ir);
-					if (was_reduced) break;
+					was_reduced = p->can_reduce_by(*ir);
+					if (was_reduced)
+					{
+						time_reduction_search += time_from_last_call();
+						p->reduce_by(*ir);
+						time_reduction += time_from_last_call();
+						break;
+					}
 					if (ir == known_gvw_greater_p) break;
 					--ir;
 				}
@@ -1750,8 +1780,14 @@ ideal ssg (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 							++ir;
 							break;
 						}
-						was_reduced = p->possibly_reduce_by(*ir);
-						if (was_reduced) break;
+						was_reduced = p->can_reduce_by(*ir);
+						if (was_reduced)
+						{
+							time_reduction_search += time_from_last_call();
+							p->reduce_by(*ir);
+							time_reduction += time_from_last_call();
+							break;
+						}
 						if (ir == R.begin()) break;
 						--ir;
 					}
@@ -1766,71 +1802,80 @@ ideal ssg (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 					break;
 				}
 			}
+			time_reduction_search += time_from_last_call();
 			const LPolysByGvw::iterator p_insert_pos =
 				R.insert(known_gvw_greater_p, p);
+			time_add_r += time_from_last_call();
 			SigMuledMinimumFinder b_min_finder(B);
 			for(int i=0;i<B.size();)
 			{
-				LabeledPolyMuled* b = B[i];
-				if (p->sig_divides(b) && gvw_less(p,&b->not_muled_))
+				LabeledPolyMuled& b = B[i];
+				if (p->sig_divides(b) && gvw_less(p,b.not_muled_))
 				{
+					b.Release();
 					B.erase_and_move_from_back(i);
-					delete b;
 				}else
 				{
 					b_min_finder.UpdateBy(i);
 					++i;
 				}
 			}
+			time_filter_b += time_from_last_call();
 			if (!reduced_to_zero)
 			{
+				LabeledPolyMuled bnew;
+				bnew.Init();
 				for(LPolysByGvw::const_iterator ir = --R.end();ir != p_insert_pos;--ir)
 				{
-					LabeledPolyMuled* bnew = new LabeledPolyMuled((*ir)->p_, *p);
+					bnew.FillBy((*ir)->p_, *p);
+					bool rejected = false;
 					for(LPolysByGvw::const_iterator ir2 = R.begin();ir2 != p_insert_pos;++ir2)
 					{
 						if ((*ir2)->sig_divides(bnew))
 						{
-							delete bnew;
-							bnew = NULL;
+							rejected = true;
 							break;
 						}
 					}
-					if (bnew)
+					time_add_b1_testings += time_from_last_call();
+					if (!rejected)
 					{
 						B.push_back(bnew);
 						b_min_finder.UpdateBy(B.size() - 1);
-
+						bnew.Init();
+						time_add_b1_insertion += time_from_last_call();
 					}
 				}
 				for(LPolysByGvw::const_iterator ir = R.begin();ir != p_insert_pos;++ir)
 				{
 					if (!gvw_less(*ir, p)) break;
 					if ((*ir)->p_ == NULL) continue;
-					LabeledPolyMuled* bnew = new LabeledPolyMuled(p->p_, *(*ir));
+					bool rejected = false;
+					bnew.FillBy(p->p_, *(*ir));
 					for(LPolysByGvw::const_iterator ir2 = R.begin();ir2 != ir;++ir2)
 					{
 						if ((*ir2)->sig_divides(bnew))
 						{
-							delete bnew;
-							bnew = NULL;
+							rejected = true;
 							break;
 						}
 					}
-					if (bnew)
+					if (!rejected)
 					{
 						B.push_back(bnew);
 						b_min_finder.UpdateBy(B.size() - 1);
+						bnew.Init();
 					}
 				}
+				bnew.Release();
+				time_add_b2 += time_from_last_call();
 			}
 			if (b_min_finder.minimum_idx_ == SigMuledMinimumFinder::NO_ELEMENTS)
 			{
 				break;
 			}else{
-				LabeledPolyMuled* bminimal = B[b_min_finder.minimum_idx_];
+				p = LabeledPoly::ConvertFromAndRelease(B[b_min_finder.minimum_idx_]);
 				B.erase_and_move_from_back(b_min_finder.minimum_idx_);
-				p = LabeledPoly::ConvertFromAndDelete(bminimal);
 			}
 		}
 		idDelete(&I0);
@@ -1844,6 +1889,17 @@ ideal ssg (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 		}
 		R.clear();
 	}
+
+	printf("time time_interred = %d\n", time_interred);
+	printf("time time_prepare = %d\n", time_prepare);
+	printf("time time_reduction_search = %d\n", time_reduction_search);
+	printf("time time_reduction = %d\n", time_reduction);
+	printf("time time_add_r = %d\n", time_add_r);
+	printf("time time_filter_b = %d\n", time_filter_b);
+	printf("time time_add_b1_testings = %d\n", time_add_b1_testings);
+	printf("time time_add_b1_insertion = %d\n", time_add_b1_insertion);
+	printf("time time_add_b2 = %d\n", time_add_b2);
+
 	printf("ZERO REDUCTIONS: %d\n", zero_reductions);
 
 	return I0;
